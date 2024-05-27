@@ -7,21 +7,27 @@ TOOL_AIR=github.com/cosmtrek/air@v1.51.0
 TOOL_GOOSE=github.com/pressly/goose/v3/cmd/goose@v3.20.0
 TOOL_RESTISH=github.com/danielgtaylor/restish@v0.20.0
 
-dev:
-	air
-
-clean:
-	rm -rf $(SERVICE_DIR)
-
 migration:
 	atlas migrate diff $(name) --env local
 
 hash:
 	atlas migrate hash --env local
 
-nuke: clean
+nuke:
+	rm -rf $(SERVICE_DIR)
 	rm -rf ./internal/sqlite/migrations
 	atlas migrate diff initial --env local
+
+# ---------- Dev
+
+dev:
+	air
+
+dev-proxy:
+	go run ./cmd/dev-proxy
+
+dev-web:
+	cd internal/web && pnpm run dev
 
 # ---------- Tooling is only required for development
 

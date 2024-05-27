@@ -13,6 +13,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/dahua"
 	"github.com/ItsNotGoodName/ipcmanview/internal/sqlite"
 	"github.com/ItsNotGoodName/ipcmanview/internal/system"
+	"github.com/ItsNotGoodName/ipcmanview/internal/web"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/chiext"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/quartzext"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
@@ -20,7 +21,6 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/danielgtaylor/huma/v2/humacli"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"github.com/phsym/console-slog"
@@ -34,11 +34,11 @@ import (
 // Options for the CLI. Pass `--port` or set the `SERVICE_PORT` env var
 type Options struct {
 	Debug    bool   `doc:"Enable debug"`
+	Dir      string `doc:"Directory to store data" short:"d" default:"ipcmanview_data"`
 	Host     string `doc:"Host to listen on"`
 	Port     int    `doc:"Port to listen on" short:"p" default:"8888"`
 	SmtpHost string `doc:"SMTP host to listen on"`
 	SmtpPort int    `doc:"SMTP port to listen on" default:"1025"`
-	Dir      string `doc:"Directory to store data" short:"d" default:"ipcmanview_data"`
 }
 
 func main() {
@@ -98,9 +98,12 @@ func main() {
 			core.Must2(quartz.NewCronTrigger("0 0 * * * *")), // Every hour
 		))
 
-		// Create a new router & API
+		// Create a new router
 		router := chi.NewMux()
-		router.Use(middleware.RequestLogger(&chiext.DefaultLogFormatter{}))
+		router.Use(chiext.Logger())
+		router.Use(web.FS("/api"))
+
+		// Create api
 		api := humachi.New(router, huma.DefaultConfig("My API", "1.0.0"))
 
 		// Register handlers

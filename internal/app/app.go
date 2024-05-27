@@ -55,7 +55,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "List devices",
 		Method:  http.MethodGet,
-		Path:    "/devices",
+		Path:    "/api/devices",
 	}, func(ctx context.Context, input *struct{}) (*ListDevicesOutput, error) {
 		rows, err := db.QueryxContext(ctx, `
 			SELECT * FROM dahua_devices
@@ -81,7 +81,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}",
+		Path:    "/api/devices/{uuid}",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceOutput, error) {
@@ -97,7 +97,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Create device",
 		Method:  http.MethodPost,
-		Path:    "/devices",
+		Path:    "/api/devices",
 	}, func(ctx context.Context, input *CreateDeviceInput) (*CreateDevicesOutput, error) {
 		device, err := dahua.CreateDevice(ctx, db, dahua.CreateDeviceArgs{
 			Name:            input.Body.Name,
@@ -124,7 +124,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Update device",
 		Method:  http.MethodPost,
-		Path:    "/devices/{uuid}",
+		Path:    "/api/devices/{uuid}",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 		Body UpdateDevice
@@ -157,7 +157,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Delete device",
 		Method:  http.MethodDelete,
-		Path:    "/devices/{uuid}",
+		Path:    "/api/devices/{uuid}",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*struct{}, error) {
@@ -166,7 +166,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device coaxial caps",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/coaxial/caps",
+		Path:    "/api/devices/{uuid}/coaxial/caps",
 	}, func(ctx context.Context, input *struct {
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
@@ -193,7 +193,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device coaxial status",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/coaxial/status",
+		Path:    "/api/devices/{uuid}/coaxial/status",
 	}, func(ctx context.Context, input *struct {
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
@@ -220,7 +220,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device detail",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/detail",
+		Path:    "/api/devices/{uuid}/detail",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceDetailOutput, error) {
@@ -246,7 +246,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device licenses",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/licenses",
+		Path:    "/api/devices/{uuid}/licenses",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceLicensesOutput, error) {
@@ -272,7 +272,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "List device ptz presets",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/ptz/presets",
+		Path:    "/api/devices/{uuid}/ptz/presets",
 	}, func(ctx context.Context, input *struct {
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
@@ -299,7 +299,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device software versions",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/software",
+		Path:    "/api/devices/{uuid}/software",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceSoftwareOutput, error) {
@@ -325,7 +325,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "List device storage",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/storage",
+		Path:    "/api/devices/{uuid}/storage",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceStorageOutput, error) {
@@ -351,7 +351,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "List device users",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/users",
+		Path:    "/api/devices/{uuid}/users",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceUsersOutput, error) {
@@ -382,7 +382,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "List device active users",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/users/active",
+		Path:    "/api/devices/{uuid}/users/active",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceActiveUsersOutput, error) {
@@ -413,7 +413,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "List device groups",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/groups",
+		Path:    "/api/devices/{uuid}/groups",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceGroupsOutput, error) {
@@ -439,7 +439,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device uptime",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/uptime",
+		Path:    "/api/devices/{uuid}/uptime",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceUptimeOutput, error) {
@@ -465,7 +465,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device status",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/status",
+		Path:    "/api/devices/{uuid}/status",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceStatusOutput, error) {
@@ -488,7 +488,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device snapshot",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/snapshot",
+		Path:    "/api/devices/{uuid}/snapshot",
 		Responses: map[string]*huma.Response{
 			"200": {
 				Description: "Current snapshot of camera",
@@ -531,7 +531,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		sse.Register(api, huma.Operation{
 			Summary: "Listen for device events",
 			Method:  http.MethodGet,
-			Path:    "/device/events",
+			Path:    "/api/device/events",
 		}, map[string]any{
 			"message": DeviceEventsOutput{},
 		}, func(ctx context.Context, input *struct {
@@ -563,7 +563,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Download device file",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/file",
+		Path:    "/api/devices/{uuid}/file",
 		Responses: map[string]*huma.Response{
 			"200": {
 				Description: "File from camera",
@@ -605,7 +605,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get device VideoInMode",
 		Method:  http.MethodGet,
-		Path:    "/devices/{uuid}/video-in-mode",
+		Path:    "/api/devices/{uuid}/video-in-mode",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*DeviceVideoInModeOutput, error) {
@@ -631,7 +631,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Sync device VideoInMode",
 		Method:  http.MethodPost,
-		Path:    "/devices/{uuid}/video-in-mode/sync",
+		Path:    "/api/devices/{uuid}/video-in-mode/sync",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 		Body DeviceVideoInModeSchedule
@@ -705,7 +705,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		huma.Register(api, huma.Operation{
 			Summary: "Set device white light state",
 			Method:  http.MethodPost,
-			Path:    "/devices/{uuid}/coaxial/white-light",
+			Path:    "/api/devices/{uuid}/coaxial/white-light",
 		}, func(ctx context.Context, input *struct {
 			UUID    string `path:"uuid" format:"uuid"`
 			Channel int    `query:"channel"`
@@ -716,7 +716,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		huma.Register(api, huma.Operation{
 			Summary: "Set device speaker state",
 			Method:  http.MethodPost,
-			Path:    "/devices/{uuid}/coaxial/speaker",
+			Path:    "/api/devices/{uuid}/coaxial/speaker",
 		}, func(ctx context.Context, input *struct {
 			UUID    string `path:"uuid" format:"uuid"`
 			Channel int    `query:"channel"`
@@ -728,7 +728,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Get setting",
 		Method:  http.MethodGet,
-		Path:    "/settings",
+		Path:    "/api/settings",
 	}, func(ctx context.Context, i *struct{}) (*SettingOutput, error) {
 		var settings system.Settings
 		err := db.GetContext(ctx, &settings, `
@@ -745,7 +745,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Update setting",
 		Method:  http.MethodPut,
-		Path:    "/settings",
+		Path:    "/api/settings",
 	}, func(ctx context.Context, input *struct {
 		Body UpdateSettingsInput
 	}) (*SettingOutput, error) {
@@ -768,7 +768,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Default setting",
 		Method:  http.MethodDelete,
-		Path:    "/settings",
+		Path:    "/api/settings",
 	}, func(ctx context.Context, i *struct{}) (*SettingOutput, error) {
 		settings, err := system.DefaultSettings(ctx, db)
 		if err != nil {
@@ -782,7 +782,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "List endpoints",
 		Method:  http.MethodGet,
-		Path:    "/endpoints",
+		Path:    "/api/endpoints",
 	}, func(ctx context.Context, i *struct{}) (*ListEndpointsOutput, error) {
 		rows, err := db.QueryxContext(ctx, `
 				SELECT * FROM endpoints
@@ -808,7 +808,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Create endpoint",
 		Method:  http.MethodPost,
-		Path:    "/endpoints",
+		Path:    "/api/endpoints",
 	}, func(ctx context.Context, input *struct {
 		Body CreateEndpointInput
 	}) (*CreateEndpointsOutput, error) {
@@ -826,7 +826,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 	huma.Register(api, huma.Operation{
 		Summary: "Delete endpoint",
 		Method:  http.MethodDelete,
-		Path:    "/endpoints/{uuid}",
+		Path:    "/api/endpoints/{uuid}",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*struct{}, error) {

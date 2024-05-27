@@ -17,6 +17,9 @@ importers:
       '@solid-primitives/date':
         specifier: ^2.0.21
         version: 2.0.21(solid-js@1.8.17)
+      '@solidjs/router':
+        specifier: ^0.13.3
+        version: 0.13.3(solid-js@1.8.17)
       '@tanstack/solid-query':
         specifier: ^5.38.0
         version: 5.38.0(solid-js@1.8.17)
@@ -29,6 +32,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      humanize-plus:
+        specifier: ^1.8.2
+        version: 1.8.2
       solid-icons:
         specifier: ^1.1.0
         version: 1.1.0(solid-js@1.8.17)
@@ -42,6 +48,9 @@ importers:
       '@tanstack/solid-query-devtools':
         specifier: ^5.38.0
         version: 5.38.0(@tanstack/solid-query@5.38.0(solid-js@1.8.17))(solid-js@1.8.17)
+      '@types/humanize-plus':
+        specifier: ^1.8.2
+        version: 1.8.2
       '@types/node':
         specifier: ^20.12.12
         version: 20.12.12
@@ -555,6 +564,11 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
+  '@solidjs/router@0.13.3':
+    resolution: {integrity: sha512-p8zznlvnN3KySMXqT8irhubgDNTETNa/guaGHU/cZl7kuiPO3PmkWNYfoNCygtEpoxLmLpf62/ZKeyhFdZexsw==}
+    peerDependencies:
+      solid-js: ^1.8.6
+
   '@swc/helpers@0.5.11':
     resolution: {integrity: sha512-YNlnKRWF2sVojTpIyzwou9XoTNbzbzONwRhOoniEioF1AtaitTvVZblaQRrAzChWQ1bLYyYSWzM18y4WwgzJ+A==}
 
@@ -602,6 +616,9 @@ packages:
 
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
+
+  '@types/humanize-plus@1.8.2':
+    resolution: {integrity: sha512-uyFFCGYuqU/Cpr8h+iE2k0shDAnXltV0Pd/r6bmxFAvXVss2cvEiQqeZpwuX8BsAtWN0JTipeXrDxdHk4EEhPg==}
 
   '@types/node@20.12.12':
     resolution: {integrity: sha512-eWLDGF/FOSPtAvEqeRAQ4C8LSA7M1I7i0ky1I8U7kD1J5ITyW3AsRhQrKVoWf5pFKZ2kILsEGJhsI9r93PYnOw==}
@@ -919,6 +936,10 @@ packages:
 
   html-entities@2.3.3:
     resolution: {integrity: sha512-DV5Ln36z34NNTDgnz0EWGBLZENelNAtkiFA4kyNOG2tDI6Mz1uSWiq1wAKdyjnJwyDiDO7Fa2SO1CTxPXL8VxA==}
+
+  humanize-plus@1.8.2:
+    resolution: {integrity: sha512-jaLeQyyzjjINGv7O9JJegjsaUcWjSj/1dcXvLEgU3pGdqCdP1PiC/uwr+saJXhTNBHZtmKnmpXyazgh+eceRxA==}
+    engines: {node: '>= 0.8.0'}
 
   ico-endec@0.1.6:
     resolution: {integrity: sha512-ZdLU38ZoED3g1j3iEyzcQj+wAkY2xfWNkymszfJPoxucIUhK7NayQ+/C4Kv0nDFMIsbtbEHldv3V8PU494/ueQ==}
@@ -1881,6 +1902,10 @@ snapshots:
     dependencies:
       solid-js: 1.8.17
 
+  '@solidjs/router@0.13.3(solid-js@1.8.17)':
+    dependencies:
+      solid-js: 1.8.17
+
   '@swc/helpers@0.5.11':
     dependencies:
       tslib: 2.6.2
@@ -1934,6 +1959,8 @@ snapshots:
       '@babel/types': 7.24.6
 
   '@types/estree@1.0.5': {}
+
+  '@types/humanize-plus@1.8.2': {}
 
   '@types/node@20.12.12':
     dependencies:
@@ -2260,6 +2287,8 @@ snapshots:
       function-bind: 1.1.2
 
   html-entities@2.3.3: {}
+
+  humanize-plus@1.8.2: {}
 
   ico-endec@0.1.6: {}
 

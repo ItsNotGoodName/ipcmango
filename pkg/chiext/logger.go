@@ -9,6 +9,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+func Logger() func(next http.Handler) http.Handler {
+	return middleware.RequestLogger(&DefaultLogFormatter{})
+}
+
 // DefaultLogFormatter is a simple logger that implements a LogFormatter.
 type DefaultLogFormatter struct {
 }
