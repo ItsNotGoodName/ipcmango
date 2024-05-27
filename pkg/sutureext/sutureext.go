@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log/slog"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/thejerf/suture/v4"
 )
 
@@ -15,27 +13,24 @@ func EventHook() suture.EventHook {
 	return func(ei suture.Event) {
 		switch e := ei.(type) {
 		case suture.EventStopTimeout:
-			log.Info().Str("supervisor", e.SupervisorName).Str("service", e.ServiceName).Msg("Service failed to terminate in a timely manner")
+			slog.Info("Service failed to terminate in a timely manner", slog.String("supervisor", e.SupervisorName), slog.String("service", e.ServiceName))
 		case suture.EventServicePanic:
-			log.Warn().Msg("Caught a service panic, which shouldn't happen")
-			log.Info().Str("panic", e.PanicMsg).Msg(e.Stacktrace)
+			slog.Warn("Caught a service panic, which shouldn't happen")
+			slog.Info(e.Stacktrace, slog.String("panic", e.PanicMsg))
 		case suture.EventServiceTerminate:
-			log.Err(fmt.Errorf("%s", e.Err)).Str("supervisor", e.SupervisorName).Str("service", e.ServiceName).Msg("Service failed")
-			logJSON(log.Debug(), e)
+			slog.Error("Service failed", slog.Any("error", e.Err), slog.String("supervisor", e.SupervisorName), slog.String("service", e.ServiceName))
+			b, _ := json.Marshal(e)
+			slog.Debug(string(b))
 		case suture.EventBackoff:
-			log.Debug().Str("supervisor", e.SupervisorName).Msg("Too many service failures - entering the backoff state")
+			slog.Debug("Too many service failures - entering the backoff state", slog.String("supervisor", e.SupervisorName))
 		case suture.EventResume:
-			log.Debug().Str("supervisor", e.SupervisorName).Msg("Exiting backoff state")
+			slog.Debug("Exiting backoff state", slog.String("supervisor", e.SupervisorName))
 		default:
-			log.Warn().Int("type", int(e.Type())).Msg("Unknown suture supervisor event type")
-			logJSON(log.Info(), e)
+			slog.Warn("Unknown suture supervisor event type", "type", int(e.Type()))
+			b, _ := json.Marshal(e)
+			slog.Info(string(b))
 		}
 	}
-}
-
-func logJSON(event *zerolog.Event, v any) {
-	b, _ := json.Marshal(v)
-	event.Msg(string(b))
 }
 
 type ServiceFunc struct {

@@ -9,9 +9,11 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+const Driver = "sqlite3"
+
 func connect(dbPath string) (*sql.DB, error) {
 	pragmas := "?_busy_timeout=10000&_journal_mode=WAL&_synchronous=NORMAL&_foreign_keys=on"
-	db, err := sql.Open("sqlite3", dbPath+pragmas)
+	db, err := sql.Open(Driver, dbPath+pragmas)
 	if err != nil {
 		return nil, err
 	}

@@ -38,17 +38,17 @@ func GetAuthorityList(ctx context.Context, c dahuarpc.Conn) ([]string, error) {
 }
 
 type UserInfo struct {
-	Anonymous            bool     `json:"Anonymous"`
-	AuthorityList        []string `json:"AuthorityList"`
-	Group                string   `json:"Group"`
-	ID                   int      `json:"Id"`
-	Memo                 string   `json:"Memo"`
-	Name                 string   `json:"Name"`
-	Password             string   `json:"Password"`
-	PasswordModifiedTime string   `json:"PasswordModifiedTime"`
-	PwdScore             int      `json:"PwdScore"`
-	Reserved             bool     `json:"Reserved"`
-	Sharable             bool     `json:"Sharable"`
+	Anonymous            bool               `json:"Anonymous"`
+	AuthorityList        []string           `json:"AuthorityList"`
+	Group                string             `json:"Group"`
+	ID                   int                `json:"Id"`
+	Memo                 string             `json:"Memo"`
+	Name                 string             `json:"Name"`
+	Password             string             `json:"Password"`
+	PasswordModifiedTime dahuarpc.Timestamp `json:"PasswordModifiedTime"`
+	PwdScore             int                `json:"PwdScore"`
+	Reserved             bool               `json:"Reserved"`
+	Sharable             bool               `json:"Sharable"`
 }
 
 func GetUserInfoAll(ctx context.Context, c dahuarpc.Conn) ([]UserInfo, error) {

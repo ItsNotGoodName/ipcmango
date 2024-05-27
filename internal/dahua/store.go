@@ -2,44 +2,28 @@ package dahua
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
-	"github.com/rs/zerolog/log"
 )
-
-func newStoreClient(conn Conn) storeClient {
-	return storeClient{
-		Client: NewClient(conn),
-	}
-}
-
-type storeClient struct {
-	Client
-}
-
-func (c storeClient) logError(err error) {
-	if err != nil {
-		log.Err(err).Int64("id", c.Client.Conn.ID).Msg("Failed to close Client connection")
-	}
-}
 
 func NewStore() *Store {
 	return &Store{
-		shutdownTimeout: 3 * time.Second,
-		clientsMu:       sync.Mutex{},
-		clients:         make(map[int64]storeClient),
+		mu:             sync.Mutex{},
+		clients:        make(map[string]Client),
+		deletedClients: []string{},
 	}
 }
 
-// Store holds clients.
+// Store handles creating and caching clients.
 type Store struct {
-	shutdownTimeout time.Duration
-
-	clientsMu sync.Mutex
-	clients   map[int64]storeClient
+	mu             sync.Mutex
+	clients        map[string]Client
+	deletedClients []string
 }
 
 func (*Store) String() string {
@@ -48,107 +32,84 @@ func (*Store) String() string {
 
 // Close closes all clients.
 func (s *Store) Close() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	wg := sync.WaitGroup{}
 
-	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	for _, client := range s.clients {
 		wg.Add(1)
-		go func(client storeClient) {
+		go func(client Client) {
 			defer wg.Done()
-			client.logError(client.Client.Close(ctx))
+			err := client.Close(ctx)
+			if err != nil {
+				slog.Error("Failed to close Client connection", slog.String("uuid", client.Conn.Key.UUID))
+			}
 		}(client)
 	}
 
 	wg.Wait()
 }
 
-func (s *Store) getOrCreateClient(ctx context.Context, conn Conn) Client {
-	client, ok := s.clients[conn.ID]
+func (s *Store) Serve(ctx context.Context) error {
+	<-ctx.Done()
+	s.Close()
+	return ctx.Err()
+}
+
+// GetClient retrieves a cached client or creates a new one.
+func (s *Store) GetClient(ctx context.Context, conn Conn) (Client, error) {
+	s.mu.Lock()
+	if slices.Contains(s.deletedClients, conn.Key.UUID) {
+		s.mu.Unlock()
+		return Client{}, fmt.Errorf("client deleted")
+	}
+
+	client, ok := s.clients[conn.Key.UUID]
 	if !ok {
 		// Not found
 
-		client = newStoreClient(conn)
-		s.clients[conn.ID] = client
-	} else if !client.Client.Conn.EQ(conn) {
-		// Found but not equal
+		client = NewClient(conn)
+		s.clients[conn.Key.UUID] = client
+	} else if !client.Conn.EQ(conn) && client.Conn.UpdatedAt.Before(conn.UpdatedAt) {
+		// Found but not equal and old
 
-		client.logError(client.Client.CloseNoWait(ctx))
+		err := client.CloseNoWait(ctx)
+		if err != nil {
+			slog.Error("Failed to close Client connection", slog.String("uuid", client.Conn.Key.UUID))
+		}
 
-		client = newStoreClient(conn)
-		s.clients[conn.ID] = client
+		client = NewClient(conn)
+		s.clients[conn.Key.UUID] = client
 	}
-
-	return client.Client
-}
-
-func (s *Store) GetClient(ctx context.Context, deviceID int64) (Client, error) {
-	s.clientsMu.Lock()
-	conn, err := GetConn(ctx, deviceID)
-	if err != nil {
-		s.clientsMu.Unlock()
-		return Client{}, err
-	}
-
-	client := s.getOrCreateClient(ctx, conn)
-	s.clientsMu.Unlock()
+	s.mu.Unlock()
 
 	return client, nil
 }
 
-func (s *Store) ListClient(ctx context.Context) ([]Client, error) {
-	s.clientsMu.Lock()
-	conns, err := ListConn(ctx)
-	if err != nil {
-		s.clientsMu.Unlock()
-		return nil, err
-	}
-
-	var clients []Client
-	for _, conn := range conns {
-		clients = append(clients, s.getOrCreateClient(ctx, conn))
-	}
-	s.clientsMu.Unlock()
-
-	return clients, nil
-}
-
-func (s *Store) deleteClient(ctx context.Context, deviceID int64) {
-	s.clientsMu.Lock()
-	client, found := s.clients[deviceID]
+// DeleteClient removes a client and prevents it from being created again.
+func (s *Store) DeleteClient(ctx context.Context, deviceUUID string) error {
+	s.mu.Lock()
+	client, found := s.clients[deviceUUID]
 	if found {
-		delete(s.clients, deviceID)
+		delete(s.clients, deviceUUID)
 	}
-	s.clientsMu.Unlock()
+	s.deletedClients = append(s.deletedClients, deviceUUID)
+	s.mu.Unlock()
 
-	if found {
-		client.logError(client.Client.Close(ctx))
-	}
-}
-
-func (s *Store) Register(hub *bus.Hub) *Store {
-	upsert := func(ctx context.Context, deviceID int64) error {
-		if _, err := s.GetClient(ctx, deviceID); err != nil {
-			if core.IsNotFound(err) {
-				s.deleteClient(ctx, deviceID)
-				return nil
-			}
-			return err
-		}
+	if !found {
 		return nil
 	}
 
-	hub.OnDahuaDeviceCreated(s.String(), func(ctx context.Context, event bus.DahuaDeviceCreated) error {
-		return upsert(ctx, event.DeviceID)
-	})
-	hub.OnDahuaDeviceUpdated(s.String(), func(ctx context.Context, event bus.DahuaDeviceUpdated) error {
-		return upsert(ctx, event.DeviceID)
-	})
-	hub.OnDahuaDeviceDeleted(s.String(), func(ctx context.Context, event bus.DahuaDeviceDeleted) error {
-		s.deleteClient(ctx, event.DeviceID)
-		return nil
-	})
+	return client.Close(ctx)
+}
 
+func (s *Store) Register() *Store {
+	bus.Subscribe(s.String(), func(ctx context.Context, event bus.DeviceDeleted) error {
+		return s.DeleteClient(ctx, event.DeviceKey.UUID)
+	})
 	return s
 }

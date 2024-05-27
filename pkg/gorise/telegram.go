@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 )
 
 func BuildTelegram(cfg Config) (Sender, error) {
@@ -41,7 +39,10 @@ type Telegram struct {
 }
 
 func (t Telegram) Send(ctx context.Context, msg Message) error {
-	body := core.First(msg.Body, msg.Title)
+	body := msg.Body
+	if body == "" {
+		body = msg.Title
+	}
 
 	// Get images
 	var images []Attachment

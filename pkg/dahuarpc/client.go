@@ -192,8 +192,8 @@ func (c Client) serve(ctx context.Context) {
 	login := func() {
 		err := Login(ctx, c.clientLogin(&state), c.username, c.password)
 		if err != nil {
-			var e *LoginError
-			if errors.As(err, &e) {
+			var e *Error
+			if errors.As(err, &e) && e.Type == ErrorTypeInvalidLogin {
 				state.To(StateError, err)
 			} else {
 				c.checkError(err)
@@ -207,7 +207,7 @@ func (c Client) serve(ctx context.Context) {
 		var closeErr error
 		if state.State == StateLogin {
 			_, err := Logout(ctx, c.clientLogin(&state))
-			var respErr *ResponseError
+			var respErr *Error
 			if errors.As(err, &respErr) && respErr.Type == ErrorTypeInvalidSession {
 				closeErr = nil
 			} else {

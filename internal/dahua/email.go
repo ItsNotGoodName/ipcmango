@@ -2,20 +2,44 @@ package dahua
 
 import (
 	"context"
-	"fmt"
-	"net/http"
+	"database/sql"
+	"io"
+	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
-	"github.com/ItsNotGoodName/ipcmanview/internal/models"
-	"github.com/ItsNotGoodName/ipcmanview/internal/repo"
 	"github.com/ItsNotGoodName/ipcmanview/internal/system"
-	"github.com/ItsNotGoodName/ipcmanview/internal/system/action"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/gorise"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+	"github.com/spf13/afero"
 )
+
+type EmailMessage struct {
+	core.Key
+	Device_ID           int64
+	Date                types.Time
+	From                string
+	To                  types.Slice[string]
+	Subject             string
+	Text                string
+	Alarm_Event         string
+	Alarm_Input_Channel string
+	Alarm_Name          string
+	Created_At          types.Time
+}
+
+type EmailAttachment struct {
+	core.Key
+	Message_ID sql.Null[int64]
+	File_Name  string
+	Size       int64
+}
 
 type EmailContent struct {
 	AlarmEvent        string
@@ -55,16 +79,11 @@ func ParseEmailContent(text string) EmailContent {
 	return content
 }
 
-type Email struct {
-	Message     repo.DahuaEmailMessage
-	Attachments []repo.DahuaEmailAttachment
-}
-
-type CreateEmailParams struct {
-	DeviceID          int64
-	Date              time.Time
+type CreateEmailArgs struct {
+	DeviceKey         core.Key
+	Date              types.Time
 	From              string
-	To                []string
+	To                types.Slice[string]
 	Subject           string
 	Text              string
 	AlarmEvent        string
@@ -78,152 +97,227 @@ type CreateEmailParamsAttachment struct {
 	Content  []byte
 }
 
-func CreateEmail(ctx context.Context, arg CreateEmailParams) (int64, error) {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return 0, err
-	}
+func CreateEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, args CreateEmailArgs) (string, error) {
+	messageUUID := uuid.NewString()
+	createdAt := types.NewTime(time.Now())
 
-	// Create message and attachments
-	res, err := createEmail(ctx, &arg)
-	if err != nil {
-		return 0, err
-	}
-
-	// Save attachment files
-	for i := range arg.Attachments {
-		err := createEmailAttachmentFile(ctx, createEmailAttachmentFileParams{
-			AttachmentID: res.AttachmentIDs[i],
-			FileID:       res.FileIDs[i],
-			FileName:     arg.Attachments[i].FileName,
-			Content:      arg.Attachments[i].Content,
-		})
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	if err := system.CreateEvent(ctx, app.DB.C(), action.DahuaEmailCreated.Create(res.MessageID)); err != nil {
-		return 0, err
-	}
-
-	app.Hub.DahuaEmailCreated(bus.DahuaEmailCreated{
-		DeviceID:  arg.DeviceID,
-		MessageID: res.MessageID,
-	})
-
-	return res.MessageID, nil
-}
-
-type createEmailResult struct {
-	MessageID     int64
-	AttachmentIDs []int64
-	FileIDs       []int64
-}
-
-func createEmail(ctx context.Context, arg *CreateEmailParams) (createEmailResult, error) {
-	tx, err := app.DB.BeginTx(ctx, true)
-	if err != nil {
-		return createEmailResult{}, err
-	}
-	defer tx.Rollback()
-
-	now := types.NewTime(time.Now())
-	date := types.NewTime(arg.Date)
-
-	msgID, err := app.DB.C().DahuaCreateEmailMessage(ctx, repo.DahuaCreateEmailMessageParams{
-		DeviceID:          arg.DeviceID,
-		Date:              date,
-		From:              arg.From,
-		To:                types.NewStringSlice(arg.To),
-		Subject:           arg.Subject,
-		Text:              arg.Text,
-		AlarmEvent:        arg.AlarmEvent,
-		AlarmInputChannel: int64(arg.AlarmInputChannel),
-		AlarmName:         arg.AlarmName,
-		CreatedAt:         now,
-	})
-	if err != nil {
-		return createEmailResult{}, err
-	}
-
-	attachmentIDs := make([]int64, len(arg.Attachments))
-	fileIDs := make([]int64, len(arg.Attachments))
-	for i, v := range arg.Attachments {
-		att, err := app.DB.C().DahuaCreateEmailAttachment(ctx, repo.DahuaCreateEmailAttachmentParams{
-			MessageID: msgID,
-			FileName:  v.FileName,
-		})
-		if err != nil {
-			return createEmailResult{}, err
-		}
-		attachmentIDs[i] = att
-
-		fileID, err := app.DB.C().DahuaCreateFile(ctx, repo.DahuaCreateFileParams{
-			DeviceID:  arg.DeviceID,
-			Channel:   0,
-			StartTime: date,
-			EndTime:   date,
-			Length:    int64(len(v.Content)),
-			Type:      models.DahuaFileType_JPG,
-			FilePath:  fmt.Sprintf("ipcmanview+email://%d", att),
-			Storage:   models.StorageLocal,
-			Source:    models.DahuaFileSource_Email,
-			UpdatedAt: now,
-		})
-		if err != nil {
-			return createEmailResult{}, err
-		}
-		fileIDs[i] = fileID
-	}
-
-	if err := tx.Commit(); err != nil {
-		return createEmailResult{}, err
-	}
-
-	return createEmailResult{
-		MessageID:     msgID,
-		AttachmentIDs: attachmentIDs,
-		FileIDs:       fileIDs,
-	}, nil
-}
-
-type createEmailAttachmentFileParams struct {
-	AttachmentID int64
-	FileID       int64
-	FileName     string
-	Content      []byte
-}
-
-func createEmailAttachmentFile(ctx context.Context, arg createEmailAttachmentFileParams) error {
-	aferoFile, err := createAferoFile(
-		ctx,
-		aferoForeignKeys{EmailAttachmentID: arg.AttachmentID, FileID: arg.FileID},
-		newAferoFileName(parseFileExtension(arg.FileName, http.DetectContentType(arg.Content))),
+	result, err := db.ExecContext(ctx, `
+		INSERT INTO dahua_email_messages (
+			uuid,
+			device_id,
+			date,
+			'from',
+			'to',
+			subject,
+			'text',
+			alarm_event,
+			alarm_input_channel,
+			alarm_name,
+			created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`,
+		messageUUID,
+		args.DeviceKey.ID,
+		args.Date,
+		args.From,
+		args.To,
+		args.Subject,
+		args.Text,
+		args.AlarmEvent,
+		args.AlarmInputChannel,
+		args.AlarmName,
+		createdAt,
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
-	defer aferoFile.Close()
-
-	if _, err = aferoFile.Write(arg.Content); err != nil {
-		return err
+	messageID, err := result.LastInsertId()
+	if err != nil {
+		return "", err
 	}
 
-	return aferoFile.Ready(ctx)
+	for _, v := range args.Attachments {
+		if err := createEmailAttachment(ctx, afs, db, messageID, v.FileName, v.Content); err != nil {
+			return "", err
+		}
+	}
+
+	bus.Publish(bus.EmailCreated{
+		DeviceKey: args.DeviceKey,
+		MessageKey: core.Key{
+			UUID: messageUUID,
+			ID:   messageID,
+		},
+	})
+
+	return messageUUID, nil
 }
 
-type LoginSMTPParams struct {
-	IP   string
-	From string
-}
+func createEmailAttachment(ctx context.Context, afs afero.Fs, tx sqlx.ExecerContext, messageID int64, fileName string, content []byte) error {
+	attachmentUUID := uuid.NewString()
 
-func LoginSMTP(ctx context.Context, arg LoginSMTPParams) (repo.DahuaDevice, error) {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return repo.DahuaDevice{}, err
+	_, err := tx.ExecContext(ctx, `
+			INSERT INTO dahua_email_attachments (
+				uuid,
+				message_id,
+				file_name,
+				size
+			) VALUES (?, ?, ?, ?)
+		`, attachmentUUID, messageID, fileName, len(content))
+	if err != nil {
+		return err
 	}
 
-	return app.DB.C().DahuaGetDeviceForSMTP(ctx, repo.DahuaGetDeviceForSMTPParams{
-		Ip:    arg.IP,
-		Email: core.NewNullString(arg.From),
+	file, err := afs.Create(attachmentUUID)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err := file.Write(content); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteOrphanEmailAttachments(ctx context.Context, afs afero.Fs, db *sqlx.DB) error {
+	var attachments []EmailAttachment
+	err := db.Select(&attachments, `
+		SELECT * FROM dahua_email_attachments WHERE message_id IS NULL LIMIT 10
+	`)
+	if err != nil {
+		return err
+	}
+	if len(attachments) == 0 {
+		return nil
+	}
+
+	for _, v := range attachments {
+		if err := afs.Remove(v.UUID); err != nil {
+			return err
+		}
+
+		_, err = db.ExecContext(ctx, `
+			DELETE FROM dahua_email_attachments WHERE id = ?
+		`, v.ID)
+		if err != nil {
+			return nil
+		}
+	}
+
+	return DeleteOrphanEmailAttachments(ctx, afs, db)
+}
+
+func NewDeleteOrphanEmailAttachmentsJob(db *sqlx.DB, afs afero.Fs) DeleteOrphanEmailAttachmentsJob {
+	return DeleteOrphanEmailAttachmentsJob{
+		db:  db,
+		afs: afs,
+	}
+}
+
+type DeleteOrphanEmailAttachmentsJob struct {
+	db  *sqlx.DB
+	afs afero.Fs
+}
+
+func (w DeleteOrphanEmailAttachmentsJob) Description() string {
+	return "dahua.DeleteOrphanEmailAttachmentsJob"
+}
+
+func (w DeleteOrphanEmailAttachmentsJob) Execute(ctx context.Context) error {
+	return DeleteOrphanEmailAttachments(ctx, w.afs, w.db)
+}
+
+func SendEmailToEndpoints(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core.Key) error {
+	var endpoints []system.Endpoint
+	err := sqlx.Select(db, &endpoints, `
+		SELECT * FROM endpoints
+	`)
+	if err != nil {
+		return err
+	}
+
+	var message EmailMessage
+	err = sqlx.GetContext(ctx, db, &message, `
+		SELECT * FROM dahua_email_messages WHERE id = ?
+	`, messageKey.ID)
+	if err != nil {
+		return err
+	}
+
+	var attachments []EmailAttachment
+	err = sqlx.SelectContext(ctx, db, &attachments, `
+		SELECT * FROM dahua_email_attachments WHERE message_id = ?
+	`, messageKey.ID)
+	if err != nil {
+		return err
+	}
+
+	wg := sync.WaitGroup{}
+
+	for _, endpoint := range endpoints {
+		wg.Add(1)
+		go func(endpoint system.Endpoint) {
+			defer wg.Done()
+
+			slog := slog.With("endpoint-uuid", endpoint.UUID)
+
+			sender, err := gorise.Build(endpoint.Gorise_URL)
+			if err != nil {
+				slog.Error("Failed to build gorise url", "error", err)
+				return
+			}
+
+			var closers []io.Closer
+			defer func() {
+				for _, closer := range closers {
+					closer.Close()
+				}
+			}()
+
+			goriseAttachments := []gorise.Attachment{}
+			for _, v := range attachments {
+				file, err := afs.Open(v.UUID)
+				if err != nil {
+					slog.Error("Failed to open attachment", "error", err, "attachment-uuid", v.UUID)
+					continue
+				}
+				closers = append(closers, file)
+
+				goriseAttachments = append(goriseAttachments, gorise.Attachment{
+					Name:   v.File_Name,
+					Mime:   "image/jpeg",
+					Reader: file,
+				})
+			}
+
+			err = sender.Send(ctx, gorise.Message{
+				Title:       message.Subject,
+				Body:        message.Text,
+				Attachments: goriseAttachments,
+			})
+			if err != nil {
+				slog.Error("Failed to send to endpoint", "error", err)
+				return
+			}
+
+		}(endpoint)
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
+func RegisterEmailToEndpoints(db *sqlx.DB, afs afero.Fs) {
+	bus.Subscribe("RegisterEmailToEndpoints", func(ctx context.Context, event bus.EmailCreated) error {
+		go func() {
+			err := SendEmailToEndpoints(ctx, db, afs, event.MessageKey)
+			if err != nil {
+				slog.Error("Failed to send email to endpoints", "error", err)
+			}
+		}()
+		return nil
 	})
 }

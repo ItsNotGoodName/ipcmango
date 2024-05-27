@@ -46,7 +46,7 @@ const (
 	SwitchModeGeneral SwitchMode = iota
 	SwitchModeDay
 	SwitchModeNight
-	SwitchModeTime
+	SwitchModeSchedule
 	SwitchModeBrightness
 )
 
@@ -58,8 +58,8 @@ func (m SwitchMode) String() string {
 		return "day"
 	case SwitchModeNight:
 		return "night"
-	case SwitchModeTime:
-		return "time"
+	case SwitchModeSchedule:
+		return "schedule"
 	case SwitchModeBrightness:
 		return "brightness"
 	default:
@@ -83,7 +83,7 @@ func (m VideoInMode) switchMode() (SwitchMode, error) {
 		return SwitchModeNight, nil
 	}
 	if m.Mode == 1 && slices.Equal(m.Config, []int{0, 1}) {
-		return SwitchModeTime, nil
+		return SwitchModeSchedule, nil
 	}
 	if m.Mode == 2 && slices.Equal(m.Config, []int{0, 1}) {
 		return SwitchModeBrightness, nil
@@ -102,7 +102,7 @@ func (m *VideoInMode) SetSwitchMode(mode SwitchMode) {
 	case SwitchModeNight:
 		m.Mode = 0
 		m.Config = []int{1}
-	case SwitchModeTime:
+	case SwitchModeSchedule:
 		m.Mode = 1
 		m.Config = []int{0, 1}
 	case SwitchModeBrightness:

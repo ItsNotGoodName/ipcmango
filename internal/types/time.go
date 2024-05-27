@@ -13,7 +13,7 @@ var timeFormats = []string{
 }
 
 func NewTime(t time.Time) Time {
-	return Time{Time: t}
+	return Time{t}
 }
 
 // Time will always UTC.

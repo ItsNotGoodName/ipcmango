@@ -2,44 +2,138 @@ package dahua
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
+	"log/slog"
+	"net"
+	"net/http"
+	"net/url"
 	"slices"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
+
+	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
-	"github.com/ItsNotGoodName/ipcmanview/internal/models"
-	"github.com/ItsNotGoodName/ipcmanview/internal/repo"
+	"github.com/ItsNotGoodName/ipcmanview/internal/types"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/coaxialcontrolio"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/configmanager"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/configmanager/config"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/intervideo"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/license"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/magicbox"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/peripheralchip"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/ptz"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/storage"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/usermanager"
-	"github.com/nathan-osman/go-sunrise"
-	"github.com/rs/zerolog/log"
 )
 
-func NewScanLocker() ScanLocker {
-	return ScanLocker{core.NewLockStore[int64]()}
+type Feature string
+
+const (
+	// Device has at least 1 camera.
+	FeatureCamera Feature = "camera"
+)
+
+type DahuaDevice struct {
+	core.Key
+	Name               string
+	IP                 string
+	Username           string
+	Password           string
+	Location           sql.Null[types.Location]
+	Features           types.Slice[Feature]
+	Email              sql.NullString
+	Seed               int64
+	Created_At         types.Time
+	Updated_At         types.Time
+	Latitude           sql.Null[float64]
+	Longitude          sql.Null[float64]
+	Sunrise_Offset     sql.Null[types.Duration]
+	Sunset_Offset      sql.Null[types.Duration]
+	Sync_Video_In_Mode sql.Null[bool]
 }
 
-type ScanLocker struct{ *core.LockStore[int64] }
+func NewConn(v DahuaDevice) Conn {
+	urL, _ := url.Parse("http://" + v.IP)
+	return Conn{
+		Key:       v.Key,
+		Name:      v.Name,
+		URL:       urL,
+		Username:  v.Username,
+		Password:  v.Password,
+		UpdatedAt: v.Updated_At.Time,
+	}
+}
+
+type Conn struct {
+	Key       core.Key
+	Name      string
+	URL       *url.URL
+	Username  string
+	Password  string
+	UpdatedAt time.Time
+}
+
+func (lhs Conn) EQ(rhs Conn) bool {
+	return lhs.Name == rhs.Name &&
+		lhs.URL.String() == rhs.URL.String() &&
+		lhs.Username == rhs.Username &&
+		lhs.Password == rhs.Password
+}
+
+func NewClient(conn Conn) Client {
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			Dial: func(network, addr string) (net.Conn, error) {
+				return net.DialTimeout(network, addr, 5*time.Second)
+			},
+		},
+	}
+
+	clientRPC := dahuarpc.NewClient(&httpClient, conn.URL, conn.Username, conn.Password)
+	clientPTZ := ptz.NewClient(clientRPC)
+	clientCGI := dahuacgi.NewClient(httpClient, conn.URL, conn.Username, conn.Password)
+	clientFile := dahuarpc.NewFileClient(&httpClient, 10)
+
+	return Client{
+		Conn: conn,
+		RPC:  clientRPC,
+		PTZ:  clientPTZ,
+		CGI:  clientCGI,
+		File: clientFile,
+	}
+}
+
+type Client struct {
+	Conn Conn
+	RPC  dahuarpc.Client
+	PTZ  ptz.Client
+	CGI  dahuacgi.Client
+	File dahuarpc.FileClient
+}
+
+func (c Client) Close(ctx context.Context) error {
+	c.File.Close()
+	return c.RPC.Close(ctx)
+}
+
+func (c Client) CloseNoWait(ctx context.Context) error {
+	c.File.Close()
+	return c.RPC.CloseNoWait(ctx)
+}
 
 func isFatalError(err error) bool {
-	res := &dahuarpc.ResponseError{}
+	res := &dahuarpc.Error{}
 	if errors.As(err, &res) && slices.Contains([]dahuarpc.ErrorType{
 		dahuarpc.ErrorTypeInvalidRequest,
 		dahuarpc.ErrorTypeMethodNotFound,
 		dahuarpc.ErrorTypeInterfaceNotFound,
 		dahuarpc.ErrorTypeUnknown,
 	}, res.Type) {
-		log.Err(err).Str("method", res.Method).Int("code", res.Code).Str("type", string(res.Type)).Msg("Ignoring RPC ResponseError")
+		slog.Error("Ignoring RPC ResponseError", slog.String("method", res.Method), slog.Int("code", res.Code), slog.String("type", string(res.Type)))
 		return false
 	}
 
@@ -53,59 +147,71 @@ func checkFatalError(err error) error {
 	return nil
 }
 
-func GetDahuaDetail(ctx context.Context, rpcClient dahuarpc.Conn) (models.DahuaDetail, error) {
+type DeviceDetail struct {
+	SN               string `json:"sn"`
+	DeviceClass      string `json:"device_class"`
+	DeviceType       string `json:"device_type"`
+	HardwareVersion  string `json:"hardware_version"`
+	MarketArea       string `json:"market_area"`
+	ProcessInfo      string `json:"process_info"`
+	Vendor           string `json:"vendor"`
+	OnvifVersion     string `json:"onvif_version"`
+	AlgorithmVersion string `json:"algorithm_version"`
+}
+
+func GetDetail(ctx context.Context, rpcClient dahuarpc.Conn) (DeviceDetail, error) {
 	sn, err := magicbox.GetSerialNo(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	deviceClass, err := magicbox.GetDeviceClass(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	deviceType, err := magicbox.GetDeviceType(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	hardwareVersion, err := magicbox.GetHardwareVersion(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	marketArea, err := magicbox.GetMarketArea(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	processInfo, err := magicbox.GetProcessInfo(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	vendor, err := magicbox.GetVendor(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	onvifVersion, err := intervideo.ManagerGetVersion(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaDetail{}, err
+		return DeviceDetail{}, err
 	}
 
 	var algorithmVersion string
 	{
 		res, err := peripheralchip.GetVersion(ctx, rpcClient, peripheralchip.TypeBLOB)
 		if err != nil && isFatalError(err) {
-			return models.DahuaDetail{}, err
+			return DeviceDetail{}, err
 		}
 		if len(res) > 0 {
 			algorithmVersion = res[0].SoftwareVersion
 		}
 	}
 
-	return models.DahuaDetail{
+	return DeviceDetail{
 		SN:               sn,
 		DeviceClass:      deviceClass,
 		DeviceType:       deviceType,
@@ -118,13 +224,21 @@ func GetDahuaDetail(ctx context.Context, rpcClient dahuarpc.Conn) (models.DahuaD
 	}, nil
 }
 
-func GetSoftwareVersion(ctx context.Context, rpcClient dahuarpc.Conn) (models.DahuaSoftwareVersion, error) {
+type DeviceSoftwareVersion struct {
+	Build                   string `json:"build"`
+	BuildDate               string `json:"build_date"`
+	SecurityBaseLineVersion string `json:"security_base_line_version"`
+	Version                 string `json:"version"`
+	WebVersion              string `json:"web_version"`
+}
+
+func GetSoftwareVersion(ctx context.Context, rpcClient dahuarpc.Conn) (DeviceSoftwareVersion, error) {
 	res, err := magicbox.GetSoftwareVersion(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
-		return models.DahuaSoftwareVersion{}, err
+		return DeviceSoftwareVersion{}, err
 	}
 
-	return models.DahuaSoftwareVersion{
+	return DeviceSoftwareVersion{
 		Build:                   res.Build,
 		BuildDate:               res.BuildDate,
 		SecurityBaseLineVersion: res.SecurityBaseLineVersion,
@@ -133,17 +247,29 @@ func GetSoftwareVersion(ctx context.Context, rpcClient dahuarpc.Conn) (models.Da
 	}, nil
 }
 
-func GetLicenseList(ctx context.Context, rpcClient dahuarpc.Conn) ([]models.DahuaLicense, error) {
+type DeviceLicense struct {
+	AbroadInfo    string    `json:"abroad_info"`
+	AllType       bool      `json:"all_type"`
+	DigitChannel  int       `json:"digit_channel"`
+	EffectiveDays int       `json:"effective_days"`
+	EffectiveTime time.Time `json:"effective_time"`
+	LicenseID     int       `json:"license_id"`
+	ProductType   string    `json:"product_type"`
+	Status        int       `json:"status"`
+	Username      string    `json:"username"`
+}
+
+func ListLicenses(ctx context.Context, rpcClient dahuarpc.Conn) ([]DeviceLicense, error) {
 	licenses, err := license.GetLicenseInfo(ctx, rpcClient)
 	if err != nil && isFatalError(err) {
 		return nil, err
 	}
 
-	res := make([]models.DahuaLicense, 0, len(licenses))
+	res := make([]DeviceLicense, 0, len(licenses))
 	for _, l := range licenses {
 		effectiveTime := time.Unix(int64(l.EffectiveTime), 0)
 
-		res = append(res, models.DahuaLicense{
+		res = append(res, DeviceLicense{
 			AbroadInfo:    l.AbroadInfo,
 			AllType:       l.AllType,
 			DigitChannel:  l.DigitChannel,
@@ -159,16 +285,26 @@ func GetLicenseList(ctx context.Context, rpcClient dahuarpc.Conn) ([]models.Dahu
 	return res, nil
 }
 
-func GetStorage(ctx context.Context, rpcClient dahuarpc.Conn) ([]models.DahuaStorage, error) {
+type DeviceStorage struct {
+	Name       string `json:"name"`
+	State      string `json:"state"`
+	Path       string `json:"path"`
+	Type       string `json:"type"`
+	TotalBytes int64  `json:"total_bytes"`
+	UsedBytes  int64  `json:"used_bytes"`
+	IsError    bool   `json:"is_error"`
+}
+
+func ListStorage(ctx context.Context, rpcClient dahuarpc.Conn) ([]DeviceStorage, error) {
 	devices, err := storage.GetDeviceAllInfo(ctx, rpcClient)
 	if err != nil {
-		return []models.DahuaStorage{}, checkFatalError(err)
+		return []DeviceStorage{}, checkFatalError(err)
 	}
 
-	var res []models.DahuaStorage
+	res := []DeviceStorage{}
 	for _, device := range devices {
 		for _, detail := range device.Detail {
-			res = append(res, models.DahuaStorage{
+			res = append(res, DeviceStorage{
 				Name:       device.Name,
 				State:      device.State,
 				Path:       detail.Path,
@@ -183,56 +319,65 @@ func GetStorage(ctx context.Context, rpcClient dahuarpc.Conn) ([]models.DahuaSto
 	return res, nil
 }
 
-func GetError(ctx context.Context, conn dahuarpc.Client) models.DahuaError {
-	err := conn.State(ctx).Error
-	if err == nil {
-		return models.DahuaError{}
-	}
-
-	return models.DahuaError{
-		Error: err.Error(),
-	}
+type DeviceCoaxialStatus struct {
+	WhiteLight bool `json:"white_light"`
+	Speaker    bool `json:"speaker"`
 }
 
-func GetCoaxialStatus(ctx context.Context, rpcClient dahuarpc.Conn, channel int) (models.DahuaCoaxialStatus, error) {
+func GetCoaxialStatus(ctx context.Context, rpcClient dahuarpc.Conn, channel int) (DeviceCoaxialStatus, error) {
 	status, err := coaxialcontrolio.GetStatus(ctx, rpcClient, channel)
 	if err != nil && isFatalError(err) {
-		return models.DahuaCoaxialStatus{}, err
+		return DeviceCoaxialStatus{}, err
 	}
 
-	return models.DahuaCoaxialStatus{
+	return DeviceCoaxialStatus{
 		Speaker:    status.Speaker == "On",
 		WhiteLight: status.WhiteLight == "On",
 	}, nil
 }
 
-func GetCoaxialCaps(ctx context.Context, rpcClient dahuarpc.Conn, channel int) (models.DahuaCoaxialCaps, error) {
+type DeviceCoaxialCaps struct {
+	SupportControlFullcolorLight bool `json:"support_control_fullcolor_light"`
+	SupportControlLight          bool `json:"support_control_light"`
+	SupportControlSpeaker        bool `json:"support_control_speaker"`
+}
+
+func GetDeviceCoaxialCaps(ctx context.Context, rpcClient dahuarpc.Conn, channel int) (DeviceCoaxialCaps, error) {
 	caps, err := coaxialcontrolio.GetCaps(ctx, rpcClient, channel)
 	if err != nil && isFatalError(err) {
-		return models.DahuaCoaxialCaps{}, err
+		return DeviceCoaxialCaps{}, err
 	}
 
-	return models.DahuaCoaxialCaps{
+	return DeviceCoaxialCaps{
 		SupportControlFullcolorLight: caps.SupportControlFullcolorLight == 1,
 		SupportControlLight:          caps.SupportControlLight == 1,
 		SupportControlSpeaker:        caps.SupportControlSpeaker == 1,
 	}, nil
 }
 
-func GetUsers(ctx context.Context, rpcClient dahuarpc.Conn, location *time.Location) ([]models.DahuaUser, error) {
+type DeviceActiveUser struct {
+	ClientAddress string    `json:"client_address"`
+	ClientType    string    `json:"client_type"`
+	Group         string    `json:"group"`
+	ID            int       `json:"id"`
+	LoginTime     time.Time `json:"login_time"`
+	Name          string    `json:"name"`
+}
+
+func ListActiveUsers(ctx context.Context, rpcClient dahuarpc.Conn, location *time.Location) ([]DeviceActiveUser, error) {
 	users, err := usermanager.GetActiveUserInfoAll(ctx, rpcClient)
 	if err != nil {
-		return nil, err
+		return []DeviceActiveUser{}, checkFatalError(err)
 	}
 
-	res := make([]models.DahuaUser, 0, len(users))
+	res := make([]DeviceActiveUser, 0, len(users))
 	for _, u := range users {
 		loginTime, err := u.LoginTime.Parse(location)
 		if err != nil {
 			return nil, err
 		}
 
-		res = append(res, models.DahuaUser{
+		res = append(res, DeviceActiveUser{
 			ClientAddress: u.ClientAddress,
 			ClientType:    u.ClientType,
 			Group:         u.Group,
@@ -245,81 +390,109 @@ func GetUsers(ctx context.Context, rpcClient dahuarpc.Conn, location *time.Locat
 	return res, nil
 }
 
-func NewDahuaEvent(v repo.DahuaEvent) models.DahuaEvent {
-	return models.DahuaEvent{
-		ID:        v.ID,
-		DeviceID:  v.DeviceID,
-		Code:      v.Code,
-		Action:    v.Action,
-		Index:     v.Index,
-		Data:      v.Data.RawMessage,
-		CreatedAt: v.CreatedAt.Time,
-	}
+type DeviceUser struct {
+	Anonymous            bool      `json:"anonymous"`
+	AuthorityList        []string  `json:"authority_list"`
+	Group                string    `json:"group"`
+	ID                   int       `json:"id"`
+	Memo                 string    `json:"memo"`
+	Name                 string    `json:"name"`
+	Password             string    `json:"password"`
+	PasswordModifiedTime time.Time `json:"password_modified_time"`
+	PwdScore             int       `json:"pwd_score"`
+	Reserved             bool      `json:"reserved"`
+	Sharable             bool      `json:"sharable"`
 }
 
-func NewDahuaFile(file mediafilefind.FindNextFileInfo, affixSeed int, location *time.Location) (models.DahuaFile, error) {
-	startTime, endTime, err := file.UniqueTime(affixSeed, location)
+func ListUsers(ctx context.Context, rpcClient dahuarpc.Conn, location *time.Location) ([]DeviceUser, error) {
+	users, err := usermanager.GetUserInfoAll(ctx, rpcClient)
 	if err != nil {
-		return models.DahuaFile{}, err
+		return []DeviceUser{}, checkFatalError(err)
 	}
 
-	return models.DahuaFile{
-		Channel:     file.Channel,
-		StartTime:   startTime,
-		EndTime:     endTime,
-		Length:      file.Length,
-		Type:        file.Type,
-		FilePath:    file.FilePath,
-		Duration:    file.Duration,
-		Disk:        file.Disk,
-		VideoStream: file.VideoStream,
-		Flags:       file.Flags,
-		Events:      file.Events,
-		Cluster:     file.Cluster,
-		Partition:   file.Partition,
-		PicIndex:    file.PicIndex,
-		Repeat:      file.Repeat,
-		WorkDir:     file.WorkDir,
-		WorkDirSN:   file.WorkDirSN == 1,
-		Storage:     StorageFromFilePath(file.FilePath),
-	}, nil
-}
-
-func NewDahuaFiles(files []mediafilefind.FindNextFileInfo, affixSeed int, location *time.Location) ([]models.DahuaFile, error) {
-	res := make([]models.DahuaFile, 0, len(files))
-	for _, file := range files {
-		r, err := NewDahuaFile(file, affixSeed, location)
+	res := make([]DeviceUser, 0, len(users))
+	for _, u := range users {
+		passwordModifiedTime, err := u.PasswordModifiedTime.Parse(location)
 		if err != nil {
-			return []models.DahuaFile{}, err
-		}
+			return nil, err
 
-		res = append(res, r)
+		}
+		res = append(res, DeviceUser{
+			Anonymous:            u.Anonymous,
+			AuthorityList:        u.AuthorityList,
+			Group:                u.Group,
+			ID:                   u.ID,
+			Memo:                 u.Memo,
+			Name:                 u.Name,
+			Password:             u.Password,
+			PasswordModifiedTime: passwordModifiedTime,
+			PwdScore:             u.PwdScore,
+			Reserved:             u.Reserved,
+			Sharable:             u.Sharable,
+		})
 	}
 
 	return res, nil
 }
 
-func GetRPCStatus(ctx context.Context, rpcClient dahuarpc.Client) models.DahuaRPCStatus {
+type DeviceGroup struct {
+	AuthorityList []string `json:"authority_list"`
+	ID            int      `json:"id"`
+	Memo          string   `json:"memo"`
+	Name          string   `json:"name"`
+}
+
+func ListGroups(ctx context.Context, rpcClient dahuarpc.Conn) ([]DeviceGroup, error) {
+	users, err := usermanager.GetGroupInfoAll(ctx, rpcClient)
+	if err != nil {
+		return []DeviceGroup{}, checkFatalError(err)
+	}
+
+	res := make([]DeviceGroup, 0, len(users))
+	for _, u := range users {
+		res = append(res, DeviceGroup{
+			AuthorityList: u.AuthorityList,
+			ID:            u.ID,
+			Memo:          u.Memo,
+			Name:          u.Name,
+		})
+	}
+
+	return res, nil
+}
+
+type DeviceStatus struct {
+	Error     string    `json:"error"`
+	State     string    `json:"state"`
+	LastLogin time.Time `json:"last_login"`
+}
+
+func GetStatus(ctx context.Context, rpcClient dahuarpc.Client) DeviceStatus {
 	rpcState := rpcClient.State(ctx)
 	var rpcError string
 	if rpcState.Error != nil {
 		rpcError = rpcState.Error.Error()
 	}
-	return models.DahuaRPCStatus{
+	return DeviceStatus{
 		Error:     rpcError,
 		State:     rpcState.State.String(),
 		LastLogin: rpcState.LastLogin,
 	}
 }
 
-func ListPresets(ctx context.Context, clientPTZ ptz.Client, channel int) ([]models.DahuaPreset, error) {
+type DevicePTZPreset struct {
+	Index int    `json:"index"`
+	Name  string `json:"name"`
+}
+
+func ListPTZPresets(ctx context.Context, clientPTZ ptz.Client, channel int) ([]DevicePTZPreset, error) {
 	vv, err := ptz.GetPresets(ctx, clientPTZ, channel)
 	if err != nil {
-		return nil, err
+		return []DevicePTZPreset{}, checkFatalError(err)
 	}
-	res := make([]models.DahuaPreset, 0, len(vv))
+	res := make([]DevicePTZPreset, 0, len(vv))
 	for _, v := range vv {
-		res = append(res, models.DahuaPreset{
+		res = append(res, DevicePTZPreset{
 			Index: v.Index,
 			Name:  v.Name,
 		})
@@ -327,114 +500,111 @@ func ListPresets(ctx context.Context, clientPTZ ptz.Client, channel int) ([]mode
 	return res, nil
 }
 
-func SetPreset(ctx context.Context, clientPTZ ptz.Client, channel, index int) error {
+func SetPTZPreset(ctx context.Context, clientPTZ ptz.Client, channel, index int) error {
 	return ptz.Start(ctx, clientPTZ, channel, ptz.Params{
 		Code: "GotoPreset",
 		Arg1: index,
 	})
 }
 
-func GetUptime(ctx context.Context, c dahuarpc.Conn) (models.DahuaUptime, error) {
+type DeviceUptime struct {
+	Last      time.Time `json:"last"`
+	Total     time.Time `json:"total"`
+	Supported bool      `json:"supported"`
+}
+
+func GetUptime(ctx context.Context, c dahuarpc.Conn) (DeviceUptime, error) {
 	uptime, err := magicbox.GetUpTime(ctx, c)
 	if err != nil {
-		return models.DahuaUptime{}, checkFatalError(err)
+		return DeviceUptime{}, checkFatalError(err)
 	}
 
 	now := time.Now()
 
-	return models.DahuaUptime{
+	return DeviceUptime{
 		Last:      now.Add(-time.Duration(uptime.Last) * time.Second),
 		Total:     now.Add(-time.Duration(uptime.Total) * time.Second),
 		Supported: true,
 	}, nil
 }
 
-func GetSunriseSunset(ctx context.Context, c dahuarpc.Conn) (models.DahuaSunriseSunset, error) {
-	cfg, err := config.GetVideoInMode(ctx, c)
-	if err != nil {
-		return models.DahuaSunriseSunset{}, err
+func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey core.Key, event dahuacgi.Event) error {
+	var eventRule struct {
+		Ignore_DB   bool
+		Ignore_Live bool
+		Ignore_MQTT bool
+		Code        string
 	}
-
-	return models.DahuaSunriseSunset{
-		SwitchMode:  cfg.Tables[0].Data.SwitchMode(),
-		TimeSection: cfg.Tables[0].Data.TimeSection[0][0],
-	}, nil
-}
-
-func SyncSunriseSunset(ctx context.Context, c dahuarpc.Conn, loc *time.Location, coordinate models.Coordinate, sunriseOffset, sunsetOffset time.Duration) (models.DahuaSunriseSunset, error) {
-	cfg, err := config.GetVideoInMode(ctx, c)
-	if err != nil {
-		return models.DahuaSunriseSunset{}, err
-	}
-
-	var changed bool
-
-	// Sync SwitchMode
-	if cfg.Tables[0].Data.SwitchMode() != config.SwitchModeTime {
-		cfg.Tables[0].Data.SetSwitchMode(config.SwitchModeTime)
-		changed = true
-	}
-
-	// Sync TimeSection
-	now := time.Now()
-	sunrise, sunset := sunrise.SunriseSunset(coordinate.Latitude, coordinate.Longitude, now.Year(), now.Month(), now.Day())
-	sunrise = sunrise.In(loc).Add(sunriseOffset)
-	sunset = sunset.In(loc).Add(sunsetOffset)
-	ts := dahuarpc.NewTimeSectionFromRange(1, sunrise, sunset)
-	if cfg.Tables[0].Data.TimeSection[0][0].String() != ts.String() {
-		cfg.Tables[0].Data.TimeSection[0][0] = ts
-		changed = true
-	}
-
-	if changed {
-		err := configmanager.SetConfig(ctx, c, cfg)
-		if err != nil {
-			return models.DahuaSunriseSunset{}, err
-		}
-	}
-
-	return models.DahuaSunriseSunset{
-		SwitchMode:  cfg.Tables[0].Data.SwitchMode(),
-		TimeSection: cfg.Tables[0].Data.TimeSection[0][0],
-	}, nil
-}
-
-func GetClient(ctx context.Context, deviceID int64) (Client, error) {
-	return app.Store.GetClient(ctx, deviceID)
-}
-
-func ListClient(ctx context.Context) ([]Client, error) {
-	return app.Store.ListClient(ctx)
-}
-
-func Normalize(ctx context.Context) error {
-	_, err := app.DB.ExecContext(ctx, `
-WITH RECURSIVE generate_series(value) AS (
-  SELECT 1
-  UNION ALL
-  SELECT value+1 FROM generate_series WHERE value+1<=999
-)
-INSERT OR IGNORE INTO dahua_seeds (seed) SELECT value from generate_series;
-INSERT OR IGNORE INTO dahua_event_rules (code) VALUES ('');
-	`)
-	if err != nil {
+	err := db.GetContext(ctx, &eventRule, `
+		SELECT
+			ignore_db,
+			ignore_live,
+			ignore_mqtt,
+			code
+		FROM
+			dahua_event_device_rules
+		WHERE
+			device_id = ?
+			AND (
+				dahua_event_device_rules.code = ?
+				OR dahua_event_device_rules.code = ''
+			)
+		UNION ALL
+		SELECT
+			ignore_db,
+			ignore_live,
+			ignore_mqtt,
+			code
+		FROM
+			dahua_event_rules
+		WHERE
+			dahua_event_rules.code = ?
+			OR dahua_event_rules.code = ''
+		ORDER BY
+			code DESC;
+	`, deviceKey.ID, event.Code, event.Code)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
-	{
-		c := newFileCursor()
-		err := app.DB.C().DahuaNormalizeFileCursors(ctx, repo.DahuaNormalizeFileCursorsParams{
-			QuickCursor: c.QuickCursor,
-			FullCursor:  c.FullCursor,
-			FullEpoch:   c.FullEpoch,
-			Scanning:    c.Scanning,
-			ScanPercent: c.ScanPercent,
-			ScanType:    c.ScanType,
-		})
+	busEvent := bus.Event{
+		EventID:    ulid.Make().String(),
+		DeviceKey:  deviceKey,
+		IgnoreDB:   eventRule.Ignore_DB,
+		IgnoreMQTT: eventRule.Ignore_MQTT,
+		IgnoreLive: eventRule.Ignore_Live,
+		Event:      event,
+		CreatedAt:  time.Now(),
+	}
+	if !busEvent.IgnoreDB {
+		data := types.NewJSON(core.IgnoreError(json.MarshalIndent(busEvent.Event.Data, "", "  ")))
+		createdAt := types.NewTime(busEvent.CreatedAt)
+		_, err := db.ExecContext(ctx, `
+			INSERT INTO dahua_events (
+				id,
+				device_id,
+				code,
+			  action,
+				'index',
+				data,
+				created_at
+			) 
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		`,
+			busEvent.EventID,
+			deviceKey.ID,
+			busEvent.Event.Code,
+			busEvent.Event.Action,
+			busEvent.Event.Index,
+			data,
+			createdAt,
+		)
 		if err != nil {
 			return err
 		}
 	}
+
+	bus.Publish(busEvent)
 
 	return nil
 }

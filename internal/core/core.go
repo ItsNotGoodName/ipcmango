@@ -7,12 +7,12 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
-
-	"github.com/ItsNotGoodName/ipcmanview/internal/models"
 )
 
-type contextKey string
+type Key struct {
+	ID   int64
+	UUID string
+}
 
 func SplitAddress(address string) (host string, port string) {
 	var err error
@@ -25,17 +25,6 @@ func SplitAddress(address string) (host string, port string) {
 
 func Address(host string, port int) string {
 	return host + ":" + strconv.Itoa(port)
-}
-
-func NewTimeRange(start, end time.Time) (models.TimeRange, error) {
-	if end.Before(start) {
-		return models.TimeRange{}, errors.New("invalid time range: end is before start")
-	}
-
-	return models.TimeRange{
-		Start: start,
-		End:   end,
-	}, nil
 }
 
 type MultiReadCloser struct {
@@ -118,4 +107,43 @@ func First(s ...string) string {
 		}
 	}
 	return ""
+}
+
+func Optional[T any](optional *T, defaulT T) T {
+	if optional != nil {
+		return *optional
+	}
+	return defaulT
+}
+
+func SQLNullToNull[T any](t sql.Null[T]) *T {
+	if t.Valid {
+		return &t.V
+	}
+	return nil
+}
+
+func NullToSQLNull[T any](t *T) sql.Null[T] {
+	if t == nil {
+		return sql.Null[T]{
+			Valid: false,
+		}
+	}
+	return sql.Null[T]{
+		V:     *t,
+		Valid: true,
+	}
+}
+
+func Must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Must2[T any](t T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return t
 }

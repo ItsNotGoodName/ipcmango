@@ -2,132 +2,194 @@ package dahua
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
-	"time"
+	"database/sql"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"slices"
+	"sync"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
-	"github.com/ItsNotGoodName/ipcmanview/internal/repo"
-	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
+	"github.com/jmoiron/sqlx"
+	"github.com/thejerf/suture/v4"
 )
 
-func DeleteEvents(ctx context.Context) error {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return err
+func NewEventManager(super *suture.Supervisor, db *sqlx.DB) *EventManager {
+	return &EventManager{
+		super:      super,
+		db:         db,
+		servicesMu: sync.Mutex{},
+		services:   make(map[string]eventService),
 	}
-	return app.DB.C().DahuaDeleteEvents(ctx)
 }
 
-const eventRuleCodeErrorMessage = "Code cannot be empty."
-
-func CreateEventRule(ctx context.Context, arg repo.DahuaCreateEventRuleParams) (int64, error) {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return 0, err
-	}
-
-	// Mutate
-	arg.Code = strings.TrimSpace(arg.Code)
-
-	if arg.Code == "" {
-		return 0, core.NewFieldError("Code", eventRuleCodeErrorMessage)
-	}
-
-	return app.DB.C().DahuaCreateEventRule(ctx, arg)
+type eventService struct {
+	Token  suture.ServiceToken
+	Worker EventWorker
 }
 
-func UpdateEventRule(ctx context.Context, arg repo.DahuaUpdateEventRuleParams) error {
-	if _, err := core.AssertAdmin(ctx); err != nil {
+type EventManager struct {
+	super *suture.Supervisor
+	db    *sqlx.DB
+
+	servicesMu sync.Mutex
+	services   map[string]eventService
+}
+
+func (m *EventManager) String() string {
+	return "dahua.EventManager"
+}
+
+func (m *EventManager) Serve(ctx context.Context) error {
+	slog.Info("Started service", slog.String("service", m.String()))
+
+	if err := m.Start(); err != nil {
 		return err
 	}
 
-	// Mutate
-	arg.Code = strings.TrimSpace(arg.Code)
+	<-ctx.Done()
+	m.Close()
+	return ctx.Err()
+}
 
-	model, err := app.DB.C().DahuaGetEventRule(ctx, arg.ID)
+func (m *EventManager) Close() {
+	m.servicesMu.Lock()
+	for _, service := range m.services {
+		m.super.Remove(service.Token)
+	}
+	clear(m.services)
+	m.servicesMu.Unlock()
+}
+
+func (m *EventManager) Start() error {
+	m.servicesMu.Lock()
+	defer m.servicesMu.Unlock()
+
+	rows, err := m.db.QueryxContext(context.Background(), `
+		SELECT * FROM dahua_devices
+	`)
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
-	if model.Code == "" && arg.Code != "" {
-		return core.NewFieldError("Code", eventRuleCodeErrorMessage)
+	for rows.Next() {
+		var device DahuaDevice
+		if err := rows.StructScan(&device); err != nil {
+			return err
+		}
+
+		worker := NewEventWorker(NewConn(device), m.db)
+		token := m.super.Add(worker)
+		m.services[device.UUID] = eventService{
+			Token:  token,
+			Worker: worker,
+		}
 	}
 
-	return app.DB.C().DahuaUpdateEventRule(ctx, arg)
+	return nil
 }
 
-func DeleteEventRule(ctx context.Context, id int64) error {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return err
+func (m *EventManager) Refresh(ctx context.Context, uuid string) error {
+	m.servicesMu.Lock()
+	defer m.servicesMu.Unlock()
+
+	service, ok := m.services[uuid]
+	if ok {
+		m.super.Remove(service.Token)
 	}
 
-	model, err := app.DB.C().DahuaGetEventRule(ctx, id)
+	var device DahuaDevice
+	err := m.db.GetContext(ctx, &device, `
+		SELECT * FROM dahua_devices WHERE uuid = ?
+	`, uuid)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
 		return err
 	}
-	if model.Code == "" {
-		return core.ErrForbidden
+
+	worker := NewEventWorker(NewConn(device), m.db)
+	token := m.super.Add(worker)
+	m.services[device.UUID] = eventService{
+		Token:  token,
+		Worker: worker,
 	}
 
-	return app.DB.C().DahuaDeleteEventRule(ctx, model.ID)
+	return nil
 }
 
-func getEventRuleByEvent(ctx context.Context, deviceID int64, code string) (repo.DahuaEventRule, error) {
-	res, err := app.DB.C().DahuaGetEventRuleByEvent(ctx, repo.DahuaGetEventRuleByEventParams{
-		DeviceID: deviceID,
-		Code:     code,
+func (m *EventManager) Register() *EventManager {
+	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceCreated) error {
+		return m.Refresh(ctx, event.DeviceKey.UUID)
 	})
-	if err != nil {
-		return repo.DahuaEventRule{}, err
-	}
-	if len(res) == 0 {
-		return repo.DahuaEventRule{}, nil
-	}
-
-	return repo.DahuaEventRule{
-		ID:         0,
-		Code:       code,
-		IgnoreDb:   res[0].IgnoreDb,
-		IgnoreLive: res[0].IgnoreLive,
-		IgnoreMqtt: res[0].IgnoreMqtt,
-	}, nil
+	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceUpdated) error {
+		return m.Refresh(ctx, event.DeviceKey.UUID)
+	})
+	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceDeleted) error {
+		return m.Refresh(ctx, event.DeviceKey.UUID)
+	})
+	return m
 }
 
-func publishEvent(ctx context.Context, deviceID int64, event dahuacgi.Event) error {
-	eventRule, err := getEventRuleByEvent(ctx, deviceID, event.Code)
+func NewEventWorker(conn Conn, db *sqlx.DB) EventWorker {
+	return EventWorker{
+		conn: conn,
+		db:   db,
+	}
+}
+
+type EventWorker struct {
+	conn Conn
+	db   *sqlx.DB
+}
+
+func (w EventWorker) String() string {
+	return fmt.Sprintf("dahua.EventWorker(name=%s)", w.conn.Name)
+}
+
+func (w EventWorker) Serve(ctx context.Context) error {
+	return sutureext.SanitizeError(ctx, w.serve(ctx))
+}
+
+func (w EventWorker) serve(ctx context.Context) error {
+	slog.Info("Started service", slog.String("service", w.String()))
+	defer slog.Info("Stopped service", slog.String("service", w.String()))
+
+	c := dahuacgi.NewClient(http.Client{}, w.conn.URL, w.conn.Username, w.conn.Password)
+
+	manager, err := dahuacgi.EventManagerGet(ctx, c, 0)
 	if err != nil {
+		var httpErr dahuacgi.HTTPError
+		if errors.As(err, &httpErr) && slices.Contains([]int{
+			http.StatusUnauthorized,
+			http.StatusForbidden,
+			http.StatusNotFound,
+		}, httpErr.StatusCode) {
+			slog.Error("Failed to get EventManager", slog.Any("error", err), slog.String("service", w.String()))
+			return errors.Join(suture.ErrDoNotRestart, err)
+		}
+
 		return err
 	}
+	defer manager.Close()
 
-	v := repo.DahuaEvent{
-		ID:        0,
-		DeviceID:  deviceID,
-		Code:      event.Code,
-		Action:    event.Action,
-		Index:     int64(event.Index),
-		Data:      types.NewJSON(core.IgnoreError(json.MarshalIndent(event.Data, "", "  "))),
-		CreatedAt: types.NewTime(time.Now()),
-	}
-	if !eventRule.IgnoreDb {
-		id, err := app.DB.C().DahuaCreateEvent(ctx, repo.DahuaCreateEventParams{
-			DeviceID:  v.DeviceID,
-			Code:      v.Code,
-			Action:    v.Action,
-			Index:     v.Index,
-			Data:      v.Data,
-			CreatedAt: v.CreatedAt,
-		})
+	for reader := manager.Reader(); ; {
+		if err := reader.Poll(); err != nil {
+			return err
+		}
+
+		event, err := reader.ReadEvent()
 		if err != nil {
 			return err
 		}
-		v.ID = id
+
+		if err := HandleEvent(ctx, w.db, w.conn.Key, event); err != nil {
+			return err
+		}
 	}
-
-	app.Hub.DahuaEvent(bus.DahuaEvent{
-		Event:     v,
-		EventRule: eventRule,
-	})
-
-	return nil
 }

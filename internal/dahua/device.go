@@ -2,330 +2,194 @@ package dahua
 
 import (
 	"context"
-	"net"
-	"net/url"
-	"slices"
-	"strings"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
-	"github.com/ItsNotGoodName/ipcmanview/internal/models"
-	"github.com/ItsNotGoodName/ipcmanview/internal/repo"
-	"github.com/ItsNotGoodName/ipcmanview/internal/system"
-	"github.com/ItsNotGoodName/ipcmanview/internal/system/action"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
-func deviceFrom(v repo.DahuaDevice) _Device {
-	return _Device{
-		Name:     v.Name,
-		URL:      v.Url.URL,
-		Username: v.Username,
-		Email:    v.Email.String,
-	}
+type CreateDeviceArgs struct {
+	Name            string
+	IP              string
+	Username        string
+	Password        string
+	Location        *types.Location
+	Features        types.Slice[Feature]
+	Email           sql.Null[string]
+	Latitude        sql.Null[float64]
+	Longitude       sql.Null[float64]
+	SunriseOffset   *types.Duration
+	SunsetOffset    *types.Duration
+	SyncVideoInMode sql.Null[bool]
 }
 
-type _Device struct {
-	Name     string `validate:"required,lte=64"`
-	URL      *url.URL
-	Username string
-	Email    string `validate:"omitempty,lte=128,email"`
-}
+func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (DahuaDevice, error) {
+	uuid := uuid.NewString()
+	createdAt := types.NewTime(time.Now())
+	updatedAt := types.NewTime(time.Now())
 
-func (d *_Device) normalize(create bool) {
-	// Name
-	d.Name = strings.TrimSpace(d.Name)
-	// Email
-	d.Email = strings.TrimSpace(d.Email)
-	// URL
-	if !slices.Contains([]string{"http", "https"}, d.URL.Scheme) {
-		switch d.URL.Port() {
-		case "443":
-			d.URL.Scheme = "https"
-		default:
-			d.URL.Scheme = "http"
-		}
-
-		u, err := url.Parse(d.URL.String())
-		if err != nil {
-			panic(err)
-		}
-		d.URL = u
-	}
-
-	// Name/Username
-	if create {
-		if d.Name == "" {
-			d.Name = d.URL.Hostname()
-		}
-		if d.Username == "" {
-			d.Username = "admin"
-		}
-	}
-}
-
-func (d *_Device) getIP() (string, error) {
-	ip := d.URL.Hostname()
-
-	ips, err := net.LookupIP(ip)
+	var device DahuaDevice
+	err := db.GetContext(ctx, &device, `
+		WITH RECURSIVE generate_series(value) AS (
+			SELECT 1
+			UNION ALL
+			SELECT value+1 FROM generate_series WHERE value+1<=999
+		)
+		INSERT INTO dahua_devices (
+			seed, 
+			uuid, 
+			name, 
+			ip, 
+			username, 
+			password, 
+			location, 
+			features,
+			email, 
+			created_at, 
+			updated_at, 
+			latitude, 
+			longitude,
+			sunrise_offset,
+			sunset_offset,
+			sync_video_in_mode
+		) 
+		VALUES ((SELECT value FROM generate_series WHERE value NOT IN (SELECT seed from dahua_devices) LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+		RETURNING *;
+	`,
+		uuid,
+		args.Name,
+		args.IP,
+		args.Username,
+		args.Password,
+		args.Location,
+		args.Features,
+		args.Email,
+		createdAt,
+		updatedAt,
+		args.Latitude,
+		args.Longitude,
+		args.SunriseOffset,
+		args.SunsetOffset,
+		args.SyncVideoInMode,
+	)
 	if err != nil {
-		return "", core.NewFieldError("URL", err.Error())
+		return device, err
 	}
 
-	for _, v := range ips {
-		if v.To4() != nil {
-			ip = v.String()
-			break
-		}
-	}
-
-	return ip, nil
-}
-
-type CreateDeviceParams struct {
-	Name     string
-	URL      *url.URL
-	Username string
-	Password string
-	Location *time.Location
-	Feature  models.DahuaFeature
-	Email    string
-}
-
-func CreateDevice(ctx context.Context, arg CreateDeviceParams) (int64, error) {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return 0, err
-	}
-
-	model := _Device{
-		Name:     arg.Name,
-		URL:      arg.URL,
-		Username: arg.Username,
-		Email:    arg.Email,
-	}
-	model.normalize(true)
-
-	err := core.ValidateStruct(ctx, model)
-	if err != nil {
-		return 0, err
-	}
-
-	ip, err := model.getIP()
-	if err != nil {
-		return 0, err
-	}
-
-	now := types.NewTime(time.Now())
-	id, err := createDahuaDevice(ctx, repo.DahuaCreateDeviceParams{
-		Name:      model.Name,
-		Url:       types.NewURL(model.URL),
-		Ip:        ip,
-		Username:  model.Username,
-		Password:  arg.Password,
-		Location:  types.NewLocation(arg.Location),
-		Feature:   arg.Feature,
-		Email:     core.StringToNullString(model.Email),
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
-	if err != nil {
-		return 0, err
-	}
-
-	return id, err
-}
-
-func createDahuaDevice(ctx context.Context, arg repo.DahuaCreateDeviceParams) (int64, error) {
-	tx, err := app.DB.BeginTx(ctx, true)
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback()
-
-	id, err := tx.C().DahuaCreateDevice(ctx, arg)
-	if err != nil {
-		return 0, err
-	}
-
-	if err := tx.C().DahuaAllocateSeed(ctx, core.NewNullInt64(id)); err != nil {
-		return 0, err
-	}
-
-	arg2 := newFileCursor()
-	arg2.DeviceID = id
-	if err := tx.C().DahuaCreateFileCursor(ctx, arg2); err != nil {
-		return 0, err
-	}
-
-	if err := system.CreateEvent(ctx, tx.C(), action.DahuaDeviceCreated.Create(id)); err != nil {
-		return 0, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, err
-	}
-
-	app.Hub.DahuaDeviceCreated(bus.DahuaDeviceCreated{
-		DeviceID: id,
+	bus.Publish(bus.DeviceCreated{
+		DeviceKey: device.Key,
 	})
 
-	return id, nil
+	return device, nil
 }
 
-type UpdateDeviceParams struct {
-	ID          int64
-	Name        string
-	URL         *url.URL
-	Username    string
-	NewPassword string
-	Location    *time.Location
-	Feature     models.DahuaFeature
-	Email       string
+type UpdateDeviceArgs struct {
+	UUID            string
+	Name            string
+	IP              string
+	Username        string
+	Password        sql.Null[string]
+	Location        *types.Location
+	Features        types.Slice[Feature]
+	Email           *string
+	Latitude        sql.Null[float64]
+	Longitude       sql.Null[float64]
+	SunriseOffset   *types.Duration
+	SunsetOffset    *types.Duration
+	SyncVideoInMode bool
 }
 
-func UpdateDevice(ctx context.Context, arg UpdateDeviceParams) error {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return err
-	}
+func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (DahuaDevice, error) {
+	updatedAt := types.NewTime(time.Now())
 
-	dbModel, err := GetDevice(ctx, arg.ID)
+	var device DahuaDevice
+	err := db.GetContext(ctx, &device, `
+		UPDATE dahua_devices SET
+			name = ?,
+			ip = ?,
+			username = ?,
+			password = coalesce(?, password),
+			location = ?,
+			features =  ?,
+			email = ?,
+			latitude = ?,
+			longitude = ?,
+			sunrise_offset = ?,
+			sunset_offset = ?,
+			sync_video_in_mode = ?,
+			updated_at = ?
+		WHERE uuid = ?
+		RETURNING *;
+	`,
+		args.Name,
+		args.IP,
+		args.Username,
+		args.Password,
+		args.Location,
+		args.Email,
+		args.Features,
+		args.Latitude,
+		args.Longitude,
+		args.SunriseOffset,
+		args.SunsetOffset,
+		args.SyncVideoInMode,
+		updatedAt,
+		args.UUID,
+	)
 	if err != nil {
-		return err
-	}
-	model := deviceFrom(dbModel)
-
-	// Mutate
-	model.Name = arg.Name
-	model.URL = arg.URL
-	model.Username = arg.Username
-	model.Email = arg.Email
-	model.normalize(false)
-
-	if err := core.ValidateStruct(ctx, model); err != nil {
-		return err
+		return device, err
 	}
 
-	ip, err := model.getIP()
-	if err != nil {
-		return err
-	}
-
-	password := dbModel.Password
-	if arg.NewPassword != "" {
-		password = arg.NewPassword
-	}
-
-	return updateDevice(ctx, repo.DahuaUpdateDeviceParams{
-		Name:      model.Name,
-		Url:       types.NewURL(model.URL),
-		Ip:        ip,
-		Username:  model.Username,
-		Password:  password,
-		Location:  types.NewLocation(arg.Location),
-		Feature:   arg.Feature,
-		Email:     core.StringToNullString(model.Email),
-		UpdatedAt: types.NewTime(time.Now()),
-		ID:        dbModel.ID,
+	bus.Publish(bus.DeviceUpdated{
+		DeviceKey: device.Key,
 	})
+
+	return device, nil
 }
 
-func updateDevice(ctx context.Context, arg repo.DahuaUpdateDeviceParams) error {
-	tx, err := app.DB.BeginTx(ctx, true)
+func DeleteDevice(ctx context.Context, db *sqlx.DB, uuid string) error {
+	var key core.Key
+	err := db.GetContext(ctx, &key, `
+		DELETE FROM dahua_devices WHERE uuid = ? RETURNING uuid, id
+	`, uuid)
 	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.C().DahuaUpdateDevice(ctx, arg); err != nil {
-		return err
-	}
-
-	if err := system.CreateEvent(ctx, tx.C(), action.DahuaDeviceUpdated.Create(arg.ID)); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	app.Hub.DahuaDeviceUpdated(bus.DahuaDeviceUpdated{
-		DeviceID: arg.ID,
+	bus.Publish(bus.DeviceDeleted{
+		DeviceKey: key,
 	})
 
 	return nil
 }
 
-func DeleteDevice(ctx context.Context, id int64) error {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return err
-	}
-
-	return deleteDevice(ctx, id)
+type DevicePosition struct {
+	Location       types.Location
+	Latitude       float64
+	Longitude      float64
+	Sunrise_Offset types.Duration
+	Sunset_Offset  types.Duration
 }
 
-func deleteDevice(ctx context.Context, id int64) error {
-	tx, err := app.DB.BeginTx(ctx, true)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if err := tx.C().DahuaDeleteDevice(ctx, id); err != nil {
-		return err
-	}
-
-	if err := system.CreateEvent(ctx, tx.C(), action.DahuaDeviceDeleted.Create(id)); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	app.Hub.DahuaDeviceDeleted(bus.DahuaDeviceDeleted{
-		DeviceID: id,
-	})
-
-	return err
-}
-
-func UpdateDeviceDisabled(ctx context.Context, id int64, disable bool) error {
-	if _, err := core.AssertAdmin(ctx); err != nil {
-		return err
-	}
-
-	return updateDeviceDisabled(ctx, repo.DahuaUpdateDeviceDisabledAtParams{
-		DisabledAt: types.NullTime{
-			Time:  types.NewTime(time.Now()),
-			Valid: disable,
-		},
-		ID: id,
-	})
-}
-
-func updateDeviceDisabled(ctx context.Context, arg repo.DahuaUpdateDeviceDisabledAtParams) error {
-	tx, err := app.DB.BeginTx(ctx, true)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.C().DahuaUpdateDeviceDisabledAt(ctx, arg); err != nil {
-		return err
-	}
-
-	if err := system.CreateEvent(ctx, tx.C(), action.DahuaDeviceUpdated.Create(arg.ID)); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	app.Hub.DahuaDeviceUpdated(bus.DahuaDeviceUpdated{
-		DeviceID: arg.ID,
-	})
-
-	return nil
+func GetDevicePosition(ctx context.Context, db *sqlx.DB, id int64) (DevicePosition, error) {
+	var position DevicePosition
+	err := db.GetContext(ctx, &position, `
+		SELECT 
+			coalesce(d.location, s.location) AS location,
+			coalesce(d.latitude, s.latitude) AS latitude,
+			coalesce(d.longitude, s.longitude) AS longitude,
+			coalesce(d.sunrise_offset, s.sunrise_offset) AS sunrise_offset,
+			coalesce(d.sunset_offset, s.sunset_offset) AS sunset_offset
+		FROM dahua_devices AS d, settings as s
+		WHERE d.id = ?
+	`, id)
+	return position, err
 }

@@ -6,32 +6,31 @@ import (
 	"fmt"
 )
 
-func NewStringSlice(slice []string) StringSlice {
-	return StringSlice{
-		Slice: slice,
+func NewSlice[T any](slice []T) Slice[T] {
+	return Slice[T]{
+		V: slice,
 	}
 }
 
-// StringSlice cannot be nil.
-type StringSlice struct {
-	Slice []string
+type Slice[T any] struct {
+	V []T
 }
 
-func (dst *StringSlice) Scan(src any) error {
+func (dst *Slice[T]) Scan(src any) error {
 	if src == nil {
 		return fmt.Errorf("cannot scan nil")
 	}
 
 	switch src := src.(type) {
 	case string:
-		return json.Unmarshal([]byte(src), &dst.Slice)
+		return json.Unmarshal([]byte(src), &dst.V)
 	}
 
 	return fmt.Errorf("cannot scan %T", src)
 }
 
-func (src StringSlice) Value() (driver.Value, error) {
-	b, err := json.Marshal(src.Slice)
+func (src Slice[T]) Value() (driver.Value, error) {
+	b, err := json.Marshal(src.V)
 	if err != nil {
 		return nil, err
 	}

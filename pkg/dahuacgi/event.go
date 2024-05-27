@@ -163,14 +163,14 @@ func eventParseBody(br *bufio.Reader) (map[string]string, []byte) {
 		// Key
 		key, err := eventTextUntil(br, '=')
 		if err != nil {
-			return m, []byte{}
+			return m, nil
 		}
 		key = strings.ToLower(key)
 
 		// Break when the next value is JSON
 		isJSON, err := eventPeekJSON(br)
 		if err != nil {
-			return m, []byte{}
+			return m, nil
 		}
 		if isJSON {
 			break
@@ -182,15 +182,15 @@ func eventParseBody(br *bufio.Reader) (map[string]string, []byte) {
 			if errors.Is(err, io.EOF) {
 				m[key] = value
 			}
-			return m, []byte{}
+			return m, nil
 		}
 		m[key] = value
 	}
 
 	// Naive way of grabbing JSON
 	data, err := io.ReadAll(br)
-	if err != nil {
-		return m, []byte{}
+	if err != nil || len(data) == 0 {
+		return m, nil
 	}
 
 	return m, data

@@ -6,7 +6,7 @@ env "local" {
 
   // Define the URL of the database which is managed
   // in this environment.
-  url = "sqlite://sqlite.db?_fk=1"
+  url = "sqlite://file.db?_fk=1"
 
   // Define the URL of the Dev Database for this environment
   // See: https://atlasgo.io/concepts/dev-database
@@ -15,6 +15,7 @@ env "local" {
   migration {
     // URL where the migration directory resides.
     dir = "file://internal/sqlite/migrations"
+    // URL where the migration directory resides.
     // An optional format of the migration directory:
     // atlas (default) | flyway | liquibase | goose | golang-migrate | dbmate
     format = goose

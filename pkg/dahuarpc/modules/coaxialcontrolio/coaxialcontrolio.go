@@ -46,12 +46,16 @@ type Caps struct {
 }
 
 type ControlRequest struct {
-	Type        int `json:"Type"`
-	IO          int `json:"IO"`
-	TriggerMode int `json:"TriggerMode"`
+	Type        Type        `json:"Type"`
+	IO          IO          `json:"IO"`
+	TriggerMode TriggerMode `json:"TriggerMode"`
 }
 
 func Control(ctx context.Context, c dahuarpc.Conn, channel int, controls ...ControlRequest) error {
+	if len(controls) == 0 {
+		return nil
+	}
+
 	_, err := dahuarpc.Send[any](ctx, c, dahuarpc.
 		New("CoaxialControlIO.control").
 		Params(struct {
@@ -64,3 +68,24 @@ func Control(ctx context.Context, c dahuarpc.Conn, channel int, controls ...Cont
 
 	return err
 }
+
+type Type int
+
+const (
+	TypeWhiteLight Type = 1
+	TypeSpeaker    Type = 2
+)
+
+type IO int
+
+const (
+	On  IO = 1
+	Off IO = 2
+)
+
+type TriggerMode int
+
+const (
+	TriggerModeLinked TriggerMode = 1
+	TriggerModeManual TriggerMode = 2
+)

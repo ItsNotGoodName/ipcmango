@@ -18,7 +18,7 @@ type JSON struct {
 
 func (dst *JSON) Scan(src any) error {
 	if src == nil {
-		dst.RawMessage = []byte{}
+		dst.RawMessage = nil
 		return nil
 	}
 

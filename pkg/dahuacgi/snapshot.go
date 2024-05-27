@@ -11,11 +11,14 @@ type Snapshot struct {
 	ContentLength string
 }
 
-func SnapshotGet(ctx context.Context, c Conn, channel int) (Snapshot, error) {
+func SnapshotGet(ctx context.Context, c Conn, channel, typE int) (Snapshot, error) {
 	req := New("snapshot.cgi")
 
 	if channel != 0 {
 		req.QueryInt("channel", channel)
+	}
+	if typE != 0 {
+		req.QueryInt("type", typE)
 	}
 
 	res, err := OK(c.Do(ctx, req))
