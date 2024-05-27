@@ -1,19 +1,9 @@
 /* @refresh reload */
 import { render } from 'solid-js/web'
 
-import App from "./App"
-import { BusProvider } from './providers/bus'
-import { WSProvider } from './providers/ws'
-import { ClientProvider } from './providers/client'
+import "./styles/index.css";
+import App from './App'
 
 const root = document.getElementById('root')
 
-render(() =>
-  <BusProvider>
-    <WSProvider>
-      <ClientProvider>
-        <App />
-      </ClientProvider>
-    </WSProvider>
-  </BusProvider>
-  , root!)
+render(() => <App />, root!)
