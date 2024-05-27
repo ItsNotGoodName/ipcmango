@@ -15,7 +15,6 @@ env "local" {
   migration {
     // URL where the migration directory resides.
     dir = "file://internal/sqlite/migrations"
-    // URL where the migration directory resides.
     // An optional format of the migration directory:
     // atlas (default) | flyway | liquibase | goose | golang-migrate | dbmate
     format = goose

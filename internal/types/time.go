@@ -12,8 +12,10 @@ var timeFormats = []string{
 	"2006-01-02 15:04:05",
 }
 
-func NewTime(t time.Time) Time {
-	return Time{t}
+func NewTime(time time.Time) Time {
+	return Time{
+		Time: time,
+	}
 }
 
 // Time will always UTC.

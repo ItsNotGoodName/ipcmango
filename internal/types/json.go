@@ -6,9 +6,9 @@ import (
 	"fmt"
 )
 
-func NewJSON(data json.RawMessage) JSON {
+func NewJSON(rawMessage json.RawMessage) JSON {
 	return JSON{
-		RawMessage: data,
+		RawMessage: rawMessage,
 	}
 }
 

@@ -13,9 +13,6 @@ dev:
 clean:
 	rm -rf $(SERVICE_DIR)
 
-restish-sync:
-	restish api sync huma
-
 migration:
 	atlas migrate diff $(name) --env local
 
