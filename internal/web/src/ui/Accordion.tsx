@@ -4,15 +4,15 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/accordion
 // https://ui.shadcn.com/docs/components/accordion
-import { Accordion } from "@kobalte/core"
+import { Accordion } from "@kobalte/core/accordion"
 import { RiArrowsArrowDownSLine } from "solid-icons/ri"
-import { splitProps } from "solid-js"
+import { ComponentProps, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
 
-export const AccordionRoot = Accordion.Root
+export const AccordionRoot = Accordion
 
-export function AccordionItem(props: Accordion.AccordionItemProps) {
+export function AccordionItem(props: ComponentProps<typeof Accordion.Item>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Accordion.Item
     class={cn("border-b", props.class)}
@@ -20,7 +20,7 @@ export function AccordionItem(props: Accordion.AccordionItemProps) {
   />
 }
 
-export function AccordionTrigger(props: Accordion.AccordionTriggerProps) {
+export function AccordionTrigger(props: ComponentProps<typeof Accordion.Trigger>) {
   const [_, rest] = splitProps(props, ["class", "children"])
   return <Accordion.Header class="flex">
     <Accordion.Trigger
@@ -36,7 +36,7 @@ export function AccordionTrigger(props: Accordion.AccordionTriggerProps) {
   </Accordion.Header>
 }
 
-export function AccordionContent(props: Accordion.AccordionContentProps) {
+export function AccordionContent(props: ComponentProps<typeof Accordion.Content>) {
   const [_, rest] = splitProps(props, ["class", "children"])
   return <Accordion.Content
     class="ui-not-expanded:animate-accordion-up ui-expanded:animate-accordion-down overflow-hidden text-sm transition-all"

@@ -4,12 +4,12 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/progress
 // https://ui.shadcn.com/docs/components/progress
-import { Progress } from "@kobalte/core"
+import { Progress } from "@kobalte/core/progress"
 import { ComponentProps, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
 
-export const ProgressRoot = Progress.Root;
+export const ProgressRoot = Progress;
 export const ProgressLabel = Progress.Label;
 export const ProgressValueLabel = Progress.ValueLabel;
 

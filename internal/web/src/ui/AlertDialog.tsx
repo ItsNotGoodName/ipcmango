@@ -5,12 +5,12 @@
 // https://kobalte.dev/docs/core/components/alert-dialog
 // https://ui.shadcn.com/docs/components/alert-dialog
 import { ComponentProps, JSX, splitProps } from "solid-js"
-import { AlertDialog } from "@kobalte/core"
+import { AlertDialog } from "@kobalte/core/alert-dialog"
 
 import { cn } from "~/lib/utils"
 import { Button, buttonVariants } from "~/ui/Button"
 
-export const AlertDialogRoot = AlertDialog.Root
+export const AlertDialogRoot = AlertDialog
 
 export const AlertDialogTrigger = AlertDialog.Trigger
 
@@ -81,7 +81,7 @@ export function AlertDialogDescription(props: ComponentProps<typeof AlertDialog.
 
 export const AlertDialogAction = Button
 
-export function AlertDialogCancel(props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) {
+export function AlertDialogCancel(props: ComponentProps<typeof AlertDialog.CloseButton>) {
   const [_, rest] = splitProps(props, ["class"])
   return <AlertDialog.CloseButton
     class={cn(

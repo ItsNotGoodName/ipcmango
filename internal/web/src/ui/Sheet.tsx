@@ -4,7 +4,7 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/sheet
 // https://ui.shadcn.com/docs/components/sheet
-import { Dialog } from "@kobalte/core"
+import { Dialog } from "@kobalte/core/dialog"
 import { RiSystemCloseLine } from "solid-icons/ri";
 import { cva, type VariantProps } from "class-variance-authority"
 import { ComponentProps, JSX, splitProps } from "solid-js";
@@ -12,7 +12,7 @@ import { ComponentProps, JSX, splitProps } from "solid-js";
 import { cn } from "~/lib/utils"
 import { DialogOverlay, DialogPortal } from "./Dialog";
 
-export const SheetRoot = Dialog.Root
+export const SheetRoot = Dialog
 export const SheetTrigger = Dialog.Trigger
 export const SheetCloseButton = Dialog.CloseButton
 

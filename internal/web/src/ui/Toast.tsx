@@ -4,7 +4,7 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/toast
 // https://ui.shadcn.com/docs/components/toast
-import { Toast, toaster } from "@kobalte/core";
+import { Toast, toaster } from "@kobalte/core/toast";
 import { cva, type VariantProps } from "class-variance-authority"
 import { RiSystemCloseLine } from "solid-icons/ri";
 import { ComponentProps, JSX, splitProps } from "solid-js";
@@ -49,9 +49,9 @@ const toastVariants = cva(
   }
 )
 
-export function ToastRoot(props: ComponentProps<typeof Toast.Root> & VariantProps<typeof toastVariants>) {
+export function ToastRoot(props: ComponentProps<typeof Toast> & VariantProps<typeof toastVariants>) {
   const [_, rest] = splitProps(props, ["class", "variant"])
-  return <Toast.Root
+  return <Toast
     class={cn(toastVariants({ variant: props.variant }), props.class)}
     {...rest}
   />

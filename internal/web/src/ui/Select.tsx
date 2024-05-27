@@ -4,19 +4,19 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/select
 // https://ui.shadcn.com/docs/components/select
-import { Select } from "@kobalte/core"
+import { Select } from "@kobalte/core/select"
 import { RiArrowsArrowDownSLine, RiSystemCheckLine } from "solid-icons/ri"
-import { For, JSX, splitProps } from "solid-js"
+import { ComponentProps, For, JSX, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
 import { labelVariants } from "./Label"
 import { createVirtualizer } from "@tanstack/solid-virtual"
 
-export const SelectRoot = Select.Root
+export const SelectRoot = Select
 
 export const SelectValue = Select.Value
 
-export function SelectLabel(props: Select.SelectLabelProps) {
+export function SelectLabel(props: ComponentProps<typeof Select.Label>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Select.Label
     class={cn(labelVariants(), props.class)}
@@ -24,7 +24,7 @@ export function SelectLabel(props: Select.SelectLabelProps) {
   />
 }
 
-export function SelectDescription(props: Select.SelectDescriptionProps) {
+export function SelectDescription(props: ComponentProps<typeof Select.Description>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Select.Description
     class={cn("text-muted-foreground text-sm", props.class)}
@@ -32,7 +32,7 @@ export function SelectDescription(props: Select.SelectDescriptionProps) {
   />
 }
 
-export function SelectErrorMessage(props: Select.SelectDescriptionProps) {
+export function SelectErrorMessage(props: ComponentProps<typeof Select.Description>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Select.ErrorMessage
     class={cn("text-destructive text-sm font-medium")}
@@ -40,7 +40,7 @@ export function SelectErrorMessage(props: Select.SelectDescriptionProps) {
   />
 }
 
-export function SelectTrigger(props: Select.SelectTriggerProps) {
+export function SelectTrigger(props: ComponentProps<typeof Select.Trigger>) {
   const [_, rest] = splitProps(props, ["class", "children"])
   return <Select.Trigger
     class={cn(
@@ -56,7 +56,7 @@ export function SelectTrigger(props: Select.SelectTriggerProps) {
 
 export const SelectPortal = Select.Portal
 
-export function SelectContent(props: Select.SelectContentProps) {
+export function SelectContent(props: ComponentProps<typeof Select.Content>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Select.Content
     class={cn(
@@ -67,15 +67,15 @@ export function SelectContent(props: Select.SelectContentProps) {
   />
 }
 
-export function SelectListbox<Option, OptGroup = never>(props: Select.SelectListboxProps<Option, OptGroup>) {
+export function SelectListbox<Option, OptGroup = never>(props: ComponentProps<typeof Select.Listbox<Option, OptGroup>>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Select.Listbox class={cn("max-h-96 overflow-y-auto p-1", props.class)} {...rest} />
 }
 
-export function SelectItem(props: Omit<Select.SelectItemProps, "class">) {
-  const [_, rest] = splitProps(props, ["children"])
+export function SelectItem(props: ComponentProps<typeof Select.Item>) {
+  const [_, rest] = splitProps(props, ["children", "class"])
   return <Select.Item
-    class="focus:bg-accent focus:text-accent-foreground ui-disabled:pointer-events-none ui-disabled:opacity-50 relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none"
+    class={cn("focus:bg-accent focus:text-accent-foreground ui-disabled:pointer-events-none ui-disabled:opacity-50 relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none", props.class)}
     {...rest}
   >
     <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">

@@ -4,16 +4,16 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/checkbox
 // https://ui.shadcn.com/docs/components/checkbox
-import { Checkbox } from "@kobalte/core";
+import { Checkbox } from "@kobalte/core/checkbox";
 import { RiSystemCheckLine } from "solid-icons/ri";
 import { ComponentProps, splitProps } from "solid-js";
 
 import { cn } from "~/lib/utils"
 import { labelVariants } from "./Label";
 
-export const CheckboxRoot = Checkbox.Root
+export const CheckboxRoot = Checkbox
 
-export function CheckboxControl(props: Omit<Checkbox.CheckboxControlProps, "children">) {
+export function CheckboxControl(props: Omit<ComponentProps<typeof Checkbox.Control>, "children">) {
   const [_, rest] = splitProps(props, ["class"])
   return <>
     <Checkbox.Input class="peer" />
@@ -31,7 +31,7 @@ export function CheckboxControl(props: Omit<Checkbox.CheckboxControlProps, "chil
   </>
 }
 
-export function CheckboxLabel(props: Checkbox.CheckboxLabelProps) {
+export function CheckboxLabel(props: ComponentProps<typeof Checkbox.Label>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Checkbox.Label
     class={cn(labelVariants(), props.class)}

@@ -4,13 +4,13 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/dropdown-menu
 // https://ui.shadcn.com/docs/components/dropdown-menu
-import { DropdownMenu } from "@kobalte/core";
+import { DropdownMenu } from "@kobalte/core/dropdown-menu";
 import { ComponentProps, JSX, splitProps } from "solid-js";
 import { RiArrowsArrowRightSLine, RiSystemCheckLine, RiSystemCheckboxBlankCircleFill } from "solid-icons/ri"
 
 import { cn } from "~/lib/utils"
 
-export const DropdownMenuRoot = DropdownMenu.Root
+export const DropdownMenuRoot = DropdownMenu
 export const DropdownMenuTrigger = DropdownMenu.Trigger
 export const DropdownMenuIcon = DropdownMenu.Icon
 export const DropdownMenuPortal = DropdownMenu.Portal
@@ -38,7 +38,7 @@ export function DropdownMenuSubTriggerIndicator() {
   return <RiArrowsArrowRightSLine class="ml-auto h-4 w-4" />
 }
 
-export function DropdownMenuSubContent(props: DropdownMenu.DropdownMenuSubContentProps) {
+export function DropdownMenuSubContent(props: ComponentProps<typeof DropdownMenu.SubContent>) {
   const [_, rest] = splitProps(props, ["class"])
   return <DropdownMenu.SubContent
     class={cn(
@@ -49,7 +49,7 @@ export function DropdownMenuSubContent(props: DropdownMenu.DropdownMenuSubConten
   />
 }
 
-export function DropdownMenuContent(props: DropdownMenu.DropdownMenuContentProps) {
+export function DropdownMenuContent(props: ComponentProps<typeof DropdownMenu.Content>) {
   const [_, rest] = splitProps(props, ["class"])
   return <DropdownMenu.Content
     class={cn(

@@ -3,18 +3,18 @@
 //
 // # URLs
 // https://kobalte.dev/docs/core/components/breadcrumbs
-import { Breadcrumbs } from "@kobalte/core";
-import { ParentProps, splitProps } from "solid-js";
+import { Breadcrumbs } from "@kobalte/core/breadcrumbs";
+import { ComponentProps, ParentProps, splitProps } from "solid-js";
 
 import { cn } from "~/lib/utils";
 
-export function BreadcrumbsRoot(props: Breadcrumbs.BreadcrumbsRootProps) {
+export function BreadcrumbsRoot(props: ComponentProps<typeof Breadcrumbs>) {
   const [_, rest] = splitProps(props, ["children"])
-  return <Breadcrumbs.Root {...rest}>
+  return <Breadcrumbs {...rest}>
     <ol class="inline-flex items-center" >
       {props.children}
     </ol>
-  </Breadcrumbs.Root>
+  </Breadcrumbs>
 }
 
 export function BreadcrumbsItem(props: ParentProps) {
@@ -23,12 +23,12 @@ export function BreadcrumbsItem(props: ParentProps) {
   </li>
 }
 
-export function BreadcrumbsLink(props: Breadcrumbs.BreadcrumbsLinkProps) {
+export function BreadcrumbsLink(props: ComponentProps<typeof Breadcrumbs.Link>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Breadcrumbs.Link class={cn("hover:text-sky-500", props.class)} {...rest} />
 }
 
-export function BreadcrumbsSeparator(props: Breadcrumbs.BreadcrumbsSeparatorProps) {
+export function BreadcrumbsSeparator(props: ComponentProps<typeof Breadcrumbs.Separator>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Breadcrumbs.Separator class={cn("px-2", props.class)} {...rest} />
 }

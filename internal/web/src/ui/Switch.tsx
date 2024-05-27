@@ -4,22 +4,22 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/switch
 // https://ui.shadcn.com/docs/components/switch
-import { Switch } from "@kobalte/core"
-import { splitProps } from "solid-js"
+import { Switch } from "@kobalte/core/switch"
+import { ComponentProps, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
 import { labelVariants } from "./Label"
 
-export const SwitchRoot = Switch.Root
+export const SwitchRoot = Switch
 
-export function SwitchLabel(props: Switch.SwitchLabelProps) {
+export function SwitchLabel(props: ComponentProps<typeof Switch.Label>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Switch.Label
     class={cn(labelVariants(), props.class)}
     {...rest}
   />
 }
-export function SwitchDescription(props: Switch.SwitchDescriptionProps) {
+export function SwitchDescription(props: ComponentProps<typeof Switch.Description>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Switch.Description
     class={cn("text-muted-foreground text-sm", props.class)}
@@ -27,7 +27,7 @@ export function SwitchDescription(props: Switch.SwitchDescriptionProps) {
   />
 }
 
-export function SwitchErrorMessage(props: Switch.SwitchErrorMessageProps) {
+export function SwitchErrorMessage(props: ComponentProps<typeof Switch.ErrorMessage>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Switch.ErrorMessage
     class={cn("text-destructive text-sm font-medium", props.class)}
@@ -35,7 +35,7 @@ export function SwitchErrorMessage(props: Switch.SwitchErrorMessageProps) {
   />
 }
 
-export function SwitchControl(props: Omit<Switch.SwitchControlProps, "children"> & { inputProps?: Omit<Switch.SwitchInputProps, "class"> }) {
+export function SwitchControl(props: Omit<ComponentProps<typeof Switch.Control>, "children"> & { inputProps?: Omit<ComponentProps<typeof Switch.Input>, "class"> }) {
   const [_, rest] = splitProps(props, ["class", "inputProps"])
   return <>
     <Switch.Input class="peer" {...props.inputProps} />

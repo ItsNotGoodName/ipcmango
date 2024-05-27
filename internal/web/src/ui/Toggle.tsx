@@ -4,7 +4,7 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/toggle-button
 // https://ui.shadcn.com/docs/components/toggle
-import { ToggleButton } from "@kobalte/core"
+import { ToggleButton } from "@kobalte/core/toggle-button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { ComponentProps, splitProps } from "solid-js"
 
@@ -30,9 +30,9 @@ const toggleVariants = cva(
   }
 )
 
-export function Toggle(props: ComponentProps<typeof ToggleButton.Root> & VariantProps<typeof toggleVariants>) {
+export function Toggle(props: ComponentProps<typeof ToggleButton> & VariantProps<typeof toggleVariants>) {
   const [_, rest] = splitProps(props, ["class", "variant", "size"])
-  return <ToggleButton.Root
+  return <ToggleButton
     class={toggleVariants({ variant: props.variant, class: props.class, size: props.size })}
     {...rest}
   />

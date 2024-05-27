@@ -4,13 +4,13 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/dialog
 // https://ui.shadcn.com/docs/components/dialog
-import { Dialog } from "@kobalte/core";
+import { Dialog } from "@kobalte/core/dialog";
 import { RiSystemCloseLine } from "solid-icons/ri";
 import { ComponentProps, JSX, splitProps } from "solid-js";
 
 import { cn } from "~/lib/utils"
 
-export const DialogRoot = Dialog.Root
+export const DialogRoot = Dialog
 export const DialogTrigger = Dialog.Trigger
 export const DialogPortal = Dialog.Portal
 export const DialogCloseButton = Dialog.CloseButton

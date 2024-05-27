@@ -4,18 +4,18 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/popover
 // https://ui.shadcn.com/docs/components/popover
-import { Popover } from "@kobalte/core";
+import { Popover } from "@kobalte/core/popover";
 import { RiSystemCloseLine } from "solid-icons/ri";
-import { splitProps } from "solid-js";
+import { ComponentProps, splitProps } from "solid-js";
 
 import { cn } from "~/lib/utils";
 
-export const PopoverRoot = Popover.Root
+export const PopoverRoot = Popover
 export const PopoverTrigger = Popover.Trigger
 export const PopoverAnchor = Popover.Anchor
 export const PopoverPortal = Popover.Portal
 
-export function PopoverContent(props: Popover.PopoverContentProps) {
+export function PopoverContent(props: ComponentProps<typeof Popover.Content>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Popover.Content
     class={cn(

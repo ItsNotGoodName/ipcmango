@@ -5,16 +5,16 @@
 // https://kobalte.dev/docs/core/components/pagination
 // https://ui.shadcn.com/docs/components/pagination
 import { ComponentProps, JSX, mergeProps, splitProps } from "solid-js"
-import { Pagination } from "@kobalte/core"
+import { Pagination } from "@kobalte/core/pagination"
 import { RiArrowsArrowLeftSLine, RiArrowsArrowRightSLine, RiSystemMoreLine } from "solid-icons/ri"
 
 import { cn } from "~/lib/utils"
 import { ButtonProps, buttonVariants } from "./Button"
 
-export function PaginationRoot(props: ComponentProps<typeof Pagination.Root>) {
+export function PaginationRoot(props: ComponentProps<typeof Pagination>) {
   const [_, rest] = splitProps(props, ["class", "count"])
   const count = () => props.page != undefined && props.page > props.count ? props.page : props.count
-  return <Pagination.Root
+  return <Pagination
     class={cn("hidden flex-row gap-1 sm:flex [&>ul]:flex [&>ul]:w-full [&>ul]:items-center [&>ul]:gap-1 ", props.class)}
     count={count()}
     {...rest}
@@ -49,9 +49,7 @@ export function PaginationLink(props: PaginationLinkProps) {
   />
 }
 
-type PaginationNextPreviousProps = Pick<ButtonProps, "size"> & JSX.ButtonHTMLAttributes<HTMLButtonElement>
-
-export function PaginationPrevious(props: PaginationNextPreviousProps) {
+export function PaginationPrevious(props: Pick<ButtonProps, "size"> & ComponentProps<typeof Pagination.Previous>) {
   const [_, rest] = splitProps(mergeProps({ size: "default" }, props), ["class", "size"])
   return <Pagination.Previous
     aria-label="Go to previous page"
@@ -69,7 +67,7 @@ export function PaginationPrevious(props: PaginationNextPreviousProps) {
   </Pagination.Previous>
 }
 
-export function PaginationNext(props: PaginationNextPreviousProps) {
+export function PaginationNext(props: Pick<ButtonProps, "size"> & ComponentProps<typeof Pagination.Next>) {
   const [_, rest] = splitProps(mergeProps({ size: "default" }, props), ["class", "size"])
   return <Pagination.Next
     aria-label="Go to next page"

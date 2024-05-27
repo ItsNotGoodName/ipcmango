@@ -4,16 +4,16 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/hover-card
 // https://ui.shadcn.com/docs/components/hover-card
-import { splitProps } from "solid-js"
-import { HoverCard } from "@kobalte/core"
+import { ComponentProps, splitProps } from "solid-js"
+import { HoverCard } from "@kobalte/core/hover-card"
 
 import { cn } from "~/lib/utils"
 
-export const HoverCardRoot = HoverCard.Root
+export const HoverCardRoot = HoverCard
 export const HoverCardTrigger = HoverCard.Trigger
 export const HoverCardArrow = HoverCard.Arrow
 
-export function HoverCardContent(props: HoverCard.HoverCardContentProps) {
+export function HoverCardContent(props: ComponentProps<typeof HoverCard.Content>) {
   const [_, rest] = splitProps(props, ["class"])
   return <HoverCard.Portal>
     <HoverCard.Content

@@ -4,12 +4,12 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/tabs
 // https://ui.shadcn.com/docs/components/tabs
-import { Tabs } from "@kobalte/core"
+import { Tabs } from "@kobalte/core/tabs"
 import { ComponentProps, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
 
-export const TabsRoot = Tabs.Root
+export const TabsRoot = Tabs
 
 export function TabsList(props: ComponentProps<typeof Tabs.List>) {
   const [_, rest] = splitProps(props, ["class"])

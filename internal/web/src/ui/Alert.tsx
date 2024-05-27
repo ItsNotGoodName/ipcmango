@@ -5,7 +5,7 @@
 // https://kobalte.dev/docs/core/components/alert
 // https://ui.shadcn.com/docs/components/alert
 import { cva, type VariantProps } from "class-variance-authority"
-import { Alert } from "@kobalte/core"
+import { Alert } from "@kobalte/core/alert"
 import { ComponentProps, JSX, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
@@ -26,9 +26,9 @@ const alertVariants = cva(
   }
 )
 
-export function AlertRoot(props: ComponentProps<typeof Alert.Root> & VariantProps<typeof alertVariants>) {
+export function AlertRoot(props: ComponentProps<typeof Alert> & VariantProps<typeof alertVariants>) {
   const [_, rest] = splitProps(props, ["class", "variant"])
-  return <Alert.Root
+  return <Alert
     class={cn(alertVariants({ variant: props.variant }), props.class)}
     {...rest}
   />

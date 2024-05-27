@@ -4,7 +4,7 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/menubar
 // https://ui.shadcn.com/docs/components/menubar
-import { Menubar } from "@kobalte/core";
+import { Menubar } from "@kobalte/core/menubar";
 import { RiArrowsArrowRightSLine, RiSystemCheckLine, RiSystemCheckboxBlankCircleFill } from "solid-icons/ri";
 import { ComponentProps, JSX, splitProps } from "solid-js";
 
@@ -16,9 +16,9 @@ export const MenubarPortal = Menubar.Portal
 export const MenubarSub = Menubar.Sub
 export const MenubarRadioGroup = Menubar.RadioGroup
 
-export function MenubarRoot(props: ComponentProps<typeof Menubar.Root>) {
+export function MenubarRoot(props: ComponentProps<typeof Menubar>) {
   const [_, rest] = splitProps(props, ["class"])
-  return <Menubar.Root
+  return <Menubar
     class={cn(
       "bg-background flex h-10 items-center space-x-1 rounded-md border p-1",
       props.class
@@ -53,7 +53,7 @@ export function MenubarSubTrigger(props: ComponentProps<typeof Menubar.SubTrigge
   </Menubar.SubTrigger>
 }
 
-export function MenubarSubContent(props: Menubar.MenubarSubContentProps) {
+export function MenubarSubContent(props: ComponentProps<typeof Menubar.SubContent>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Menubar.Portal>
     <Menubar.SubContent
@@ -66,7 +66,7 @@ export function MenubarSubContent(props: Menubar.MenubarSubContentProps) {
   </Menubar.Portal>
 }
 
-export function MenubarContent(props: Menubar.MenubarContentProps) {
+export function MenubarContent(props: ComponentProps<typeof Menubar.Content>) {
   const [_, rest] = splitProps(props, ["class"])
   return <Menubar.Portal>
     <Menubar.Content

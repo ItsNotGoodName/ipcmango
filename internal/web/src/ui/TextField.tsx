@@ -5,13 +5,13 @@
 // https://kobalte.dev/docs/core/components/text-field
 // https://ui.shadcn.com/docs/components/input
 // https://ui.shadcn.com/docs/components/textarea
-import { TextField } from "@kobalte/core"
+import { TextField } from "@kobalte/core/text-field"
 import { ComponentProps, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
 import { labelVariants } from "./Label"
 
-export function TextFieldInput(props: TextField.TextFieldInputProps) {
+export function TextFieldInput(props: ComponentProps<typeof TextField.Input>) {
   const [_, rest] = splitProps(props, ["class"])
   return <TextField.Input
     class={cn(
@@ -22,7 +22,7 @@ export function TextFieldInput(props: TextField.TextFieldInputProps) {
   />
 }
 
-export function TextFieldTextArea(props: TextField.TextFieldTextAreaProps) {
+export function TextFieldTextArea(props: ComponentProps<typeof TextField.TextArea>) {
   const [_, rest] = splitProps(props, ["class"])
   return <TextField.TextArea
     class={cn(
@@ -33,9 +33,9 @@ export function TextFieldTextArea(props: TextField.TextFieldTextAreaProps) {
   />
 }
 
-export const TextFieldRoot = TextField.Root
+export const TextFieldRoot = TextField
 
-export function TextFieldLabel(props: TextField.TextFieldLabelProps) {
+export function TextFieldLabel(props: ComponentProps<typeof TextField.Label>) {
   const [_, rest] = splitProps(props, ["class"])
   return <TextField.Label
     class={cn(labelVariants(), props.class)}
@@ -43,7 +43,7 @@ export function TextFieldLabel(props: TextField.TextFieldLabelProps) {
   />
 }
 
-export function TextFieldDescription(props: TextField.TextFieldDescriptionProps) {
+export function TextFieldDescription(props: ComponentProps<typeof TextField.Description>) {
   const [_, rest] = splitProps(props, ["class"])
   return <TextField.Description
     class={cn("text-muted-foreground text-sm", props.class)}

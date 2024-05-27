@@ -4,14 +4,14 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/image
 // https://ui.shadcn.com/docs/components/avatar
-import { Image } from "@kobalte/core"
+import { Image } from "@kobalte/core/image"
 import { ComponentProps, splitProps } from "solid-js"
 
 import { cn } from "~/lib/utils"
 
-export function AvatarRoot(props: ComponentProps<typeof Image.Root>) {
+export function AvatarRoot(props: ComponentProps<typeof Image>) {
   const [_, rest] = splitProps(props, ["class"])
-  return <Image.Root
+  return <Image
     class={cn(
       "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
       props.class
