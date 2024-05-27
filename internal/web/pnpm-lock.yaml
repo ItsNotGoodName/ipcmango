@@ -11,9 +11,15 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.1
         version: 0.13.1(solid-js@1.8.17)
+      '@lukemorales/query-key-factory':
+        specifier: ^1.3.4
+        version: 1.3.4(@tanstack/query-core@5.38.0)(@tanstack/react-query@5.39.0(react@18.3.1))
       '@solid-primitives/date':
         specifier: ^2.0.21
         version: 2.0.21(solid-js@1.8.17)
+      '@tanstack/solid-query':
+        specifier: ^5.38.0
+        version: 5.38.0(solid-js@1.8.17)
       '@tanstack/solid-virtual':
         specifier: ^3.5.0
         version: 3.5.0(solid-js@1.8.17)
@@ -33,6 +39,9 @@ importers:
       '@kobalte/tailwindcss':
         specifier: ^0.9.0
         version: 0.9.0(tailwindcss@3.4.3)
+      '@tanstack/solid-query-devtools':
+        specifier: ^5.38.0
+        version: 5.38.0(@tanstack/solid-query@5.38.0(solid-js@1.8.17))(solid-js@1.8.17)
       '@types/node':
         specifier: ^20.12.12
         version: 20.12.12
@@ -373,6 +382,13 @@ packages:
     peerDependencies:
       solid-js: ^1.7.11
 
+  '@lukemorales/query-key-factory@1.3.4':
+    resolution: {integrity: sha512-A3frRDdkmaNNQi6mxIshsDk4chRXWoXa05US8fBo4kci/H+lVmujS6QrwQLLGIkNIRFGjMqp2uKjC4XsLdydRw==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      '@tanstack/query-core': '>= 4.0.0'
+      '@tanstack/react-query': '>= 4.0.0'
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -541,6 +557,28 @@ packages:
 
   '@swc/helpers@0.5.11':
     resolution: {integrity: sha512-YNlnKRWF2sVojTpIyzwou9XoTNbzbzONwRhOoniEioF1AtaitTvVZblaQRrAzChWQ1bLYyYSWzM18y4WwgzJ+A==}
+
+  '@tanstack/query-core@5.38.0':
+    resolution: {integrity: sha512-QtkoxvFcu52mNpp3+qOo9H265m3rt83Dgbw5WnNyJvr83cegrQ7zT8haHhL4Rul6ZQkeovxyWbXVW9zI0WYx6g==}
+
+  '@tanstack/query-devtools@5.37.1':
+    resolution: {integrity: sha512-XcG4IIHIv0YQKrexTqo2zogQWR1Sz672tX2KsfE9kzB+9zhx44vRKH5si4WDILE1PIWQpStFs/NnrDQrBAUQpg==}
+
+  '@tanstack/react-query@5.39.0':
+    resolution: {integrity: sha512-zc0WnyEffyTgG+myLv8cY2tJOUT6jOprCiprpbMqylCaCFipSDUPCYCt2AC+qxgk2CFuqiI/fjb1u5/HhLkrPg==}
+    peerDependencies:
+      react: ^18.0.0
+
+  '@tanstack/solid-query-devtools@5.38.0':
+    resolution: {integrity: sha512-mUPxow+fEkNj8u83zCS8IEqXTAfKHZAvx63qPaOs3Ps8XBc0TYP6p6+vRMj1pcE02O6NjyHKWqrYwYAerSlu4Q==}
+    peerDependencies:
+      '@tanstack/solid-query': ^5.38.0
+      solid-js: ^1.6.0
+
+  '@tanstack/solid-query@5.38.0':
+    resolution: {integrity: sha512-5BvW3DJfQRNYedun/95jQcLDHO5iM51Jkz0OcjNS9Pm1l47lqCAhoYzwHKsVz5GkMKW9EPuqSvG64yZ+mFF5cw==}
+    peerDependencies:
+      solid-js: ^1.6.0
 
   '@tanstack/solid-virtual@3.5.0':
     resolution: {integrity: sha512-iqiaHaEN23VIRQbCs+vtZ4gBt66M0QxPQ1q7lQXfAL+rkvZCbvdf9jzQ8PX+bvvd0NQQvqxtHuDMc9cUNfPmXg==}
@@ -959,6 +997,10 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
+  loose-envify@1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
+
   lru-cache@10.2.2:
     resolution: {integrity: sha512-9hp3Vp2/hFQUiIwKo8XCeFVnrg8Pk3TYNPIR7tJADKi5YfcF7vEaK7avFHTlSy3kOKYaJQaalfEo6YuXdceBOQ==}
     engines: {node: 14 || >=16.14}
@@ -1123,6 +1165,10 @@ packages:
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
+
+  react@18.3.1:
+    resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
+    engines: {node: '>=0.10.0'}
 
   read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
@@ -1695,6 +1741,11 @@ snapshots:
       '@solid-primitives/utils': 6.2.3(solid-js@1.8.17)
       solid-js: 1.8.17
 
+  '@lukemorales/query-key-factory@1.3.4(@tanstack/query-core@5.38.0)(@tanstack/react-query@5.39.0(react@18.3.1))':
+    dependencies:
+      '@tanstack/query-core': 5.38.0
+      '@tanstack/react-query': 5.39.0(react@18.3.1)
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -1833,6 +1884,26 @@ snapshots:
   '@swc/helpers@0.5.11':
     dependencies:
       tslib: 2.6.2
+
+  '@tanstack/query-core@5.38.0': {}
+
+  '@tanstack/query-devtools@5.37.1': {}
+
+  '@tanstack/react-query@5.39.0(react@18.3.1)':
+    dependencies:
+      '@tanstack/query-core': 5.38.0
+      react: 18.3.1
+
+  '@tanstack/solid-query-devtools@5.38.0(@tanstack/solid-query@5.38.0(solid-js@1.8.17))(solid-js@1.8.17)':
+    dependencies:
+      '@tanstack/query-devtools': 5.37.1
+      '@tanstack/solid-query': 5.38.0(solid-js@1.8.17)
+      solid-js: 1.8.17
+
+  '@tanstack/solid-query@5.38.0(solid-js@1.8.17)':
+    dependencies:
+      '@tanstack/query-core': 5.38.0
+      solid-js: 1.8.17
 
   '@tanstack/solid-virtual@3.5.0(solid-js@1.8.17)':
     dependencies:
@@ -2242,6 +2313,10 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
+  loose-envify@1.4.0:
+    dependencies:
+      js-tokens: 4.0.0
+
   lru-cache@10.2.2: {}
 
   lru-cache@5.1.1:
@@ -2387,6 +2462,10 @@ snapshots:
       ini: 1.3.8
       minimist: 1.2.8
       strip-json-comments: 2.0.1
+
+  react@18.3.1:
+    dependencies:
+      loose-envify: 1.4.0
 
   read-cache@1.0.0:
     dependencies:
