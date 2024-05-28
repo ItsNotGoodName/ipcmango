@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GetApiDevicesResponse, PostApiDevicesData, PostApiDevicesResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEndpointsResponse, PostApiEndpointsData, PostApiEndpointsResponse, DeleteApiEndpointsByUuidData, DeleteApiEndpointsByUuidResponse, GetApiEventsData, GetApiEventsResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse } from './types.gen';
+import type { GetApiDevicesResponse, PostApiDevicesData, PostApiDevicesResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEndpointsResponse, PostApiEndpointsData, PostApiEndpointsResponse, DeleteApiEndpointsByUuidData, DeleteApiEndpointsByUuidResponse, GetApiEventsData, GetApiEventsResponse, GetApiPagesHomeResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse } from './types.gen';
 
 /**
  * List devices
@@ -502,7 +502,7 @@ export const deleteApiEndpointsByUuid = (data: DeleteApiEndpointsByUuidData): Ca
 }); };
 
 /**
- * Listen for events from devices
+ * Listen for events
  * @param data The data for the request.
  * @param data.deviceUuids
  * @param data.codes
@@ -522,7 +522,20 @@ export const getApiEvents = (data: GetApiEventsData = {}): CancelablePromise<Get
 }); };
 
 /**
- * Default setting
+ * Get home page
+ * @returns GetHomePage OK
+ * @throws ApiError
+ */
+export const getApiPagesHome = (): CancelablePromise<GetApiPagesHomeResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/pages/home',
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
+ * Default settings
  * @returns Settings OK
  * @throws ApiError
  */
@@ -535,7 +548,7 @@ export const deleteApiSettings = (): CancelablePromise<DeleteApiSettingsResponse
 }); };
 
 /**
- * Get setting
+ * Get settings
  * @returns Settings OK
  * @throws ApiError
  */
@@ -548,7 +561,7 @@ export const getApiSettings = (): CancelablePromise<GetApiSettingsResponse> => {
 }); };
 
 /**
- * Update setting
+ * Update settings
  * @param data The data for the request.
  * @param data.requestBody
  * @returns Settings OK

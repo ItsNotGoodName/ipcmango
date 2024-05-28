@@ -147,3 +147,24 @@ func Must2[T any](t T, err error) T {
 	}
 	return t
 }
+
+func DirectorySize(dir string) (int64, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0, err
+	}
+
+	dirSize := int64(0)
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			return 0, err
+		}
+
+		if info.Mode().IsRegular() {
+			dirSize += info.Size()
+		}
+	}
+
+	return dirSize, nil
+}

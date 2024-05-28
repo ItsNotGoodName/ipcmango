@@ -7,8 +7,8 @@ import { TableBody, TableCell, TableHead, TableHeader, TableRoot, TableRow } fro
 import { Skeleton } from "~/ui/Skeleton"
 import { createUptime, formatDate, parseDate, } from "~/lib/utils"
 import { linkVariants } from "~/ui/Link"
-import { createQuery } from "@tanstack/solid-query"
-import { GetApiDevicesResponse } from "~/client"
+import { createMutation, createQuery, useQueryClient } from "@tanstack/solid-query"
+import { GetApiDevicesResponse, postApiDevicesByUuidVideoInModeSync } from "~/client"
 import { Button } from "~/ui/Button"
 import { RiMediaImageLine, RiSystemRefreshLine } from "solid-icons/ri"
 import { Image } from "@kobalte/core/image"
@@ -70,6 +70,7 @@ export function Devices() {
                 <TabsTrigger value="software-version">Software Version</TabsTrigger>
                 <TabsTrigger value="license">License</TabsTrigger>
                 <TabsTrigger value="storage">Storage</TabsTrigger>
+                <TabsTrigger value="videoinmode">VideoInMode</TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -111,6 +112,11 @@ export function Devices() {
           <TabsContent value="storage">
             <Suspense fallback={<Skeleton class="h-32" />}>
               <StorageTable devices={data.data} />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="videoinmode">
+            <Suspense fallback={<Skeleton class="h-32" />}>
+              <VideoInMode devices={data.data} />
             </Suspense>
           </TabsContent>
         </TabsRoot>
@@ -516,6 +522,61 @@ function StorageTable(props: { devices?: GetApiDevicesResponse }) {
         </For>
       </TableBody>
     </TableRoot>
+  )
+}
+
+function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
+  const colspan = 4;
+
+  const client = useQueryClient()
+
+  return (
+    <TableRoot>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Device</TableHead>
+          <TableHead>Switch Mode</TableHead>
+          <TableHead>Time Section</TableHead>
+          <TableHead></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <For each={props.devices}>
+          {item => {
+            const data = createQuery(() => q.devices.video_in_mode(item.uuid))
+            const sync = createMutation(() => ({
+              mutationFn: () => postApiDevicesByUuidVideoInModeSync({ uuid: item.uuid, requestBody: {} }),
+              onSuccess: () => client.invalidateQueries({
+                queryKey: q.devices.video_in_mode(item.uuid).queryKey,
+              })
+            }))
+
+            return (
+              <ErrorBoundary fallback={e =>
+                <TableRow>
+                  <DeviceNameCell device={item} />
+                  <ErrorTableCell colspan={colspan} error={e} />
+                </TableRow>
+              }>
+                <Suspense fallback={
+                  <TableRow>
+                    <DeviceNameCell device={item} />
+                    <LoadingTableCell colspan={colspan} />
+                  </TableRow>
+                }>
+                  <TableRow>
+                    <DeviceNameCell device={item} />
+                    <TableCell>{data.data?.switch_mode}</TableCell>
+                    <TableCell>{data.data?.time_section}</TableCell>
+                    <TableCell><Button size="xs" disabled={sync.isPending} onClick={() => sync.mutate()}>Sync</Button></TableCell>
+                  </TableRow>
+                </Suspense>
+              </ErrorBoundary>
+            )
+          }}
+        </For>
+      </TableBody>
+    </TableRoot >
   )
 }
 

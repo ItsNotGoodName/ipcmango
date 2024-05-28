@@ -1,4 +1,4 @@
-import { getApiDevices, getApiDevicesByUuidDetail, getApiDevicesByUuidLicenses, getApiDevicesByUuidSoftware, getApiDevicesByUuidStatus, getApiDevicesByUuidStorage, getApiDevicesByUuidUptime } from '~/client/services.gen';
+import { getApiDevices, getApiDevicesByUuidDetail, getApiDevicesByUuidLicenses, getApiDevicesByUuidSoftware, getApiDevicesByUuidStatus, getApiDevicesByUuidStorage, getApiDevicesByUuidUptime, getApiDevicesByUuidVideoInMode } from '~/client/services.gen';
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 
 export const q = createQueryKeyStore({
@@ -31,6 +31,10 @@ export const q = createQueryKeyStore({
     storage: (uuid: string) => ({
       queryKey: [uuid],
       queryFn: () => getApiDevicesByUuidStorage({ uuid }),
+    }),
+    video_in_mode: (uuid: string) => ({
+      queryKey: [uuid],
+      queryFn: () => getApiDevicesByUuidVideoInMode({ uuid }),
     }),
   }
 })

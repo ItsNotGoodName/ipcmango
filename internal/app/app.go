@@ -13,6 +13,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/ItsNotGoodName/ipcmanview/internal/build"
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/dahua"
@@ -54,7 +55,7 @@ func NewHumaConfig() huma.Config {
 	return huma.DefaultConfig("IPCManView API", "1.0.0")
 }
 
-func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) {
+func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahuaStore *dahua.Store) {
 	// Devices
 	huma.Register(api, huma.Operation{
 		Summary: "List devices",
@@ -166,6 +167,36 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*struct{}, error) {
 		return &struct{}{}, dahua.DeleteDevice(ctx, db, input.UUID)
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Get home page",
+		Method:  http.MethodGet,
+		Path:    "/api/pages/home",
+	}, func(ctx context.Context, input *struct{}) (*GetHomePageOutput, error) {
+		fileUsage, err := core.DirectorySize(afsDirectory)
+		if err != nil {
+			return nil, err
+		}
+
+		body := GetHomePage{
+			FileUsage: fileUsage,
+			Build:     build.Current,
+		}
+		err = db.GetContext(ctx, &body, `
+			SELECT 
+				(SELECT count(*) FROM dahua_devices) AS device_count,
+				(SELECT count(*) FROM dahua_events) AS event_count,
+				(SELECT count(*) FROM dahua_email_messages) AS email_count,
+				(SELECT count(*) FROM dahua_files) AS file_count,
+				(SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()) AS db_usage
+		`)
+		if err != nil {
+			return nil, err
+		}
+
+		return &GetHomePageOutput{
+			Body: body,
+		}, nil
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Get device coaxial caps",
@@ -533,7 +564,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		eventHub := bus.NewHub[bus.Event]().Register()
 
 		sse.Register(api, huma.Operation{
-			Summary: "Listen for events from devices",
+			Summary: "Listen for events",
 			Method:  http.MethodGet,
 			Path:    "/api/events",
 		}, map[string]any{
@@ -730,7 +761,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		})
 	}
 	huma.Register(api, huma.Operation{
-		Summary: "Get setting",
+		Summary: "Get settings",
 		Method:  http.MethodGet,
 		Path:    "/api/settings",
 	}, func(ctx context.Context, i *struct{}) (*SettingOutput, error) {
@@ -747,7 +778,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Update setting",
+		Summary: "Update settings",
 		Method:  http.MethodPut,
 		Path:    "/api/settings",
 	}, func(ctx context.Context, input *struct {
@@ -770,7 +801,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Default setting",
+		Summary: "Default settings",
 		Method:  http.MethodDelete,
 		Path:    "/api/settings",
 	}, func(ctx context.Context, i *struct{}) (*SettingOutput, error) {
@@ -1086,4 +1117,18 @@ type ListEndpointsOutput struct {
 
 type CreateEndpointsOutput struct {
 	Body Endpoint
+}
+
+type GetHomePageOutput struct {
+	Body GetHomePage
+}
+
+type GetHomePage struct {
+	Device_Count int         `json:"device_count"`
+	Event_Count  int         `json:"event_count"`
+	Email_Count  int         `json:"email_count"`
+	File_Count   int         `json:"file_count"`
+	DB_Usage     int         `json:"db_usage"`
+	FileUsage    int64       `json:"file_usage"`
+	Build        build.Build `json:"build"`
 }

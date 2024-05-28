@@ -114,7 +114,7 @@ func main() {
 			api := humachi.New(router, app.NewHumaConfig())
 
 			// Register handlers
-			app.Register(api, db, afs, dahuaStore)
+			app.Register(api, db, afs, afsPath, dahuaStore)
 
 			// Create the httpServer
 			httpServer := app.NewHTTPServer(&http.Server{
@@ -161,7 +161,7 @@ func main() {
 		Short: "Print the OpenAPI spec",
 		Run: func(cmd *cobra.Command, args []string) {
 			api := humachi.New(chi.NewMux(), app.NewHumaConfig())
-			app.Register(api, nil, nil, nil)
+			app.Register(api, nil, nil, "", nil)
 			b, _ := json.MarshalIndent(api.OpenAPI(), "", "  ")
 			fmt.Println(string(b))
 		},

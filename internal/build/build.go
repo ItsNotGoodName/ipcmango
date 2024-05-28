@@ -31,11 +31,11 @@ func init() {
 var Current Build
 
 type Build struct {
-	Commit     string
-	Version    string
-	Date       time.Time
-	RepoURL    string
-	CommitURL  string
-	LicenseURL string
-	ReleaseURL string
+	Commit     string    `json:"commit,omitempty"`
+	Version    string    `json:"version,omitempty"`
+	Date       time.Time `json:"date,omitempty"`
+	RepoURL    string    `json:"repo_url,omitempty"`
+	CommitURL  string    `json:"commit_url,omitempty"`
+	LicenseURL string    `json:"license_url,omitempty"`
+	ReleaseURL string    `json:"release_url,omitempty"`
 }
