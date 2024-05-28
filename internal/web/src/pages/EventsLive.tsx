@@ -12,14 +12,14 @@ import { BreadcrumbsItem, BreadcrumbsLink, BreadcrumbsRoot, BreadcrumbsSeparator
 import { createDate, createTimeAgo } from "@solid-primitives/date";
 import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger } from "~/ui/Tooltip";
 import { JSONTableRow } from "./Events";
-import { q } from "./data";
+import { api } from "./data";
 import { createQuery } from "@tanstack/solid-query";
 import { DeviceEventsOutput } from "~/client";
 
 export function EventsLive() {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const data = createQuery(() => q.devices.list)
+  const data = createQuery(() => api.devices.list)
 
   const dataOpen = () => Boolean(searchParams.data)
   const setDataOpen = (value: boolean) => setSearchParams({ data: value ? String(value) : "" })

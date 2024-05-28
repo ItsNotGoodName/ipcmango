@@ -9,7 +9,7 @@ import { RiBusinessMailLine, RiDeviceDatabase2Line, RiDeviceHardDrive2Line, RiDo
 import { formatDate, parseDate } from "~/lib/utils"
 import { linkVariants } from "~/ui/Link"
 import { createQuery } from "@tanstack/solid-query"
-import { getApiPagesHome } from "~/client"
+import { pages } from "./data"
 
 function StatParent(props: ParentProps) {
   return <div class="sm:max-w-48 flex-1">{props.children}</div>
@@ -28,10 +28,7 @@ function StatValue(props: ParentProps) {
 }
 
 export function Home() {
-  const data = createQuery(() => ({
-    queryKey: ["pages", "home"],
-    queryFn: getApiPagesHome,
-  }))
+  const data = createQuery(() => pages.home)
 
   return (
     <LayoutNormal>

@@ -16,7 +16,7 @@ import { ToggleButton } from "@kobalte/core/toggle-button"
 import Humanize from "humanize-plus"
 import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger } from "~/ui/Tooltip"
 import { createDate, createTimeAgo } from "@solid-primitives/date"
-import { q } from "./data"
+import { api } from "./data"
 
 
 function EmptyTableCell(props: { colspan: number }) {
@@ -52,7 +52,7 @@ function DeviceNameCell(props: { device: { uuid: string, name: string } }) {
 export function Devices() {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const data = createQuery(() => q.devices.list)
+  const data = createQuery(() => api.devices.list)
 
   return (
     <LayoutNormal>
@@ -168,7 +168,7 @@ function StatusTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => q.devices.status(item.uuid))
+            const data = createQuery(() => api.devices.status(item.uuid))
 
             return (
               <TableRow>
@@ -204,7 +204,7 @@ function UptimeTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => q.devices.uptime(item.uuid))
+            const data = createQuery(() => api.devices.uptime(item.uuid))
 
             return (
               <TableRow>
@@ -304,7 +304,7 @@ function DetailTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => q.devices.detail(item.uuid))
+            const data = createQuery(() => api.devices.detail(item.uuid))
 
             return (
               <TableRow>
@@ -357,7 +357,7 @@ function SoftwareVersionTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => q.devices.software(item.uuid))
+            const data = createQuery(() => api.devices.software(item.uuid))
 
             return (
               <TableRow>
@@ -402,7 +402,7 @@ function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => q.devices.licenses(item.uuid))
+            const data = createQuery(() => api.devices.licenses(item.uuid))
 
             return (
               <ErrorBoundary fallback={e =>
@@ -481,7 +481,7 @@ function StorageTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => q.devices.storage(item.uuid))
+            const data = createQuery(() => api.devices.storage(item.uuid))
 
             return (
               <ErrorBoundary fallback={e =>
@@ -543,11 +543,11 @@ function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => q.devices.video_in_mode(item.uuid))
+            const data = createQuery(() => api.devices.video_in_mode(item.uuid))
             const sync = createMutation(() => ({
               mutationFn: () => postApiDevicesByUuidVideoInModeSync({ uuid: item.uuid, requestBody: {} }),
               onSuccess: () => client.invalidateQueries({
-                queryKey: q.devices.video_in_mode(item.uuid).queryKey,
+                queryKey: api.devices.video_in_mode(item.uuid).queryKey,
               })
             }))
 
