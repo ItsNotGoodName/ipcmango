@@ -3,6 +3,7 @@ import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 import { lazy } from "solid-js"
 import { Route, Router } from "@solidjs/router";
 import { NotFound } from "./pages/404";
+import { Root } from "./Root";
 
 const Devices = lazy(() => import("~/pages/Devices"));
 import loadDevices from "~/pages/Devices.data";
@@ -17,7 +18,7 @@ function App() {
   provideTheme()
 
   return (
-    <Router explicitLinks>
+    <Router root={Root} explicitLinks>
       <Route path="/devices" component={Devices} load={loadDevices} />
       <Route path="*404" component={NotFound} />
     </Router >

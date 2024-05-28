@@ -51,7 +51,7 @@ func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.DahuaD
 }
 
 func NewHumaConfig() huma.Config {
-	return huma.DefaultConfig("My API", "1.0.0")
+	return huma.DefaultConfig("IPCManView API", "1.0.0")
 }
 
 func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) {
