@@ -7,8 +7,12 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
 }
 
-export function formatDate(value: Date | string): string {
-  return new Date(value).toLocaleString()
+export function formatDate(value: Date): string {
+  return value.toLocaleString()
+}
+
+export function parseDate(value: Date | string | undefined): Date {
+  return new Date(value || "")
 }
 
 type RowSelectionItem<T> = {

@@ -7,7 +7,8 @@
     "dev": "vite --host",
     "build": "tsc && vite build",
     "preview": "vite preview --host",
-    "generate-pwa-assets": "pwa-assets-generator --preset minimal-2023 public/favicon.svg"
+    "generate-pwa-assets": "pwa-assets-generator --preset minimal-2023 public/favicon.svg",
+    "generate-openapi-ts": "openapi-ts -i ../../docs/openapi.json -o src/client"
   },
   "dependencies": {
     "@kobalte/core": "^0.13.1",
@@ -23,6 +24,7 @@
     "solid-js": "^1.8.15"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "^0.46.3",
     "@kobalte/tailwindcss": "^0.9.0",
     "@tanstack/solid-query-devtools": "^5.38.0",
     "@types/humanize-plus": "^1.8.2",

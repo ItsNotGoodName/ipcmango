@@ -29,6 +29,16 @@ dev-proxy:
 dev-web:
 	cd internal/web && pnpm run dev
 
+# ---------- OpenAPI
+
+openapi: openapi-json openapi-web
+
+openapi-json:
+	go run ./cmd/ipcmanview openapi > ./docs/openapi.json
+
+openapi-web:
+	cd ./internal/web && pnpm run generate-openapi-ts
+
 # ---------- Tooling is only required for development
 
 tooling: tooling-air tooling-goose tooling-restish tooling-atlas

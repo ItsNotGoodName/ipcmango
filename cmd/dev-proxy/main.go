@@ -20,8 +20,9 @@ type Config struct {
 }
 
 type Server struct {
-	URL    string
-	Routes []string
+	URL      string
+	Wildcard []string
+	Path     []string
 }
 
 func main() {
@@ -29,12 +30,13 @@ func main() {
 		Address: ":3000",
 		Servers: []Server{
 			{
-				URL:    "http://127.0.0.1:8888",
-				Routes: []string{"/api"},
+				URL:      "http://127.0.0.1:8888",
+				Wildcard: []string{"/api"},
+				Path:     []string{"/docs", "/openapi.yaml", "/openapi.json"},
 			},
 			{
-				URL:    "http://127.0.0.1:5173",
-				Routes: []string{"/"},
+				URL:      "http://127.0.0.1:5173",
+				Wildcard: []string{"/"},
 			},
 		},
 	})
@@ -51,16 +53,20 @@ func start(cfg Config) {
 	for _, server := range cfg.Servers {
 		urL := core.Must2(url.Parse(server.URL))
 		func(urL *url.URL) {
-			for _, route := range server.Routes {
-				r.Mount(route, &httputil.ReverseProxy{
-					Rewrite: func(r *httputil.ProxyRequest) {
-						r.SetURL(urL)
-						r.SetXForwarded()
-					},
-					Transport: &http.Transport{
-						TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-					},
-				})
+			proxy := &httputil.ReverseProxy{
+				Rewrite: func(r *httputil.ProxyRequest) {
+					r.SetURL(urL)
+					r.SetXForwarded()
+				},
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				},
+			}
+			for _, route := range server.Wildcard {
+				r.Mount(route, proxy)
+			}
+			for _, static := range server.Path {
+				r.Handle(static, proxy)
 			}
 		}(urL)
 	}
