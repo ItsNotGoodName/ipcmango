@@ -4,7 +4,7 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/combobox
 // https://ui.shadcn.com/docs/components/combobox
-import { Combobox, ComboboxListboxProps, ComboboxRootProps } from "@kobalte/core/combobox";
+import { Combobox, ComboboxListboxProps } from "@kobalte/core/combobox";
 import { RiSystemCheckLine, RiSystemCloseLine, RiSystemSearchLine } from "solid-icons/ri";
 import { Accessor, ComponentProps, For, Show, mergeProps, splitProps } from "solid-js";
 import { cva } from "class-variance-authority";
@@ -25,7 +25,7 @@ export interface ComboboxControlState<T> {
 
 const tagVariants = cva("focus:ring-ring bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center rounded-sm border border-transparent px-1 py-0.5 text-xs font-normal transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2")
 
-export function ComboboxRoot<Option, OptGroup = never>(props: ComboboxRootProps<Option, OptGroup>) {
+export function ComboboxRoot<Option, OptGroup = never>(props: ComponentProps<typeof Combobox<Option, OptGroup>>) {
   return <Combobox placement="bottom-start" allowsEmptyCollection {...props} />
 }
 

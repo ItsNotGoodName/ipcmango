@@ -669,7 +669,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Path:    "/api/devices/{uuid}/video-in-mode/sync",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
-		Body DeviceVideoInModeSchedule
+		Body DeviceVideoInModeSync
 	}) (*DeviceVideoInModeOutput, error) {
 		device, err := useDevice(ctx, db, input.UUID)
 		if err != nil {
@@ -782,7 +782,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Method:  http.MethodPut,
 		Path:    "/api/settings",
 	}, func(ctx context.Context, input *struct {
-		Body UpdateSettingsInput
+		Body UpdateSettings
 	}) (*SettingOutput, error) {
 		settings, err := system.UpdateSettings(ctx, db, system.UpdateSettingsArgs{
 			Location:        input.Body.Location,
@@ -845,7 +845,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Method:  http.MethodPost,
 		Path:    "/api/endpoints",
 	}, func(ctx context.Context, input *struct {
-		Body CreateEndpointInput
+		Body CreateEndpoint
 	}) (*CreateEndpointsOutput, error) {
 		endpoint, err := system.CreateEndpoint(ctx, db, system.CreateEndpointArgs{
 			GoriseURL: input.Body.GoriseURL,
@@ -907,7 +907,7 @@ type Settings struct {
 	SyncVideoInMode bool           `json:"sync_video_in_mode"`
 }
 
-type UpdateSettingsInput struct {
+type UpdateSettings struct {
 	Location        types.Location `json:"location"`
 	Latitude        float64        `json:"latitude"`
 	Longitude       float64        `json:"longitude"`
@@ -939,7 +939,7 @@ type ListDevicesOutput struct {
 	Body []Device
 }
 
-type DeviceVideoInModeSchedule struct {
+type DeviceVideoInModeSync struct {
 	Location      *types.Location `json:"location,omitempty"`
 	Latitude      *float64        `json:"latitude,omitempty"`
 	Longitude     *float64        `json:"longitude,omitempty"`
@@ -990,7 +990,7 @@ type CreateDevice struct {
 	Username        string          `json:"username,omitempty"`
 	Password        string          `json:"password,omitempty"`
 	Location        *types.Location `json:"location,omitempty"`
-	Features        []dahua.Feature `json:"features,omitempty"`
+	Features        []dahua.Feature `json:"features,omitempty" enum:"camera"`
 	Email           *string         `json:"email,omitempty"`
 	Latitude        *float64        `json:"latitude,omitempty"`
 	Longitude       *float64        `json:"longitude,omitempty"`
@@ -1005,13 +1005,13 @@ type UpdateDevice struct {
 	Username        string          `json:"username"`
 	Password        *string         `json:"password,omitempty"`
 	Location        *types.Location `json:"location,omitempty"`
-	Features        []dahua.Feature `json:"features,omitempty"`
+	Features        []dahua.Feature `json:"features,omitempty" enum:"camera"`
 	Email           *string         `json:"email,omitempty"`
 	Latitude        *float64        `json:"latitude"`
 	Longitude       *float64        `json:"longitude"`
 	SunriseOffset   *types.Duration `json:"sunrise_offset,omitempty"`
 	SunsetOffset    *types.Duration `json:"sunset_offset,omitempty"`
-	SyncVideoInMode *bool           `json:"sync_video_in_mode"`
+	SyncVideoInMode *bool           `json:"sync_video_in_mode,omitempty"`
 }
 
 type CreateDeviceInput struct {
@@ -1107,7 +1107,7 @@ type DeviceEventsOutput struct {
 	CreatedAt  time.Time       `json:"created_at"`
 }
 
-type CreateEndpointInput struct {
+type CreateEndpoint struct {
 	GoriseURL string `json:"gorise_url"`
 }
 

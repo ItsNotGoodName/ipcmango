@@ -1,5 +1,5 @@
 import { A, useSearchParams } from "@solidjs/router"
-import { ErrorBoundary, For, Show, Suspense, createSignal, } from "solid-js"
+import { Accessor, ErrorBoundary, For, Show, Suspense, createMemo, createSignal, } from "solid-js"
 import { PageError } from "~/ui/Page"
 import { LayoutNormal } from "~/ui/Layout"
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "~/ui/Tabs"
@@ -17,6 +17,7 @@ import Humanize from "humanize-plus"
 import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger } from "~/ui/Tooltip"
 import { createDate, createTimeAgo } from "@solid-primitives/date"
 import { api } from "./data"
+import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox"
 
 
 function EmptyTableCell(props: { colspan: number }) {
@@ -54,10 +55,20 @@ export function Devices() {
 
   const data = createQuery(() => api.devices.list)
 
+  const filterDeviceUUIDs: Accessor<string[]> = createMemo(() => searchParams.device?.split('.') || [])
+  const setFilterDeviceUUIDs = (value: string[]) => setSearchParams({ device: value.join('.') })
+  const devices = () => filterDeviceUUIDs().length == 0 ? data.data : data.data?.filter(v => filterDeviceUUIDs().includes(v.uuid))
+
   return (
     <LayoutNormal>
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
         <h1>Devices</h1>
+        <div>
+          <DeviceFilterCombobox
+            deviceIDs={filterDeviceUUIDs()}
+            setDeviceIDs={setFilterDeviceUUIDs}
+          />
+        </div>
         <TabsRoot value={searchParams.tab || "device"} onChange={(value) => setSearchParams({ tab: value })}>
           <div class="flex flex-col gap-2">
             <div class="overflow-x-auto">
@@ -76,47 +87,47 @@ export function Devices() {
           </div>
           <TabsContent value="device">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <DeviceTable devices={data.data} />
+              <DeviceTable devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="status">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <StatusTable devices={data.data} />
+              <StatusTable devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="uptime">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <UptimeTable devices={data.data} />
+              <UptimeTable devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="snapshot">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <SnapshotGrid devices={data.data} />
+              <SnapshotGrid devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="detail">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <DetailTable devices={data.data} />
+              <DetailTable devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="software-version">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <SoftwareVersionTable devices={data.data} />
+              <SoftwareVersionTable devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="license">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <LicenseTable devices={data.data} />
+              <LicenseTable devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="storage">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <StorageTable devices={data.data} />
+              <StorageTable devices={devices()} />
             </Suspense>
           </TabsContent>
           <TabsContent value="videoinmode">
             <Suspense fallback={<Skeleton class="h-32" />}>
-              <VideoInMode devices={data.data} />
+              <VideoInMode devices={devices()} />
             </Suspense>
           </TabsContent>
         </TabsRoot>
@@ -141,7 +152,7 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
           {item => (
             <TableRow>
               <DeviceNameCell device={item} />
-              <TableCell><a class={linkVariants()} href={item.ip}>{item.ip}</a></TableCell>
+              <TableCell><a class={linkVariants()} href={'http://' + item.ip} target="_blank">{item.ip}</a></TableCell>
               <TableCell>{item.username}</TableCell>
               <TableCell>{formatDate(parseDate(item.created_at))}</TableCell>
             </TableRow>
@@ -546,9 +557,7 @@ function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
             const data = createQuery(() => api.devices.video_in_mode(item.uuid))
             const sync = createMutation(() => ({
               mutationFn: () => postApiDevicesByUuidVideoInModeSync({ uuid: item.uuid, requestBody: {} }),
-              onSuccess: () => client.invalidateQueries({
-                queryKey: api.devices.video_in_mode(item.uuid).queryKey,
-              })
+              onSuccess: (data) => client.setQueryData(api.devices.video_in_mode(item.uuid).queryKey, data)
             }))
 
             return (
