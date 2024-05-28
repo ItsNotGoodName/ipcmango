@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func useDevice(ctx context.Context, db *sqlx.DB, uuid string) (dahua.DahuaDevice, error) {
+func useDeviceByUUID(ctx context.Context, db *sqlx.DB, uuid string) (dahua.DahuaDevice, error) {
 	var device dahua.DahuaDevice
 	err := db.GetContext(ctx, &device, `
 		SELECT * FROM dahua_devices WHERE uuid = ?
@@ -90,7 +90,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -102,28 +102,59 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	huma.Register(api, huma.Operation{
 		Summary: "Create device",
 		Method:  http.MethodPost,
-		Path:    "/api/devices",
+		Path:    "/api/devices/create",
 	}, func(ctx context.Context, input *CreateDeviceInput) (*CreateDevicesOutput, error) {
-		device, err := dahua.CreateDevice(ctx, db, dahua.CreateDeviceArgs{
-			Name:            input.Body.Name,
-			IP:              input.Body.IP,
-			Username:        input.Body.Username,
-			Password:        input.Body.Password,
-			Location:        input.Body.Location,
-			Features:        types.NewSlice(input.Body.Features),
-			Email:           core.NullToSQLNull(input.Body.Email),
-			Latitude:        core.NullToSQLNull(input.Body.Latitude),
-			Longitude:       core.NullToSQLNull(input.Body.Longitude),
-			SunriseOffset:   input.Body.SunriseOffset,
-			SunsetOffset:    input.Body.SunsetOffset,
-			SyncVideoInMode: core.NullToSQLNull(input.Body.SyncVideoInMode),
-		})
+		deviceKey, err := dahua.CreateDevice(ctx, db, input.Body.Convert())
+		if err != nil {
+			return nil, err
+		}
+
+		var device dahua.DahuaDevice
+		err = db.GetContext(ctx, &device, `
+			SELECT * FROM dahua_devices WHERE id = ?
+		`, deviceKey.ID)
 		if err != nil {
 			return nil, err
 		}
 
 		return &CreateDevicesOutput{
 			Body: NewDevice(device),
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Put devices",
+		Method:  http.MethodPut,
+		Path:    "/api/devices",
+	}, func(ctx context.Context, input *PutDevicesInput) (*PutDevicesOutput, error) {
+		var args []dahua.CreateDeviceArgs
+		for _, arg := range input.Body {
+			args = append(args, arg.Convert())
+		}
+
+		_, err := dahua.PutDevices(ctx, db, args)
+		if err != nil {
+			return nil, err
+		}
+
+		rows, err := db.QueryxContext(ctx, `
+			SELECT * FROM dahua_devices
+		`)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		body := []Device{}
+		for rows.Next() {
+			var v dahua.DahuaDevice
+			if err := rows.StructScan(&v); err != nil {
+				return nil, err
+			}
+			body = append(body, NewDevice(v))
+		}
+
+		return &PutDevicesOutput{
+			Body: body,
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
@@ -206,7 +237,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
 	}) (*GetDeviceCoaxialCapsOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +264,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
 	}) (*GetDeviceCoaxialStatusOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -259,7 +290,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceDetailOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -285,7 +316,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceLicensesOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -312,7 +343,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
 	}) (*ListDevicePTZPresetsOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -338,7 +369,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceSoftwareOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -364,7 +395,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceStorageOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -390,7 +421,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceUsersOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -421,7 +452,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceActiveUsersOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -452,7 +483,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceGroupsOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -478,7 +509,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceUptimeOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -504,7 +535,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceStatusOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -535,7 +566,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Channel int    `query:"channel"`
 		Type    int    `query:"type"`
 	}) (*huma.StreamResponse, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -613,7 +644,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		// TODO: this should be path param wildcard but OpenAPI is stupid
 		Name string `query:"name" required:"true"`
 	}) (*huma.StreamResponse, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -644,7 +675,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*DeviceVideoInModeOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -671,7 +702,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		UUID string `path:"uuid" format:"uuid"`
 		Body DeviceVideoInModeSync
 	}) (*DeviceVideoInModeOutput, error) {
-		device, err := useDevice(ctx, db, input.UUID)
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
 		if err != nil {
 			return nil, err
 		}
@@ -703,7 +734,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	})
 	{
 		setDeviceCoaxialState := func(ctx context.Context, uuid string, channel int, typE coaxialcontrolio.Type, action string) error {
-			device, err := useDevice(ctx, db, uuid)
+			device, err := useDeviceByUUID(ctx, db, uuid)
 			if err != nil {
 				return err
 			}
@@ -1014,15 +1045,40 @@ type UpdateDevice struct {
 	SyncVideoInMode *bool           `json:"sync_video_in_mode,omitempty"`
 }
 
+func (i *CreateDevice) Resolve(ctx huma.Context) []error {
+	if i.Name == "" {
+		i.Name = i.IP
+	}
+	return nil
+}
+
+func (i *CreateDevice) Convert() dahua.CreateDeviceArgs {
+	return dahua.CreateDeviceArgs{
+		Name:            i.Name,
+		IP:              i.IP,
+		Username:        i.Username,
+		Password:        i.Password,
+		Location:        i.Location,
+		Features:        types.NewSlice(i.Features),
+		Email:           core.NullToSQLNull(i.Email),
+		Latitude:        core.NullToSQLNull(i.Latitude),
+		Longitude:       core.NullToSQLNull(i.Longitude),
+		SunriseOffset:   i.SunriseOffset,
+		SunsetOffset:    i.SunsetOffset,
+		SyncVideoInMode: core.NullToSQLNull(i.SyncVideoInMode),
+	}
+}
+
 type CreateDeviceInput struct {
 	Body CreateDevice
 }
 
-func (i *CreateDeviceInput) Resolve(ctx huma.Context) []error {
-	if i.Body.Name == "" {
-		i.Body.Name = i.Body.IP
-	}
-	return nil
+type PutDevicesInput struct {
+	Body []CreateDevice
+}
+
+type PutDevicesOutput struct {
+	Body []Device
 }
 
 type CreateDevicesOutput struct {

@@ -16,7 +16,7 @@ export type CreateDevice = {
      */
     readonly $schema?: string;
     email?: string;
-    features?: Array<(string)>;
+    features?: Array<('camera')>;
     ip?: string;
     latitude?: number;
     location?: string;
@@ -29,7 +29,7 @@ export type CreateDevice = {
     username?: string;
 };
 
-export type CreateEndpointInput = {
+export type CreateEndpoint = {
     /**
      * A URL to the JSON Schema for this object.
      */
@@ -201,7 +201,7 @@ export type DeviceVideoInMode = {
     time_section: string;
 };
 
-export type DeviceVideoInModeSchedule = {
+export type DeviceVideoInModeSync = {
     /**
      * A URL to the JSON Schema for this object.
      */
@@ -304,7 +304,7 @@ export type UpdateDevice = {
      */
     readonly $schema?: string;
     email?: string;
-    features?: Array<(string)>;
+    features?: Array<('camera')>;
     ip: string;
     latitude: number | null;
     location?: string;
@@ -313,11 +313,11 @@ export type UpdateDevice = {
     password?: string;
     sunrise_offset?: string;
     sunset_offset?: string;
-    sync_video_in_mode: boolean | null;
+    sync_video_in_mode?: boolean;
     username: string;
 };
 
-export type UpdateSettingsInput = {
+export type UpdateSettings = {
     /**
      * A URL to the JSON Schema for this object.
      */
@@ -332,11 +332,17 @@ export type UpdateSettingsInput = {
 
 export type GetApiDevicesResponse = Array<Device>;
 
-export type PostApiDevicesData = {
+export type PutApiDevicesData = {
+    requestBody: Array<CreateDevice>;
+};
+
+export type PutApiDevicesResponse = Array<Device>;
+
+export type PostApiDevicesCreateData = {
     requestBody: CreateDevice;
 };
 
-export type PostApiDevicesResponse = Device;
+export type PostApiDevicesCreateResponse = Device;
 
 export type DeleteApiDevicesByUuidData = {
     uuid: string;
@@ -470,7 +476,7 @@ export type GetApiDevicesByUuidVideoInModeData = {
 export type GetApiDevicesByUuidVideoInModeResponse = DeviceVideoInMode;
 
 export type PostApiDevicesByUuidVideoInModeSyncData = {
-    requestBody: DeviceVideoInModeSchedule;
+    requestBody: DeviceVideoInModeSync;
     uuid: string;
 };
 
@@ -479,7 +485,7 @@ export type PostApiDevicesByUuidVideoInModeSyncResponse = DeviceVideoInMode;
 export type GetApiEndpointsResponse = Array<Endpoint>;
 
 export type PostApiEndpointsData = {
-    requestBody: CreateEndpointInput;
+    requestBody: CreateEndpoint;
 };
 
 export type PostApiEndpointsResponse = Endpoint;
@@ -518,7 +524,7 @@ export type DeleteApiSettingsResponse = Settings;
 export type GetApiSettingsResponse = Settings;
 
 export type PutApiSettingsData = {
-    requestBody: UpdateSettingsInput;
+    requestBody: UpdateSettings;
 };
 
 export type PutApiSettingsResponse = Settings;
@@ -537,8 +543,23 @@ export type $OpenApiTs = {
                 default: ErrorModel;
             };
         };
+        put: {
+            req: PutApiDevicesData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<Device>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/devices/create': {
         post: {
-            req: PostApiDevicesData;
+            req: PostApiDevicesCreateData;
             res: {
                 /**
                  * OK

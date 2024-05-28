@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GetApiDevicesResponse, PostApiDevicesData, PostApiDevicesResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEndpointsResponse, PostApiEndpointsData, PostApiEndpointsResponse, DeleteApiEndpointsByUuidData, DeleteApiEndpointsByUuidResponse, GetApiEventsData, GetApiEventsResponse, GetApiPagesHomeResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse } from './types.gen';
+import type { GetApiDevicesResponse, PutApiDevicesData, PutApiDevicesResponse, PostApiDevicesCreateData, PostApiDevicesCreateResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEndpointsResponse, PostApiEndpointsData, PostApiEndpointsResponse, DeleteApiEndpointsByUuidData, DeleteApiEndpointsByUuidResponse, GetApiEventsData, GetApiEventsResponse, GetApiPagesHomeResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse } from './types.gen';
 
 /**
  * List devices
@@ -19,15 +19,32 @@ export const getApiDevices = (): CancelablePromise<GetApiDevicesResponse> => { r
 }); };
 
 /**
+ * Put devices
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns Device OK
+ * @throws ApiError
+ */
+export const putApiDevices = (data: PutApiDevicesData): CancelablePromise<PutApiDevicesResponse> => { return __request(OpenAPI, {
+    method: 'PUT',
+    url: '/api/devices',
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
  * Create device
  * @param data The data for the request.
  * @param data.requestBody
  * @returns Device OK
  * @throws ApiError
  */
-export const postApiDevices = (data: PostApiDevicesData): CancelablePromise<PostApiDevicesResponse> => { return __request(OpenAPI, {
+export const postApiDevicesCreate = (data: PostApiDevicesCreateData): CancelablePromise<PostApiDevicesCreateResponse> => { return __request(OpenAPI, {
     method: 'POST',
-    url: '/api/devices',
+    url: '/api/devices/create',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {

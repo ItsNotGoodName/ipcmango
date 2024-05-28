@@ -16,7 +16,7 @@ tasks:
   build-nightly:
     internal: true
     cmds:
-      - go generate ./...
+      - go generate -tags=static ./...
       - go mod tidy
       - GOOS=linux GOARCH=amd64       go build -tags=static -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_x86_64/{{.CMD_NAME}}       {{.PACKAGE}}
       - GOOS=linux GOARCH=arm GOARM=7 go build -tags=static -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_armv7/{{.CMD_NAME}}        {{.PACKAGE}}

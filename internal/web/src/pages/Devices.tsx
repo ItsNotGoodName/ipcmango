@@ -1,11 +1,11 @@
 import { A, useSearchParams } from "@solidjs/router"
-import { Accessor, ErrorBoundary, For, Show, Suspense, createMemo, createSignal, } from "solid-js"
+import { ErrorBoundary, For, Show, Suspense, createSignal, } from "solid-js"
 import { PageError } from "~/ui/Page"
 import { LayoutNormal } from "~/ui/Layout"
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "~/ui/Tabs"
 import { TableBody, TableCell, TableHead, TableHeader, TableRoot, TableRow } from "~/ui/Table"
 import { Skeleton } from "~/ui/Skeleton"
-import { createUptime, formatDate, parseDate, } from "~/lib/utils"
+import { createUptime, formatDate, parseDate, useQueryFilter, } from "~/lib/utils"
 import { linkVariants } from "~/ui/Link"
 import { createMutation, createQuery, useQueryClient } from "@tanstack/solid-query"
 import { GetApiDevicesResponse, postApiDevicesByUuidVideoInModeSync } from "~/client"
@@ -18,6 +18,7 @@ import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger } from "~/ui/
 import { createDate, createTimeAgo } from "@solid-primitives/date"
 import { api } from "./data"
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox"
+import { toast } from "~/ui/Toast"
 
 
 function EmptyTableCell(props: { colspan: number }) {
@@ -55,18 +56,17 @@ export function Devices() {
 
   const data = createQuery(() => api.devices.list)
 
-  const filterDeviceUUIDs: Accessor<string[]> = createMemo(() => searchParams.device?.split('.') || [])
-  const setFilterDeviceUUIDs = (value: string[]) => setSearchParams({ device: value.join('.') })
-  const devices = () => filterDeviceUUIDs().length == 0 ? data.data : data.data?.filter(v => filterDeviceUUIDs().includes(v.uuid))
+  const queryFilter = useQueryFilter("device")
+  const devices = () => queryFilter.values().length == 0 ? data.data : data.data?.filter(v => queryFilter.values().includes(v.uuid))
 
   return (
     <LayoutNormal>
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
         <h1>Devices</h1>
-        <div>
+        <div class="flex">
           <DeviceFilterCombobox
-            deviceIDs={filterDeviceUUIDs()}
-            setDeviceIDs={setFilterDeviceUUIDs}
+            deviceIDs={queryFilter.values()}
+            setDeviceIDs={queryFilter.setValues}
           />
         </div>
         <TabsRoot value={searchParams.tab || "device"} onChange={(value) => setSearchParams({ tab: value })}>
@@ -557,7 +557,8 @@ function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
             const data = createQuery(() => api.devices.video_in_mode(item.uuid))
             const sync = createMutation(() => ({
               mutationFn: () => postApiDevicesByUuidVideoInModeSync({ uuid: item.uuid, requestBody: {} }),
-              onSuccess: (data) => client.setQueryData(api.devices.video_in_mode(item.uuid).queryKey, data)
+              onSuccess: (data) => client.setQueryData(api.devices.video_in_mode(item.uuid).queryKey, data),
+              onError: (error) => toast.error(error.name, error.message)
             }))
 
             return (

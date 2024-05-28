@@ -3,6 +3,16 @@
 CREATE TABLE `settings` (`id` integer NULL DEFAULT 0, `location` text NOT NULL, `latitude` real NOT NULL, `longitude` real NOT NULL, `sunrise_offset` text NOT NULL, `sunset_offset` text NOT NULL, `sync_video_in_mode` bool NOT NULL, `updated_at` datetime NOT NULL);
 -- create index "settings_id" to table: "settings"
 CREATE UNIQUE INDEX `settings_id` ON `settings` (`id`);
+-- create "users" table
+CREATE TABLE `users` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `email` text NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `disabled_at` datetime NULL);
+-- create index "users_email" to table: "users"
+CREATE UNIQUE INDEX `users_email` ON `users` (`email`);
+-- create index "users_username" to table: "users"
+CREATE UNIQUE INDEX `users_username` ON `users` (`username`);
+-- create "user_sessions" table
+CREATE TABLE `user_sessions` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `user_agent` text NOT NULL, `ip` text NOT NULL, `last_ip` text NOT NULL, `last_used_at` datetime NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `expired_at` datetime NOT NULL, `user_id` integer NOT NULL, `session` text NOT NULL, CONSTRAINT `0` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+-- create "tokens" table
+CREATE TABLE `tokens` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `user_agent` text NOT NULL, `ip` text NOT NULL, `last_ip` text NOT NULL, `last_used_at` datetime NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `expired_at` datetime NOT NULL, `token` text NOT NULL);
 -- create "dahua_devices" table
 CREATE TABLE `dahua_devices` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `seed` integer NOT NULL, `name` text NOT NULL, `ip` text NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `email` text NULL, `features` json NOT NULL, `location` text NULL, `latitude` real NULL, `longitude` real NULL, `sunrise_offset` text NULL, `sunset_offset` text NULL, `sync_video_in_mode` bool NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
 -- create index "dahua_devices_seed" to table: "dahua_devices"
@@ -43,12 +53,12 @@ CREATE UNIQUE INDEX `dahua_storage_destinations_name` ON `dahua_storage_destinat
 CREATE TABLE `dahua_email_messages` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `device_id` integer NOT NULL, `date` datetime NOT NULL, `from` text NOT NULL, `to` json NOT NULL, `subject` text NOT NULL, `text` text NOT NULL, `alarm_event` text NOT NULL, `alarm_input_channel` integer NOT NULL, `alarm_name` text NOT NULL, `created_at` datetime NOT NULL, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
 -- create "dahua_email_attachments" table
 CREATE TABLE `dahua_email_attachments` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `message_id` integer NULL, `file_name` text NOT NULL, `size` integer NOT NULL, CONSTRAINT `0` FOREIGN KEY (`message_id`) REFERENCES `dahua_email_messages` (`id`) ON UPDATE CASCADE ON DELETE SET NULL);
--- create "endpoints" table
-CREATE TABLE `endpoints` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `gorise_url` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
+-- create "dahua_email_endpoints" table
+CREATE TABLE `dahua_email_endpoints` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `expression` text NOT NULL, `title_template` text NOT NULL, `body_template` text NOT NULL, `urls` json NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
 
 -- +goose Down
--- reverse: create "endpoints" table
-DROP TABLE `endpoints`;
+-- reverse: create "dahua_email_endpoints" table
+DROP TABLE `dahua_email_endpoints`;
 -- reverse: create "dahua_email_attachments" table
 DROP TABLE `dahua_email_attachments`;
 -- reverse: create "dahua_email_messages" table
@@ -89,6 +99,16 @@ DROP INDEX `dahua_devices_name`;
 DROP INDEX `dahua_devices_seed`;
 -- reverse: create "dahua_devices" table
 DROP TABLE `dahua_devices`;
+-- reverse: create "tokens" table
+DROP TABLE `tokens`;
+-- reverse: create "user_sessions" table
+DROP TABLE `user_sessions`;
+-- reverse: create index "users_username" to table: "users"
+DROP INDEX `users_username`;
+-- reverse: create index "users_email" to table: "users"
+DROP INDEX `users_email`;
+-- reverse: create "users" table
+DROP TABLE `users`;
 -- reverse: create index "settings_id" to table: "settings"
 DROP INDEX `settings_id`;
 -- reverse: create "settings" table

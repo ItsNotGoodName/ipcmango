@@ -46,6 +46,9 @@
           },
           "features": {
             "items": {
+              "enum": [
+                "camera"
+              ],
               "type": "string"
             },
             "type": "array"
@@ -95,13 +98,13 @@
         },
         "type": "object"
       },
-      "CreateEndpointInput": {
+      "CreateEndpoint": {
         "additionalProperties": false,
         "properties": {
           "$schema": {
             "description": "A URL to the JSON Schema for this object.",
             "examples": [
-              "https://example.com/schemas/CreateEndpointInput.json"
+              "https://example.com/schemas/CreateEndpoint.json"
             ],
             "format": "uri",
             "readOnly": true,
@@ -705,13 +708,13 @@
         ],
         "type": "object"
       },
-      "DeviceVideoInModeSchedule": {
+      "DeviceVideoInModeSync": {
         "additionalProperties": false,
         "properties": {
           "$schema": {
             "description": "A URL to the JSON Schema for this object.",
             "examples": [
-              "https://example.com/schemas/DeviceVideoInModeSchedule.json"
+              "https://example.com/schemas/DeviceVideoInModeSync.json"
             ],
             "format": "uri",
             "readOnly": true,
@@ -984,6 +987,9 @@
           },
           "features": {
             "items": {
+              "enum": [
+                "camera"
+              ],
               "type": "string"
             },
             "type": "array"
@@ -1031,10 +1037,7 @@
             "type": "string"
           },
           "sync_video_in_mode": {
-            "type": [
-              "boolean",
-              "null"
-            ]
+            "type": "boolean"
           },
           "username": {
             "type": "string"
@@ -1045,18 +1048,17 @@
           "ip",
           "username",
           "latitude",
-          "longitude",
-          "sync_video_in_mode"
+          "longitude"
         ],
         "type": "object"
       },
-      "UpdateSettingsInput": {
+      "UpdateSettings": {
         "additionalProperties": false,
         "properties": {
           "$schema": {
             "description": "A URL to the JSON Schema for this object.",
             "examples": [
-              "https://example.com/schemas/UpdateSettingsInput.json"
+              "https://example.com/schemas/UpdateSettings.json"
             ],
             "format": "uri",
             "readOnly": true,
@@ -1139,6 +1141,49 @@
         },
         "summary": "List devices"
       },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/CreateDevice"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Device"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Put devices"
+      }
+    },
+    "/api/devices/create": {
       "post": {
         "requestBody": {
           "content": {
@@ -2046,7 +2091,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeviceVideoInModeSchedule"
+                "$ref": "#/components/schemas/DeviceVideoInModeSync"
               }
             }
           },
@@ -2111,7 +2156,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateEndpointInput"
+                "$ref": "#/components/schemas/CreateEndpoint"
               }
             }
           },
@@ -2338,7 +2383,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateSettingsInput"
+                "$ref": "#/components/schemas/UpdateSettings"
               }
             }
           },

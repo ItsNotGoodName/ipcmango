@@ -44,6 +44,7 @@ export const $CreateDevice = {
         },
         features: {
             items: {
+                enum: ['camera'],
                 type: 'string'
             },
             type: 'array'
@@ -88,12 +89,12 @@ export const $CreateDevice = {
     type: 'object'
 } as const;
 
-export const $CreateEndpointInput = {
+export const $CreateEndpoint = {
     additionalProperties: false,
     properties: {
         '$schema': {
             description: 'A URL to the JSON Schema for this object.',
-            examples: ['https://example.com/schemas/CreateEndpointInput.json'],
+            examples: ['https://example.com/schemas/CreateEndpoint.json'],
             format: 'uri',
             readOnly: true,
             type: 'string'
@@ -577,12 +578,12 @@ export const $DeviceVideoInMode = {
     type: 'object'
 } as const;
 
-export const $DeviceVideoInModeSchedule = {
+export const $DeviceVideoInModeSync = {
     additionalProperties: false,
     properties: {
         '$schema': {
             description: 'A URL to the JSON Schema for this object.',
-            examples: ['https://example.com/schemas/DeviceVideoInModeSchedule.json'],
+            examples: ['https://example.com/schemas/DeviceVideoInModeSync.json'],
             format: 'uri',
             readOnly: true,
             type: 'string'
@@ -807,6 +808,7 @@ export const $UpdateDevice = {
         },
         features: {
             items: {
+                enum: ['camera'],
                 type: 'string'
             },
             type: 'array'
@@ -842,22 +844,22 @@ export const $UpdateDevice = {
             type: 'string'
         },
         sync_video_in_mode: {
-            type: ['boolean', 'null']
+            type: 'boolean'
         },
         username: {
             type: 'string'
         }
     },
-    required: ['name', 'ip', 'username', 'latitude', 'longitude', 'sync_video_in_mode'],
+    required: ['name', 'ip', 'username', 'latitude', 'longitude'],
     type: 'object'
 } as const;
 
-export const $UpdateSettingsInput = {
+export const $UpdateSettings = {
     additionalProperties: false,
     properties: {
         '$schema': {
             description: 'A URL to the JSON Schema for this object.',
-            examples: ['https://example.com/schemas/UpdateSettingsInput.json'],
+            examples: ['https://example.com/schemas/UpdateSettings.json'],
             format: 'uri',
             readOnly: true,
             type: 'string'

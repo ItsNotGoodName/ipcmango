@@ -2,6 +2,7 @@ import { Accessor, Setter, batch, createEffect, createMemo, createSignal, onClea
 import { type ClassValue, clsx } from "clsx"
 import { createStore } from "solid-js/store";
 import { createDateNow, createTimeDifference } from "@solid-primitives/date";
+import { useSearchParams } from "@solidjs/router";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
@@ -132,4 +133,16 @@ export function createUptime(date: Accessor<Date>) {
       seconds,
     }
   })
+}
+
+export function useQueryFilter(key: string) {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const values: Accessor<string[]> = createMemo(() => searchParams[key]?.split('.') || [])
+  const setValues = (value: string[]) => setSearchParams({ [key]: value.join('.') })
+
+  return {
+    values,
+    setValues
+  }
 }

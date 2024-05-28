@@ -28,13 +28,26 @@ type CreateDeviceArgs struct {
 	SyncVideoInMode sql.Null[bool]
 }
 
-func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (DahuaDevice, error) {
+func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (core.Key, error) {
+	deviceKey, err := createDevice(ctx, db, args)
+	if err != nil {
+		return deviceKey, err
+	}
+
+	bus.Publish(bus.DeviceCreated{
+		DeviceKey: deviceKey,
+	})
+
+	return deviceKey, nil
+}
+
+func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDeviceArgs) (core.Key, error) {
 	uuid := uuid.NewString()
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
 
-	var device DahuaDevice
-	err := db.GetContext(ctx, &device, `
+	var deviceKey core.Key
+	err := sqlx.GetContext(ctx, db, &deviceKey, `
 		WITH RECURSIVE generate_series(value) AS (
 			SELECT 1
 			UNION ALL
@@ -59,7 +72,7 @@ func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (Dahu
 			sync_video_in_mode
 		) 
 		VALUES ((SELECT value FROM generate_series WHERE value NOT IN (SELECT seed from dahua_devices) LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
-		RETURNING *;
+		RETURNING id, uuid;
 	`,
 		uuid,
 		args.Name,
@@ -78,14 +91,53 @@ func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (Dahu
 		args.SyncVideoInMode,
 	)
 	if err != nil {
-		return device, err
+		return deviceKey, err
 	}
 
-	bus.Publish(bus.DeviceCreated{
-		DeviceKey: device.Key,
-	})
+	return deviceKey, nil
+}
 
-	return device, nil
+func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]core.Key, error) {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var deletedKeys []core.Key
+	err = db.SelectContext(ctx, &deletedKeys, `
+		DELETE FROM dahua_devices RETURNING id, uuid
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	var keys []core.Key
+	for _, arg := range args {
+		key, err := createDevice(ctx, tx, arg)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	for _, deletedKey := range deletedKeys {
+		bus.Publish(bus.DeviceDeleted{
+			DeviceKey: deletedKey,
+		})
+	}
+
+	for _, key := range keys {
+		bus.Publish(bus.DeviceCreated{
+			DeviceKey: key,
+		})
+	}
+
+	return keys, nil
 }
 
 type UpdateDeviceArgs struct {

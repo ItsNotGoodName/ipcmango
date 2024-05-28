@@ -10,6 +10,51 @@ CREATE TABLE settings (
 );
 
 ------------
+-- Auth
+------------
+CREATE TABLE users (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  uuid TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  disabled_at DATETIME
+);
+
+CREATE TABLE user_sessions (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  uuid TEXT NOT NULL,
+  user_agent TEXT NOT NULL,
+  ip TEXT NOT NULL,
+  last_ip TEXT NOT NULL,
+  last_used_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  expired_at DATETIME NOT NULL,
+
+  user_id INTEGER NOT NULL,
+  session TEXT NOT NULL,
+
+  FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE tokens (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  uuid TEXT NOT NULL,
+  user_agent TEXT NOT NULL,
+  ip TEXT NOT NULL,
+  last_ip TEXT NOT NULL,
+  last_used_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  expired_at DATETIME NOT NULL,
+
+  token TEXT NOT NULL
+);
+
+------------
 -- Dahua
 ------------
 CREATE TABLE dahua_devices (
@@ -144,10 +189,13 @@ CREATE TABLE dahua_email_attachments (
   FOREIGN KEY (message_id) REFERENCES dahua_email_messages (id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE TABLE endpoints (
+CREATE TABLE dahua_email_endpoints (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   uuid TEXT NOT NULL,
-  gorise_url TEXT NOT NULL,
+  expression TEXT NOT NULL,
+  title_template TEXT NOT NULL,
+  body_template TEXT NOT NULL,
+  urls JSON NOT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL
 );
