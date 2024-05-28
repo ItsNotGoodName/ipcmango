@@ -533,9 +533,9 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, dahuaStore *dahua.Store) 
 		eventHub := bus.NewHub[bus.Event]().Register()
 
 		sse.Register(api, huma.Operation{
-			Summary: "Listen for device events",
+			Summary: "Listen for events from devices",
 			Method:  http.MethodGet,
-			Path:    "/api/device/events",
+			Path:    "/api/events",
 		}, map[string]any{
 			"message": DeviceEventsOutput{},
 		}, func(ctx context.Context, input *struct {

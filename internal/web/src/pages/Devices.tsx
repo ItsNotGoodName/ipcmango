@@ -8,9 +8,7 @@ import { Skeleton } from "~/ui/Skeleton"
 import { createUptime, formatDate, parseDate, } from "~/lib/utils"
 import { linkVariants } from "~/ui/Link"
 import { createQuery } from "@tanstack/solid-query"
-import { getApiDevices, getApiDevicesByUuidDetail, getApiDevicesByUuidLicenses, getApiDevicesByUuidSoftware, getApiDevicesByUuidStatus, getApiDevicesByUuidStorage, getApiDevicesByUuidUptime } from '~/client/services.gen';
 import { GetApiDevicesResponse } from "~/client"
-import { createQueryKeyStore } from "@lukemorales/query-key-factory"
 import { Button } from "~/ui/Button"
 import { RiMediaImageLine, RiSystemRefreshLine } from "solid-icons/ri"
 import { Image } from "@kobalte/core/image"
@@ -18,40 +16,8 @@ import { ToggleButton } from "@kobalte/core/toggle-button"
 import Humanize from "humanize-plus"
 import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger } from "~/ui/Tooltip"
 import { createDate, createTimeAgo } from "@solid-primitives/date"
+import { q } from "./data"
 
-const q = createQueryKeyStore({
-  devices: {
-    list: {
-      queryKey: null,
-      queryFn: getApiDevices,
-      throwOnError: true,
-    },
-    status: (uuid: string) => ({
-      queryKey: [uuid],
-      queryFn: () => getApiDevicesByUuidStatus({ uuid }),
-    }),
-    uptime: (uuid: string) => ({
-      queryKey: [uuid],
-      queryFn: () => getApiDevicesByUuidUptime({ uuid }),
-    }),
-    detail: (uuid: string) => ({
-      queryKey: [uuid],
-      queryFn: () => getApiDevicesByUuidDetail({ uuid }),
-    }),
-    software: (uuid: string) => ({
-      queryKey: [uuid],
-      queryFn: () => getApiDevicesByUuidSoftware({ uuid }),
-    }),
-    licenses: (uuid: string) => ({
-      queryKey: [uuid],
-      queryFn: () => getApiDevicesByUuidLicenses({ uuid }),
-    }),
-    storage: (uuid: string) => ({
-      queryKey: [uuid],
-      queryFn: () => getApiDevicesByUuidStorage({ uuid }),
-    }),
-  }
-})
 
 function EmptyTableCell(props: { colspan: number }) {
   return <TableCell colspan={props.colspan}>N/A</TableCell>

@@ -306,27 +306,6 @@ export type UpdateSettingsInput = {
     sync_video_in_mode: boolean;
 };
 
-export type GetApiDeviceEventsData = {
-    codes?: Array<(string)>;
-    deviceUuids?: Array<(string)>;
-};
-
-export type GetApiDeviceEventsResponse = Array<({
-    data: DeviceEventsOutput;
-    /**
-     * The event name.
-     */
-    event?: "message";
-    /**
-     * The event ID.
-     */
-    id?: number;
-    /**
-     * The retry time in milliseconds.
-     */
-    retry?: number;
-})>;
-
 export type GetApiDevicesResponse = Array<Device>;
 
 export type PostApiDevicesData = {
@@ -487,25 +466,12 @@ export type DeleteApiEndpointsByUuidData = {
 
 export type DeleteApiEndpointsByUuidResponse = void;
 
-export type DeleteApiSettingsResponse = Settings;
-
-export type GetApiSettingsResponse = Settings;
-
-export type PutApiSettingsData = {
-    requestBody: UpdateSettingsInput;
+export type GetApiEventsData = {
+    codes?: Array<(string)>;
+    deviceUuids?: Array<(string)>;
 };
 
-export type PutApiSettingsResponse = Settings;
-
-export type $OpenApiTs = {
-    '/api/device/events': {
-        get: {
-            req: GetApiDeviceEventsData;
-            res: {
-                /**
-                 * OK
-                 */
-                200: Array<({
+export type GetApiEventsResponse = Array<({
     data: DeviceEventsOutput;
     /**
      * The event name.
@@ -520,13 +486,18 @@ export type $OpenApiTs = {
      */
     retry?: number;
 })>;
-                /**
-                 * Error
-                 */
-                default: ErrorModel;
-            };
-        };
-    };
+
+export type DeleteApiSettingsResponse = Settings;
+
+export type GetApiSettingsResponse = Settings;
+
+export type PutApiSettingsData = {
+    requestBody: UpdateSettingsInput;
+};
+
+export type PutApiSettingsResponse = Settings;
+
+export type $OpenApiTs = {
     '/api/devices': {
         get: {
             res: {
@@ -900,6 +871,35 @@ export type $OpenApiTs = {
                  * No Content
                  */
                 204: void;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/events': {
+        get: {
+            req: GetApiEventsData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<({
+    data: DeviceEventsOutput;
+    /**
+     * The event name.
+     */
+    event?: "message";
+    /**
+     * The event ID.
+     */
+    id?: number;
+    /**
+     * The retry time in milliseconds.
+     */
+    retry?: number;
+})>;
                 /**
                  * Error
                  */

@@ -2,6 +2,7 @@
 import { render } from 'solid-js/web'
 
 import "./styles/index.css";
+import "./styles/hljs.css";
 import App from './App'
 import { QueryClient, QueryClientProvider } from '@tanstack/solid-query';
 import { SolidQueryDevtools } from '@tanstack/solid-query-devtools'

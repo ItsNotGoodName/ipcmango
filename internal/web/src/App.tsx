@@ -7,6 +7,8 @@ import { Root } from "./Root";
 
 const Devices = lazy(() => import("~/pages/Devices"));
 import loadDevices from "~/pages/Devices.data";
+const EventsLive = lazy(() => import("~/pages/EventsLive"));
+import loadEventsLive from "~/pages/EventsLive.data";
 
 export const queries = createQueryKeyStore({
   github: {
@@ -20,6 +22,7 @@ function App() {
   return (
     <Router root={Root} explicitLinks>
       <Route path="/devices" component={Devices} load={loadDevices} />
+      <Route path="/events/live" component={EventsLive} load={loadEventsLive} />
       <Route path="*404" component={NotFound} />
     </Router >
   )
