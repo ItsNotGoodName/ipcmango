@@ -864,7 +864,13 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 			if err := rows.StructScan(&v); err != nil {
 				return nil, err
 			}
-			body = append(body, NewEmailEndpoint(v))
+
+			deviceUUIDs, err := dahua.GetEmailDeviceUUIDs(ctx, db, v.Key)
+			if err != nil {
+				return nil, err
+			}
+
+			body = append(body, NewEmailEndpoint(v, deviceUUIDs))
 		}
 
 		return &ListEmailEndpointsOutput{
@@ -885,7 +891,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 			BodyTemplate:  input.Body.BodyTemplate,
 			Attachments:   input.Body.Attachments,
 			URLs:          types.NewSlice(input.Body.URLs),
-			DeviceUUIds:   input.Body.DeviceUUIDs,
+			DeviceUUIDs:   input.Body.DeviceUUIDs,
 		})
 		if err != nil {
 			return nil, err
@@ -899,8 +905,13 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 			return nil, err
 		}
 
+		deviceUUIDs, err := dahua.GetEmailDeviceUUIDs(ctx, db, endpoint.Key)
+		if err != nil {
+			return nil, err
+		}
+
 		return &CreateEmailEndpointOutput{
-			Body: NewEmailEndpoint(endpoint),
+			Body: NewEmailEndpoint(endpoint, deviceUUIDs),
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
@@ -914,9 +925,11 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	})
 }
 
-func NewEmailEndpoint(v dahua.EmailEndpoint) EmailEndpoint {
+func NewEmailEndpoint(v dahua.EmailEndpoint, deviceUUIDs []string) EmailEndpoint {
 	return EmailEndpoint{
 		UUID:          v.UUID,
+		Global:        v.Global,
+		DeviceUUIDs:   deviceUUIDs,
 		Expression:    v.Expression,
 		URLs:          v.URLs.V,
 		TitleTemplate: v.Title_Template,
@@ -929,6 +942,8 @@ func NewEmailEndpoint(v dahua.EmailEndpoint) EmailEndpoint {
 
 type EmailEndpoint struct {
 	UUID          string    `json:"uuid"`
+	Global        bool      `json:"global"`
+	DeviceUUIDs   []string  `json:"device_uuids"`
 	Expression    string    `json:"expression"`
 	URLs          []string  `json:"urls"`
 	TitleTemplate string    `json:"title_template"`

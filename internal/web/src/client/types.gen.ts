@@ -227,7 +227,9 @@ export type EmailEndpoint = {
     attachments: boolean;
     body_template: string;
     created_at: string;
+    device_uuids: Array<(string)>;
     expression: string;
+    global: boolean;
     title_template: string;
     updated_at: string;
     urls: Array<(string)>;

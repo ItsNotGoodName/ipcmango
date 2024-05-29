@@ -797,8 +797,17 @@
             "format": "date-time",
             "type": "string"
           },
+          "device_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "expression": {
             "type": "string"
+          },
+          "global": {
+            "type": "boolean"
           },
           "title_template": {
             "type": "string"
@@ -819,6 +828,8 @@
         },
         "required": [
           "uuid",
+          "global",
+          "device_uuids",
           "expression",
           "urls",
           "title_template",

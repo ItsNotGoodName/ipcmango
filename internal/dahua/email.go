@@ -19,7 +19,6 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/gorise"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/k0kubun/pp/v3"
 	"github.com/spf13/afero"
 )
 
@@ -35,6 +34,14 @@ type EmailEndpoint struct {
 	Updated_At     types.Time
 }
 
+func GetEmailDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey core.Key) ([]string, error) {
+	var deviceUUIDs []string
+	err := db.SelectContext(ctx, &deviceUUIDs, `
+		SELECT d.uuid FROM dahua_devices_to_email_endpoints AS t LEFT JOIN dahua_devices AS d ON t.device_id = d.id WHERE t.email_endpoint_id = ?;
+	`, endpointKey.ID)
+	return deviceUUIDs, err
+}
+
 type CreateEmailEndpointsArgs struct {
 	Global        bool
 	Expression    string
@@ -42,7 +49,7 @@ type CreateEmailEndpointsArgs struct {
 	BodyTemplate  string
 	Attachments   bool
 	URLs          types.Slice[string]
-	DeviceUUIds   []string
+	DeviceUUIDs   []string
 }
 
 func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpointsArgs) (core.Key, error) {
@@ -93,18 +100,15 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 		return core.Key{}, err
 	}
 
-	_, err = tx.ExecContext(ctx, `
-		DELETE FROM dahua_devices_to_email_endpoints WHERE email_endpoint_id = ?
-	`, key.ID)
-	if err != nil {
-		return core.Key{}, err
-	}
-
-	_, err = tx.ExecContext(ctx, `
-		INSERT INTO dahua_devices_to_email_endpoints (device_id, email_endpoint_id) SELECT id, ? FROM dahua_devices
-	`, key.ID)
-	if err != nil {
-		return core.Key{}, err
+	if len(args.DeviceUUIDs) != 0 {
+		query, queryArgs, err := sqlx.In(`
+			INSERT INTO dahua_devices_to_email_endpoints (device_id, email_endpoint_id)
+			SELECT id, ? FROM dahua_devices WHERE uuid IN (?)
+		`, key.ID, args.DeviceUUIDs)
+		_, err = tx.ExecContext(ctx, db.Rebind(query), queryArgs...)
+		if err != nil {
+			return core.Key{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -347,8 +351,6 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 	if err != nil {
 		return err
 	}
-
-	pp.Println(endpoints)
 
 	var attachments []EmailAttachment
 	err = sqlx.SelectContext(ctx, db, &attachments, `

@@ -658,8 +658,17 @@ export const $EmailEndpoint = {
             format: 'date-time',
             type: 'string'
         },
+        device_uuids: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        },
         expression: {
             type: 'string'
+        },
+        global: {
+            type: 'boolean'
         },
         title_template: {
             type: 'string'
@@ -678,7 +687,7 @@ export const $EmailEndpoint = {
             type: 'string'
         }
     },
-    required: ['uuid', 'expression', 'urls', 'title_template', 'body_template', 'attachments', 'created_at', 'updated_at'],
+    required: ['uuid', 'global', 'device_uuids', 'expression', 'urls', 'title_template', 'body_template', 'attachments', 'created_at', 'updated_at'],
     type: 'object'
 } as const;
 
