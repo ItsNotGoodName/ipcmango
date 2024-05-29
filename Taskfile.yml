@@ -16,13 +16,13 @@ tasks:
   build-nightly:
     internal: true
     cmds:
-      - go generate -tags=static ./...
+      - go generate -tags={{.BUILD_TAGS}} ./...
       - go mod tidy
-      - GOOS=linux GOARCH=amd64       go build -tags=static -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_x86_64/{{.CMD_NAME}}       {{.PACKAGE}}
-      - GOOS=linux GOARCH=arm GOARM=7 go build -tags=static -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_armv7/{{.CMD_NAME}}        {{.PACKAGE}}
-      - GOOS=linux GOARCH=arm64       go build -tags=static -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_arm64/{{.CMD_NAME}}        {{.PACKAGE}}
-      - GOOS=darwin GOARCH=arm64      go build -tags=static -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Darwin_arm64/{{.CMD_NAME}}       {{.PACKAGE}}
-      - GOOS=windows GOARCH=amd64     go build -tags=static -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Windows_x86_64/{{.CMD_NAME}}.exe {{.PACKAGE}}
+      - GOOS=linux GOARCH=amd64       go build -tags={{.BUILD_TAGS}} -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_x86_64/{{.CMD_NAME}}       {{.PACKAGE}}
+      - GOOS=linux GOARCH=arm GOARM=7 go build -tags={{.BUILD_TAGS}} -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_armv7/{{.CMD_NAME}}        {{.PACKAGE}}
+      - GOOS=linux GOARCH=arm64       go build -tags={{.BUILD_TAGS}} -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Linux_arm64/{{.CMD_NAME}}        {{.PACKAGE}}
+      - GOOS=darwin GOARCH=arm64      go build -tags={{.BUILD_TAGS}} -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Darwin_arm64/{{.CMD_NAME}}       {{.PACKAGE}}
+      - GOOS=windows GOARCH=amd64     go build -tags={{.BUILD_TAGS}} -ldflags="{{.LDFLAGS}}" -o ./dist/{{.CMD_NAME}}_Windows_x86_64/{{.CMD_NAME}}.exe {{.PACKAGE}}
       - mkdir -p ./dist/linux     && ln -rsf ./dist/ipcmanview_Linux_x86_64 ./dist/linux/amd64
       - mkdir -p ./dist/linux/arm && ln -rsf ./dist/ipcmanview_Linux_armv7  ./dist/linux/arm/v7
       - mkdir -p ./dist/linux     && ln -rsf ./dist/ipcmanview_Linux_arm64  ./dist/linux/arm64
@@ -35,6 +35,7 @@ tasks:
       BUILD_COMMIT:
         sh: git rev-parse HEAD
       BUILD_REPO_URL: "https://{{.PACKAGE_NAME}}"
+      BUILD_TAGS: static
 
       LDFLAGS: -s -w -X {{.BUILD_PACKAGE_NAME}}.version={{.BUILD_VERSION}} -X {{.BUILD_PACKAGE_NAME}}.commit={{.BUILD_COMMIT}} -X {{.BUILD_PACKAGE_NAME}}.date={{.BUILD_DATE}} -X {{.BUILD_PACKAGE_NAME}}.repoURL={{.BUILD_REPO_URL}}
       PACKAGE: "{{.PACKAGE_NAME}}/cmd/{{.CMD_NAME}}"

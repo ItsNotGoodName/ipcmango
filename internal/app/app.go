@@ -568,7 +568,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		}, nil
 	})
 	{
-		eventHub := bus.NewHub[bus.Event]().Register()
+		eventHub := bus.NewHub[bus.EventCreated]().Register()
 
 		sse.Register(api, huma.Operation{
 			Summary: "Listen for events",

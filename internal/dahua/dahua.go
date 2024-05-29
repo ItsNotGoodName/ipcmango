@@ -567,7 +567,7 @@ func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey core.Key, event dah
 		return err
 	}
 
-	busEvent := bus.Event{
+	busEvent := bus.EventCreated{
 		EventID:    ulid.Make().String(),
 		DeviceKey:  deviceKey,
 		IgnoreDB:   eventRule.Ignore_DB,

@@ -19,7 +19,7 @@ type DeviceDeleted struct {
 	DeviceKey core.Key
 }
 
-type Event struct {
+type EventCreated struct {
 	EventID    string
 	DeviceKey  core.Key
 	IgnoreDB   bool
