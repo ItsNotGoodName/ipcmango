@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -189,6 +190,7 @@ type EmailAttachment struct {
 	Message_ID sql.Null[int64]
 	File_Name  string
 	Size       int64
+	Mime_Type  string
 }
 
 type CreateEmailArgs struct {
@@ -268,14 +270,17 @@ func CreateEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, args CreateEmai
 func createEmailAttachment(ctx context.Context, afs afero.Fs, tx sqlx.ExecerContext, messageID int64, fileName string, content []byte) error {
 	attachmentUUID := uuid.NewString()
 
+	mimeType := http.DetectContentType(content)
+
 	_, err := tx.ExecContext(ctx, `
-			INSERT INTO dahua_email_attachments (
-				uuid,
-				message_id,
-				file_name,
-				size
-			) VALUES (?, ?, ?, ?)
-		`, attachmentUUID, messageID, fileName, len(content))
+		INSERT INTO dahua_email_attachments (
+			uuid,
+			message_id,
+			file_name,
+			size,
+			mime_type
+		) VALUES (?, ?, ?, ?, ?)
+	`, attachmentUUID, messageID, fileName, len(content), mimeType)
 	if err != nil {
 		return err
 	}
@@ -381,12 +386,12 @@ func (w DeleteOrphanEmailAttachmentsJob) Execute(ctx context.Context) error {
 	return DeleteOrphanEmailAttachments(ctx, w.afs, w.db)
 }
 
-func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core.Key) error {
+func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageID int64) error {
 	// Load message
 	var message EmailMessage
 	err := sqlx.GetContext(ctx, db, &message, `
 		SELECT * FROM dahua_email_messages WHERE id = ?
-	`, messageKey.ID)
+	`, messageID)
 	if err != nil {
 		return err
 	}
@@ -406,7 +411,7 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 	var attachments []EmailAttachment
 	err = sqlx.SelectContext(ctx, db, &attachments, `
 		SELECT * FROM dahua_email_attachments WHERE message_id = ?
-	`, messageKey.ID)
+	`, messageID)
 	if err != nil {
 		return err
 	}
@@ -455,16 +460,16 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 
 func NewEmailWorker(db *sqlx.DB, afs afero.Fs) EmailWorker {
 	return EmailWorker{
-		db:  db,
-		afs: afs,
-		c:   make(chan core.Key, 100),
+		db:         db,
+		afs:        afs,
+		messageIDC: make(chan int64, 100),
 	}
 }
 
 type EmailWorker struct {
-	db  *sqlx.DB
-	afs afero.Fs
-	c   chan core.Key
+	db         *sqlx.DB
+	afs        afero.Fs
+	messageIDC chan int64
 }
 
 func (w EmailWorker) String() string {
@@ -480,8 +485,8 @@ func (w EmailWorker) serve(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case key := <-w.c:
-			err := HandleEmail(ctx, w.db, w.afs, key)
+		case messageID := <-w.messageIDC:
+			err := HandleEmail(ctx, w.db, w.afs, messageID)
 			if err != nil {
 				return err
 			}
@@ -494,7 +499,7 @@ func (w EmailWorker) Register() EmailWorker {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case w.c <- event.MessageKey:
+		case w.messageIDC <- event.MessageKey.ID:
 			return nil
 		}
 	})
@@ -537,7 +542,7 @@ func NewEmailPayload(message EmailMessage, attachments []EmailAttachment) EmailP
 			UUID:     a.UUID,
 			FileName: a.File_Name,
 			Size:     a.Size,
-			Mime:     "image/jpeg",
+			Mime:     a.Mime_Type,
 		})
 
 	}

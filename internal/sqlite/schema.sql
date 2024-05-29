@@ -186,6 +186,7 @@ CREATE TABLE dahua_email_attachments (
   message_id INTEGER,
   file_name TEXT NOT NULL,
   size INTEGER NOT NULL,
+  mime_type TEXT NOT NULL,
   FOREIGN KEY (message_id) REFERENCES dahua_email_messages (id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 

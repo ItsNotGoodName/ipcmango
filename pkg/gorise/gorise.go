@@ -86,7 +86,7 @@ func Build(urL string) (Sender, error) {
 
 	sender, err := builder(url.Config)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", url.Scheme, err)
+		return nil, fmt.Errorf("%w: %s", err, url.Scheme)
 	}
 
 	return sender, nil

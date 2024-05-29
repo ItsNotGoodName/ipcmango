@@ -52,7 +52,7 @@ CREATE UNIQUE INDEX `dahua_storage_destinations_name` ON `dahua_storage_destinat
 -- create "dahua_email_messages" table
 CREATE TABLE `dahua_email_messages` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `device_id` integer NOT NULL, `date` datetime NOT NULL, `from` text NOT NULL, `to` json NOT NULL, `subject` text NOT NULL, `text` text NOT NULL, `alarm_event` text NOT NULL, `alarm_input_channel` integer NOT NULL, `alarm_name` text NOT NULL, `created_at` datetime NOT NULL, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
 -- create "dahua_email_attachments" table
-CREATE TABLE `dahua_email_attachments` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `message_id` integer NULL, `file_name` text NOT NULL, `size` integer NOT NULL, CONSTRAINT `0` FOREIGN KEY (`message_id`) REFERENCES `dahua_email_messages` (`id`) ON UPDATE CASCADE ON DELETE SET NULL);
+CREATE TABLE `dahua_email_attachments` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `message_id` integer NULL, `file_name` text NOT NULL, `size` integer NOT NULL, `mime_type` text NOT NULL, CONSTRAINT `0` FOREIGN KEY (`message_id`) REFERENCES `dahua_email_messages` (`id`) ON UPDATE CASCADE ON DELETE SET NULL);
 -- create "dahua_email_endpoints" table
 CREATE TABLE `dahua_email_endpoints` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `global` boolean NOT NULL, `expression` text NOT NULL, `title_template` text NOT NULL, `body_template` text NOT NULL, `attachments` boolean NOT NULL, `urls` json NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `disabled_at` datetime NULL);
 -- create "dahua_devices_to_email_endpoints" table
