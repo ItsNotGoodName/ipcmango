@@ -17,6 +17,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/gorise"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/afero"
@@ -34,15 +35,17 @@ type EmailEndpoint struct {
 	Updated_At     types.Time
 }
 
-func GetEmailDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey core.Key) ([]string, error) {
+func GetEmailEndpointDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey core.Key) ([]string, error) {
 	var deviceUUIDs []string
 	err := db.SelectContext(ctx, &deviceUUIDs, `
-		SELECT d.uuid FROM dahua_devices_to_email_endpoints AS t LEFT JOIN dahua_devices AS d ON t.device_id = d.id WHERE t.email_endpoint_id = ?;
+		SELECT d.uuid FROM dahua_devices_to_email_endpoints AS t
+		LEFT JOIN dahua_devices AS d ON t.device_id = d.id
+		WHERE t.email_endpoint_id = ?;
 	`, endpointKey.ID)
 	return deviceUUIDs, err
 }
 
-type CreateEmailEndpointsArgs struct {
+type CreateEmailEndpointArgs struct {
 	Global        bool
 	Expression    string
 	TitleTemplate string
@@ -52,7 +55,7 @@ type CreateEmailEndpointsArgs struct {
 	DeviceUUIDs   []string
 }
 
-func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpointsArgs) (core.Key, error) {
+func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpointArgs) (core.Key, error) {
 	for _, urL := range args.URLs.V {
 		_, err := gorise.Build(urL)
 		if err != nil {
@@ -118,7 +121,7 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 	return key, nil
 }
 
-func DeleteEndpoints(ctx context.Context, db *sqlx.DB, uuid string) error {
+func DeleteEndpoint(ctx context.Context, db *sqlx.DB, uuid string) error {
 	_, err := db.ExecContext(ctx, `
 		DELETE FROM dahua_email_endpoints WHERE uuid = ?
 	`, uuid)
@@ -335,6 +338,7 @@ func (w DeleteOrphanEmailAttachmentsJob) Execute(ctx context.Context) error {
 }
 
 func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core.Key) error {
+	// Load message
 	var message EmailMessage
 	err := sqlx.GetContext(ctx, db, &message, `
 		SELECT * FROM dahua_email_messages WHERE id = ?
@@ -343,6 +347,7 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 		return err
 	}
 
+	// Load endpoints that match the message
 	var endpoints []EmailEndpoint
 	err = sqlx.Select(db, &endpoints, `
 		SELECT t.* FROM dahua_email_endpoints AS t
@@ -352,6 +357,7 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 		return err
 	}
 
+	// Load attachments
 	var attachments []EmailAttachment
 	err = sqlx.SelectContext(ctx, db, &attachments, `
 		SELECT * FROM dahua_email_attachments WHERE message_id = ?
@@ -380,7 +386,7 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 			continue
 		}
 
-		sender, err := NewSender(email, endpoint.Title_Template, endpoint.Body_Template)
+		sender, err := NewSender(email, endpoint.Title_Template, endpoint.Body_Template, endpoint.Attachments)
 		if err != nil {
 			errs = errors.Join(err)
 			continue
@@ -402,16 +408,48 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 	return errs
 }
 
-func RegisterEmailToEndpoints(db *sqlx.DB, afs afero.Fs) {
-	bus.Subscribe("RegisterEmailToEndpoints", func(ctx context.Context, event bus.EmailCreated) error {
-		go func() {
-			err := HandleEmail(ctx, db, afs, event.MessageKey)
+func NewEmailWorker(db *sqlx.DB, afs afero.Fs) EmailWorker {
+	return EmailWorker{
+		db:  db,
+		afs: afs,
+		c:   make(chan core.Key, 100),
+	}
+}
+
+type EmailWorker struct {
+	db  *sqlx.DB
+	afs afero.Fs
+	c   chan core.Key
+}
+
+func (w EmailWorker) Serve(ctx context.Context) error {
+	return sutureext.SanitizeError(ctx, w.serve(ctx))
+}
+
+func (w EmailWorker) serve(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case key := <-w.c:
+			err := HandleEmail(ctx, w.db, w.afs, key)
 			if err != nil {
-				slog.Error("Failed to send email to endpoints", "error", err)
+				return err
 			}
-		}()
-		return nil
+		}
+	}
+}
+
+func (w EmailWorker) Register() EmailWorker {
+	bus.Subscribe("RegisterEmailToEndpoints", func(ctx context.Context, event bus.EmailCreated) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case w.c <- event.MessageKey:
+			return nil
+		}
 	})
+	return w
 }
 
 func NewEmailRule(expression string) (EmailRule, error) {
@@ -419,7 +457,7 @@ func NewEmailRule(expression string) (EmailRule, error) {
 		expression = "true"
 	}
 
-	t, err := template.New("").Parse(expression)
+	t, err := template.New("").Parse("{{" + expression + "}}")
 	if err != nil {
 		return EmailRule{}, err
 	}
@@ -510,7 +548,7 @@ func EmailRenderTemplate(tmpl string, data EmailTemplate) (string, error) {
 	return buffer.String(), nil
 }
 
-func NewSender(email EmailTemplate, titleTemplate string, bodyTemplate string) (EmailSender, error) {
+func NewSender(email EmailTemplate, titleTemplate string, bodyTemplate string, attachments bool) (EmailSender, error) {
 	title, err := EmailRenderTemplate(titleTemplate, email)
 	if err != nil {
 		return EmailSender{}, err
@@ -522,16 +560,18 @@ func NewSender(email EmailTemplate, titleTemplate string, bodyTemplate string) (
 	}
 
 	return EmailSender{
-		Email: email,
-		Title: title,
-		Body:  body,
+		Email:       email,
+		Title:       title,
+		Body:        body,
+		Attachments: attachments,
 	}, nil
 }
 
 type EmailSender struct {
-	Email EmailTemplate
-	Title string
-	Body  string
+	Email       EmailTemplate
+	Title       string
+	Body        string
+	Attachments bool
 }
 
 func (s EmailSender) Send(ctx context.Context, afs afero.Fs, goriseURL string) error {
@@ -548,19 +588,21 @@ func (s EmailSender) Send(ctx context.Context, afs afero.Fs, goriseURL string) e
 	}()
 
 	attachments := []gorise.Attachment{}
-	for _, v := range s.Email.Attachments {
-		file, err := afs.Open(v.UUID)
-		if err != nil {
-			slog.Warn("Failed to open attachment", "error", err, "attachment-uuid", v.UUID)
-			continue
-		}
-		closers = append(closers, file)
+	if s.Attachments {
+		for _, v := range s.Email.Attachments {
+			file, err := afs.Open(v.UUID)
+			if err != nil {
+				slog.Warn("Failed to open attachment", "error", err, "attachment-uuid", v.UUID)
+				continue
+			}
+			closers = append(closers, file)
 
-		attachments = append(attachments, gorise.Attachment{
-			Name:   v.FileName,
-			Mime:   v.Mime,
-			Reader: file,
-		})
+			attachments = append(attachments, gorise.Attachment{
+				Name:   v.FileName,
+				Mime:   v.Mime,
+				Reader: file,
+			})
+		}
 	}
 
 	return sender.Send(ctx, gorise.Message{

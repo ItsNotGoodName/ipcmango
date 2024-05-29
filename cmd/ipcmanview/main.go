@@ -92,15 +92,15 @@ func main() {
 			scheduler := quartzext.NewServiceScheduler(quartz.NewStdScheduler())
 			root.Add(scheduler)
 
-			// Create dahuaStore
+			// Create dahua store
 			dahuaStore := dahua.NewStore()
 			root.Add(dahuaStore)
 
-			// Create dahuaEventManager
-			dahuaEventManager := dahua.NewEventManager(root, db).Register()
-			root.Add(dahuaEventManager)
+			// Create dahua event manager
+			root.Add(dahua.NewEventManager(root, db).Register())
 
-			dahua.RegisterEmailToEndpoints(db, afs)
+			// Create dahua email worker
+			root.Add(dahua.NewEmailWorker(db, afs).Register())
 
 			// Schedule jobs
 			core.Must(scheduler.ScheduleJob(

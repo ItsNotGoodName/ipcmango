@@ -865,7 +865,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 				return nil, err
 			}
 
-			deviceUUIDs, err := dahua.GetEmailDeviceUUIDs(ctx, db, v.Key)
+			deviceUUIDs, err := dahua.GetEmailEndpointDeviceUUIDs(ctx, db, v.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -884,7 +884,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		Body CreateEmailEndpoint
 	}) (*CreateEmailEndpointOutput, error) {
-		key, err := dahua.CreateEmailEndpoint(ctx, db, dahua.CreateEmailEndpointsArgs{
+		key, err := dahua.CreateEmailEndpoint(ctx, db, dahua.CreateEmailEndpointArgs{
 			Global:        input.Body.Global,
 			Expression:    input.Body.Expression,
 			TitleTemplate: input.Body.TitleTemplate,
@@ -905,7 +905,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 			return nil, err
 		}
 
-		deviceUUIDs, err := dahua.GetEmailDeviceUUIDs(ctx, db, endpoint.Key)
+		deviceUUIDs, err := dahua.GetEmailEndpointDeviceUUIDs(ctx, db, endpoint.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -921,7 +921,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*struct{}, error) {
-		return &struct{}{}, dahua.DeleteEndpoints(ctx, db, input.UUID)
+		return &struct{}{}, dahua.DeleteEndpoint(ctx, db, input.UUID)
 	})
 }
 
