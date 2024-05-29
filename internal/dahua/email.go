@@ -33,6 +33,7 @@ type EmailEndpoint struct {
 	Attachments    bool
 	Created_At     types.Time
 	Updated_At     types.Time
+	Disabled_At    sql.Null[types.Time]
 }
 
 func GetEmailEndpointDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey core.Key) ([]string, error) {
@@ -53,6 +54,7 @@ type CreateEmailEndpointArgs struct {
 	Attachments   bool
 	URLs          types.Slice[string]
 	DeviceUUIDs   []string
+	Disabled      bool
 }
 
 func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpointArgs) (core.Key, error) {
@@ -72,6 +74,11 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 	endpointUUID := uuid.NewString()
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
+	var disabledAt *types.Time
+	if args.Disabled {
+		t := types.NewTime(time.Now())
+		disabledAt = &t
+	}
 
 	var key core.Key
 	err = tx.GetContext(ctx, &key, `
@@ -84,9 +91,10 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 			attachments,
 			urls,
 			created_at,
-			updated_at
+			updated_at,
+			disabled_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, uuid
 	`,
 		endpointUUID,
@@ -98,6 +106,7 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 		args.URLs,
 		createdAt,
 		updatedAt,
+		disabledAt,
 	)
 	if err != nil {
 		return core.Key{}, err
@@ -351,7 +360,9 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 	var endpoints []EmailEndpoint
 	err = sqlx.Select(db, &endpoints, `
 		SELECT t.* FROM dahua_email_endpoints AS t
-		WHERE t.global IS TRUE OR t.id IN (SELECT id FROM dahua_devices_to_email_endpoints AS r WHERE r.device_id = ?)
+		WHERE t.global IS TRUE 
+		OR t.id IN (SELECT id FROM dahua_devices_to_email_endpoints AS r WHERE r.device_id = ?)
+		AND t.disabled_at IS NULL
 	`, message.Device_ID)
 	if err != nil {
 		return err

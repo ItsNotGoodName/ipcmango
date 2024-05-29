@@ -199,7 +199,8 @@ CREATE TABLE dahua_email_endpoints (
   attachments BOOLEAN NOT NULL,
   urls JSON NOT NULL,
   created_at DATETIME NOT NULL,
-  updated_at DATETIME NOT NULL
+  updated_at DATETIME NOT NULL,
+  disabled_at DATETIME
 );
 
 CREATE TABLE dahua_devices_to_email_endpoints (

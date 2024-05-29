@@ -892,6 +892,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 			Attachments:   input.Body.Attachments,
 			URLs:          types.NewSlice(input.Body.URLs),
 			DeviceUUIDs:   input.Body.DeviceUUIDs,
+			Disabled:      input.Body.Disabled,
 		})
 		if err != nil {
 			return nil, err
@@ -937,6 +938,7 @@ func NewEmailEndpoint(v dahua.EmailEndpoint, deviceUUIDs []string) EmailEndpoint
 		Attachments:   v.Attachments,
 		CreatedAt:     v.Created_At.Time,
 		UpdatedAt:     v.Updated_At.Time,
+		Disabled:      v.Disabled_At.Valid,
 	}
 }
 
@@ -951,6 +953,7 @@ type EmailEndpoint struct {
 	Attachments   bool      `json:"attachments"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
+	Disabled      bool      `json:"disabled"`
 }
 
 func NewSettings(v system.Settings) Settings {
@@ -1208,6 +1211,7 @@ type CreateEmailEndpoint struct {
 	Attachments   bool     `json:"attachments,omitempty"`
 	DeviceUUIDs   []string `json:"device_uuids,omitempty"`
 	Global        bool     `json:"global,omitempty"`
+	Disabled      bool     `json:"disabled,omitempty" default:"false"`
 }
 
 type ListEmailEndpointsOutput struct {
