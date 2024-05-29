@@ -54,9 +54,17 @@ CREATE TABLE `dahua_email_messages` (`id` integer NOT NULL PRIMARY KEY AUTOINCRE
 -- create "dahua_email_attachments" table
 CREATE TABLE `dahua_email_attachments` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `message_id` integer NULL, `file_name` text NOT NULL, `size` integer NOT NULL, CONSTRAINT `0` FOREIGN KEY (`message_id`) REFERENCES `dahua_email_messages` (`id`) ON UPDATE CASCADE ON DELETE SET NULL);
 -- create "dahua_email_endpoints" table
-CREATE TABLE `dahua_email_endpoints` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `expression` text NOT NULL, `title_template` text NOT NULL, `body_template` text NOT NULL, `urls` json NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
+CREATE TABLE `dahua_email_endpoints` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `expression` text NOT NULL, `title_template` text NOT NULL, `body_template` text NOT NULL, `attachments` boolean NOT NULL, `urls` json NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
+-- create "dahua_devices_to_email_endpoints" table
+CREATE TABLE `dahua_devices_to_email_endpoints` (`device_id` integer NOT NULL, `email_endpoint_id` integer NOT NULL, CONSTRAINT `0` FOREIGN KEY (`email_endpoint_id`) REFERENCES `dahua_email_endpoints` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `1` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+-- create index "dahua_devices_to_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_email_endpoints"
+CREATE UNIQUE INDEX `dahua_devices_to_email_endpoints_device_id_email_endpoint_id` ON `dahua_devices_to_email_endpoints` (`device_id`, `email_endpoint_id`);
 
 -- +goose Down
+-- reverse: create index "dahua_devices_to_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_email_endpoints"
+DROP INDEX `dahua_devices_to_email_endpoints_device_id_email_endpoint_id`;
+-- reverse: create "dahua_devices_to_email_endpoints" table
+DROP TABLE `dahua_devices_to_email_endpoints`;
 -- reverse: create "dahua_email_endpoints" table
 DROP TABLE `dahua_email_endpoints`;
 -- reverse: create "dahua_email_attachments" table

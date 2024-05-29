@@ -195,7 +195,16 @@ CREATE TABLE dahua_email_endpoints (
   expression TEXT NOT NULL,
   title_template TEXT NOT NULL,
   body_template TEXT NOT NULL,
+  attachments BOOLEAN NOT NULL,
   urls JSON NOT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE dahua_devices_to_email_endpoints (
+  device_id INTEGER NOT NULL,
+  email_endpoint_id INTEGER NOT NULL,
+  UNIQUE (device_id, email_endpoint_id),
+  FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (email_endpoint_id) REFERENCES dahua_email_endpoints (id) ON UPDATE CASCADE ON DELETE CASCADE
 );

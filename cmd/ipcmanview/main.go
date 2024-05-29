@@ -34,14 +34,16 @@ import (
 	_ "github.com/k0kubun/pp/v3"
 )
 
-// Options for the CLI. Pass `--port` or set the `SERVICE_PORT` env var
+// Options for the CLI. Pass `--http-port` or set the `SERVICE_HTTP_PORT` env var
 type Options struct {
-	Debug    bool   `doc:"enable debug"`
-	Dir      string `doc:"directory to store data" short:"d" default:"ipcmanview_data"`
-	Host     string `doc:"host to listen on"`
-	Port     int    `doc:"port to listen on" short:"p" default:"8888"`
-	SmtpHost string `doc:"smtp host to listen on"`
-	SmtpPort int    `doc:"smtp port to listen on" default:"1025"`
+	Debug     bool   `doc:"enable debug"`
+	Dir       string `doc:"directory to store data" short:"d" default:"ipcmanview_data"`
+	HttpHost  string `doc:"http host to listen on"`
+	HttpPort  int    `doc:"http port to listen on" default:"8080"`
+	HttpsHost string `doc:"https host to listen on"`
+	HttpsPort int    `doc:"https port to listen on" default:"8443"`
+	SmtpHost  string `doc:"smtp host to listen on"`
+	SmtpPort  int    `doc:"smtp port to listen on" default:"1025"`
 }
 
 func main() {
@@ -62,6 +64,11 @@ func main() {
 
 		// Tell the CLI how to start your application
 		hooks.OnStart(func() {
+			// Initialize context
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			bus.SetContext(ctx)
+
 			// Create suture root
 			root := suture.New("root", suture.Spec{
 				EventHook: sutureext.EventHook(),
@@ -105,7 +112,7 @@ func main() {
 				core.Must2(quartz.NewCronTrigger("0 0 * * * *")), // Every hour
 			))
 
-			// Create a new router
+			// Create router
 			router := chi.NewMux()
 			router.Use(chiext.Logger())
 			router.Use(web.FS("/api", "/openapi", "/docs"))
@@ -116,23 +123,29 @@ func main() {
 			// Register handlers
 			app.Register(api, db, afs, afsPath, dahuaStore)
 
-			// Create the httpServer
-			httpServer := app.NewHTTPServer(&http.Server{
-				Addr:    core.Address("", options.Port),
+			// Create HTTP server
+			root.Add(app.NewHTTPServer(&http.Server{
+				Addr:    core.Address(options.HttpHost, options.HttpPort),
 				Handler: router,
-			})
-			root.Add(httpServer)
+			}, nil))
 
-			// Create the smtpServer
-			smtpServer := app.NewSMTPServer(db, afs, core.Address("", options.SmtpPort))
-			root.Add(smtpServer)
+			// Generate certificate
+			certificate := system.Certificate{
+				CertFile: filepath.Join(dir, "cert.pem"),
+				KeyFile:  filepath.Join(dir, "key.pem"),
+			}
+			core.Must(certificate.GenerateIfNotExist())
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			// Create HTTPS server
+			root.Add(app.NewHTTPServer(&http.Server{
+				Addr:    core.Address(options.HttpsHost, options.HttpsPort),
+				Handler: router,
+			}, &certificate))
+
+			// Create SMTP server
+			root.Add(app.NewSMTPServer(db, afs, core.Address(options.SmtpHost, options.SmtpPort)))
 
 			core.Must(system.InitializeSettings(ctx, db))
-
-			bus.SetContext(ctx)
 
 			errC := root.ServeBackground(ctx)
 

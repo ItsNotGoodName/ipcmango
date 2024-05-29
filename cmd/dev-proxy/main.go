@@ -9,34 +9,40 @@ import (
 	"os"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
+	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/chiext"
 	"github.com/go-chi/chi/v5"
 	"github.com/phsym/console-slog"
 )
 
 type Config struct {
-	Address string
-	Servers []Server
+	Address     string
+	Servers     []Server
+	Certificate system.Certificate
 }
 
 type Server struct {
-	URL      string
-	Wildcard []string
-	Path     []string
+	URL    string
+	Mount  []string
+	Handle []string
 }
 
 func main() {
 	start(Config{
-		Address: ":3000",
+		Address: ":3443",
+		Certificate: system.Certificate{
+			CertFile: "./ipcmanview_data/cert.pem",
+			KeyFile:  "./ipcmanview_data/key.pem",
+		},
 		Servers: []Server{
 			{
-				URL:      "http://127.0.0.1:8888",
-				Wildcard: []string{"/api"},
-				Path:     []string{"/docs", "/openapi.yaml", "/openapi.json"},
+				URL:    "http://127.0.0.1:8080",
+				Mount:  []string{"/api"},
+				Handle: []string{"/docs", "/openapi.yaml", "/openapi.json"},
 			},
 			{
-				URL:      "http://127.0.0.1:5173",
-				Wildcard: []string{"/"},
+				URL:   "http://127.0.0.1:5173",
+				Mount: []string{"/"},
 			},
 		},
 	})
@@ -62,10 +68,10 @@ func start(cfg Config) {
 					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 				},
 			}
-			for _, route := range server.Wildcard {
+			for _, route := range server.Mount {
 				r.Mount(route, proxy)
 			}
-			for _, static := range server.Path {
+			for _, static := range server.Handle {
 				r.Handle(static, proxy)
 			}
 		}(urL)
@@ -76,5 +82,5 @@ func start(cfg Config) {
 		Handler: r,
 	}
 
-	server.ListenAndServe()
+	core.Must(server.ListenAndServeTLS(cfg.Certificate.CertFile, cfg.Certificate.KeyFile))
 }

@@ -15,7 +15,7 @@ https://github.com/ItsNotGoodName/ipcmanview/assets/35015993/5c9a5482-a031-49ae-
 - Subscribe to device events
 - View snapshot of cameras
 - Receive and view emails from devices
-- Send emails to other messaging endpoints (e.g Telegram, ntfy, ...)
+- Redirect emails to other messaging endpoints (e.g Telegram, ntfy, ...)
 - Sync VideoInMode with sunrise and sunset
 
 # Usage
@@ -29,8 +29,10 @@ ipcmanview
 | Environment Variable    | Default           | Description                                            |
 | ----------------------- | ----------------- | ------------------------------------------------------ |
 | `SERVICE_DIR`           | "ipcmanview_data" | Directory path for storing data.                       |
-| `SERVICE_HOST`          |                   | Host to listen on (e.g. "127.0.0.1").                  |
-| `SERVICE_PORT`          | 8080              | Port to listen on.                                     |
+| `SERVICE_HTTP_HOST`     |                   | HTTP host to listen on (e.g. "127.0.0.1").             |
+| `SERVICE_HTTP_PORT`     | 8080              | HTTP port to listen on.                                |
+| `SERVICE_HTTPS_HOST`    |                   | HTTPS host to listen on (e.g. "127.0.0.1").            |
+| `SERVICE_HTTPS_PORT`    | 8443              | HTTPS port to listen on.                               |
 | `SERVICE_SMTP_HOST`     |                   | SMTP host to listen on (e.g. "127.0.0.1").             |
 | `SERVICE_SMTP_PORT`     | 1025              | SMTP port to listen on.                                |
 | `SERVICE_MQTT_ADDRESS`  |                   | MQTT server address (e.g. "mqtt://192.168.1.20:1883"). |

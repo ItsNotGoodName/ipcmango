@@ -4,16 +4,20 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+
+	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 )
 
-func NewHTTPServer(httpServer *http.Server) HTTPServer {
+func NewHTTPServer(httpServer *http.Server, certificate *system.Certificate) HTTPServer {
 	return HTTPServer{
-		server: httpServer,
+		server:      httpServer,
+		certificate: certificate,
 	}
 }
 
 type HTTPServer struct {
-	server *http.Server
+	server      *http.Server
+	certificate *system.Certificate
 }
 
 func (s HTTPServer) String() string {
@@ -24,7 +28,13 @@ func (s HTTPServer) Serve(ctx context.Context) error {
 	slog.Info("Starting HTTP server", "address", s.server.Addr)
 
 	errC := make(chan error, 1)
-	go func() { errC <- s.server.ListenAndServe() }()
+	go func() {
+		if s.certificate != nil {
+			errC <- s.server.ListenAndServeTLS(s.certificate.CertFile, s.certificate.KeyFile)
+		} else {
+			errC <- s.server.ListenAndServe()
+		}
+	}()
 
 	select {
 	case err := <-errC:

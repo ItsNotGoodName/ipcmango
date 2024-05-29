@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"os"
 	"time"
+
+	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 )
 
 type Certificate struct {
@@ -17,7 +19,25 @@ type Certificate struct {
 	KeyFile  string
 }
 
-func (c Certificate) ForceGenerate() error {
+func (cert Certificate) GenerateIfNotExist() error {
+	certFileExists, err := core.FileExists(cert.CertFile)
+	if err != nil {
+		return err
+	}
+	keyFileExists, err := core.FileExists(cert.KeyFile)
+	if err != nil {
+		return err
+	}
+	if !(certFileExists && keyFileExists) {
+		err := cert.Generate()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c Certificate) Generate() error {
 	now := time.Now()
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(2024),

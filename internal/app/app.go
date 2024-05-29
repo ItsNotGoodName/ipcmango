@@ -846,47 +846,60 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "List endpoints",
+		Summary: "List email endpoints",
 		Method:  http.MethodGet,
-		Path:    "/api/endpoints",
-	}, func(ctx context.Context, i *struct{}) (*ListEndpointsOutput, error) {
+		Path:    "/api/email-endpoints",
+	}, func(ctx context.Context, i *struct{}) (*ListEmailEndpointsOutput, error) {
 		rows, err := db.QueryxContext(ctx, `
-				SELECT * FROM endpoints
+			SELECT * FROM dahua_email_endpoints
 		`)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
 
-		body := []Endpoint{}
+		body := []EmailEndpoint{}
 		for rows.Next() {
-			var v system.Endpoint
+			var v dahua.EmailEndpoint
 			if err := rows.StructScan(&v); err != nil {
 				return nil, err
 			}
-			body = append(body, NewEndpoint(v))
+			body = append(body, NewEmailEndpoint(v))
 		}
 
-		return &ListEndpointsOutput{
+		return &ListEmailEndpointsOutput{
 			Body: body,
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Create endpoint",
+		Summary: "Create email endpoint",
 		Method:  http.MethodPost,
-		Path:    "/api/endpoints",
+		Path:    "/api/email-endpoints",
 	}, func(ctx context.Context, input *struct {
-		Body CreateEndpoint
-	}) (*CreateEndpointsOutput, error) {
-		endpoint, err := system.CreateEndpoint(ctx, db, system.CreateEndpointArgs{
-			GoriseURL: input.Body.GoriseURL,
+		Body CreateEmailEndpoint
+	}) (*CreateEmailEndpointOutput, error) {
+		key, err := dahua.CreateEmailEndpoint(ctx, db, dahua.CreateEmailEndpointsArgs{
+			Expression:    "",
+			TitleTemplate: "{{.Message.Subject}}",
+			BodyTemplate:  "{{.Message.Text}}",
+			Attachments:   false,
+			URLs:          types.NewSlice(input.Body.URLs),
+			DeviceUUIds:   input.Body.DeviceUUIDs,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		return &CreateEndpointsOutput{
-			Body: NewEndpoint(endpoint),
+		var endpoint dahua.EmailEndpoint
+		err = db.GetContext(ctx, &endpoint, `
+			SELECT * FROM dahua_email_endpoints WHERE id = ?;
+		`, key.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &CreateEmailEndpointOutput{
+			Body: NewEmailEndpoint(endpoint),
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
@@ -896,24 +909,32 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*struct{}, error) {
-		return &struct{}{}, system.DeleteEndpoints(ctx, db, input.UUID)
+		return &struct{}{}, dahua.DeleteEndpoints(ctx, db, input.UUID)
 	})
 }
 
-func NewEndpoint(v system.Endpoint) Endpoint {
-	return Endpoint{
-		UUID:      v.UUID,
-		GoriseURL: v.Gorise_URL,
-		CreatedAt: v.Created_At.Time,
-		UpdatedAt: v.Updated_At.Time,
+func NewEmailEndpoint(v dahua.EmailEndpoint) EmailEndpoint {
+	return EmailEndpoint{
+		UUID:          v.UUID,
+		Expression:    v.Expression,
+		URLs:          v.URLs.V,
+		TitleTemplate: v.Title_Template,
+		BodyTemplate:  v.Body_Template,
+		Attachments:   v.Attachments,
+		CreatedAt:     v.Created_At.Time,
+		UpdatedAt:     v.Updated_At.Time,
 	}
 }
 
-type Endpoint struct {
-	UUID      string
-	GoriseURL string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+type EmailEndpoint struct {
+	UUID          string    `json:"uuid"`
+	Expression    string    `json:"expression"`
+	URLs          []string  `json:"urls"`
+	TitleTemplate string    `json:"title_template"`
+	BodyTemplate  string    `json:"body_template"`
+	Attachments   bool      `json:"attachments"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 func NewSettings(v system.Settings) Settings {
@@ -1163,16 +1184,17 @@ type DeviceEventsOutput struct {
 	CreatedAt  time.Time       `json:"created_at"`
 }
 
-type CreateEndpoint struct {
-	GoriseURL string `json:"gorise_url"`
+type CreateEmailEndpoint struct {
+	URLs        []string `json:"urls"`
+	DeviceUUIDs []string `json:"device_uuids"`
 }
 
-type ListEndpointsOutput struct {
-	Body []Endpoint
+type ListEmailEndpointsOutput struct {
+	Body []EmailEndpoint
 }
 
-type CreateEndpointsOutput struct {
-	Body Endpoint
+type CreateEmailEndpointOutput struct {
+	Body EmailEndpoint
 }
 
 type GetHomePageOutput struct {
