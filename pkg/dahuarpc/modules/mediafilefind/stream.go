@@ -3,12 +3,12 @@ package mediafilefind
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 )
 
 type Stream struct {
+	conn   dahuarpc.Conn
 	object int64
 	count  int
 	closed bool
@@ -38,49 +38,48 @@ func NewStream(ctx context.Context, c dahuarpc.Conn, condtion Condition) (*Strea
 	}
 
 	return &Stream{
+		conn:   c,
 		object: object,
 		count:  64,
 		closed: closed,
 	}, nil
 }
 
-func (s *Stream) Next(ctx context.Context, c dahuarpc.Conn) ([]FindNextFileInfo, error) {
+func (s *Stream) Next(ctx context.Context) ([]FindNextFileInfo, error) {
 	if s.closed {
 		return nil, nil
 	}
 
-	files, err := FindNextFile(ctx, c, s.object, s.count)
+	files, err := FindNextFile(ctx, s.conn, s.object, s.count)
 	if err != nil {
-		s.Close(c)
+		s.Close()
 		return nil, err
 	}
 
 	if files.Infos == nil {
-		s.Close(c)
+		s.Close()
 		return nil, nil
 	}
 
 	if files.Found < s.count {
-		s.Close(c)
+		s.Close()
 	}
 
 	return files.Infos, nil
 }
 
-func (s *Stream) Close(c dahuarpc.Conn) {
+func (s *Stream) Close() {
 	if s.closed {
 		return
 	}
 
 	s.closed = true
 
-	// TODO: find another way to close stream when context was canceled.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx := context.Background()
 
-	if _, err := Close(ctx, c, s.object); err != nil {
+	if _, err := Close(ctx, s.conn, s.object); err != nil {
 		return
 	}
 
-	Destroy(ctx, c, s.object)
+	Destroy(ctx, s.conn, s.object)
 }
