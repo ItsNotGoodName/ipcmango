@@ -18,6 +18,9 @@ nuke:
 	rm -rf ./internal/sqlite/migrations
 	atlas migrate diff initial --env local
 
+web:
+	cd internal/web && pnpm install
+
 # ---------- Dev
 
 dev:
@@ -50,7 +53,7 @@ tooling-goose:
 	go install $(TOOL_GOOSE)
 
 tooling-restish:
-	go install $(TOOL_GOOSE)
+	go install $(TOOL_RESTISH)
 
 tooling-atlas:
 	# TODO: pin atlas version

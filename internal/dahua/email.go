@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/afero"
 )
 
+// -------------------- EmailEndpoint CRUD
 type EmailEndpoint struct {
 	core.Key
 	Global         bool
@@ -58,18 +59,53 @@ type CreateEmailEndpointArgs struct {
 }
 
 func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpointArgs) (core.Key, error) {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return core.Key{}, err
+	}
+	defer tx.Rollback()
+
+	key, err := createEmailEndpoint(ctx, tx, args)
+	if err != nil {
+		return core.Key{}, err
+	}
+
+	return key, tx.Commit()
+}
+
+func PutEmailEndpoints(ctx context.Context, db *sqlx.DB, args []CreateEmailEndpointArgs) ([]core.Key, error) {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `
+		DELETE FROM dahua_email_endpoints
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	var keys []core.Key
+	for _, arg := range args {
+		key, err := createEmailEndpoint(ctx, tx, arg)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+
+	return keys, tx.Commit()
+}
+
+func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpointArgs) (core.Key, error) {
 	for _, urL := range args.URLs.V {
 		_, err := gorise.Build(urL)
 		if err != nil {
 			return core.Key{}, err
 		}
 	}
-
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return core.Key{}, err
-	}
-	defer tx.Rollback()
 
 	endpointUUID := uuid.NewString()
 	createdAt := types.NewTime(time.Now())
@@ -81,7 +117,7 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 	}
 
 	var key core.Key
-	err = tx.GetContext(ctx, &key, `
+	err := tx.GetContext(ctx, &key, `
 		INSERT INTO dahua_email_endpoints (
 			uuid,
 			global,
@@ -117,14 +153,10 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 			INSERT INTO dahua_devices_to_email_endpoints (device_id, email_endpoint_id)
 			SELECT id, ? FROM dahua_devices WHERE uuid IN (?)
 		`, key.ID, args.DeviceUUIDs)
-		_, err = tx.ExecContext(ctx, db.Rebind(query), queryArgs...)
+		_, err = tx.ExecContext(ctx, tx.Rebind(query), queryArgs...)
 		if err != nil {
 			return core.Key{}, err
 		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return core.Key{}, err
 	}
 
 	return key, nil
@@ -137,6 +169,7 @@ func DeleteEndpoint(ctx context.Context, db *sqlx.DB, uuid string) error {
 	return err
 }
 
+// -------------------- Email CRUD
 type EmailMessage struct {
 	core.Key
 	Device_ID           int64
@@ -156,44 +189,6 @@ type EmailAttachment struct {
 	Message_ID sql.Null[int64]
 	File_Name  string
 	Size       int64
-}
-
-type EmailContent struct {
-	AlarmEvent        string
-	AlarmInputChannel int
-	AlarmDeviceName   string
-	AlarmName         string
-	IPAddress         string
-}
-
-func ParseEmailContent(text string) EmailContent {
-	var content EmailContent
-	for _, line := range strings.Split(text, "\n") {
-		kv := strings.SplitN(line, ":", 2)
-		if len(kv) != 2 {
-			continue
-		}
-
-		key := strings.TrimSpace(kv[0])
-		value := strings.TrimSpace(kv[1])
-
-		switch key {
-		case "Alarm Event":
-			content.AlarmEvent = value
-		case "Alarm Input Channel":
-			channel, _ := strconv.Atoi(value)
-			content.AlarmInputChannel = channel
-		case "Alarm Device Name":
-			content.AlarmDeviceName = value
-		case "Alarm Name":
-			content.AlarmName = value
-		case "IP Address":
-			content.IPAddress = value
-		default:
-		}
-	}
-
-	return content
 }
 
 type CreateEmailArgs struct {
@@ -326,6 +321,46 @@ func DeleteOrphanEmailAttachments(ctx context.Context, afs afero.Fs, db *sqlx.DB
 	return DeleteOrphanEmailAttachments(ctx, afs, db)
 }
 
+// ---------- END
+
+type EmailContent struct {
+	AlarmEvent        string
+	AlarmInputChannel int
+	AlarmDeviceName   string
+	AlarmName         string
+	IPAddress         string
+}
+
+func ParseEmailContent(text string) EmailContent {
+	var content EmailContent
+	for _, line := range strings.Split(text, "\n") {
+		kv := strings.SplitN(line, ":", 2)
+		if len(kv) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(kv[0])
+		value := strings.TrimSpace(kv[1])
+
+		switch key {
+		case "Alarm Event":
+			content.AlarmEvent = value
+		case "Alarm Input Channel":
+			channel, _ := strconv.Atoi(value)
+			content.AlarmInputChannel = channel
+		case "Alarm Device Name":
+			content.AlarmDeviceName = value
+		case "Alarm Name":
+			content.AlarmName = value
+		case "IP Address":
+			content.IPAddress = value
+		default:
+		}
+	}
+
+	return content
+}
+
 func NewDeleteOrphanEmailAttachmentsJob(db *sqlx.DB, afs afero.Fs) DeleteOrphanEmailAttachmentsJob {
 	return DeleteOrphanEmailAttachmentsJob{
 		db:  db,
@@ -360,8 +395,7 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 	var endpoints []EmailEndpoint
 	err = sqlx.Select(db, &endpoints, `
 		SELECT t.* FROM dahua_email_endpoints AS t
-		WHERE t.global IS TRUE 
-		OR t.id IN (SELECT id FROM dahua_devices_to_email_endpoints AS r WHERE r.device_id = ?)
+		WHERE (t.global IS TRUE OR t.id IN (SELECT id FROM dahua_devices_to_email_endpoints AS r WHERE r.device_id = ?))
 		AND t.disabled_at IS NULL
 	`, message.Device_ID)
 	if err != nil {
@@ -377,7 +411,7 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 		return err
 	}
 
-	email := NewEmailTemplate(message, attachments)
+	email := NewEmailPayload(message, attachments)
 
 	wg := sync.WaitGroup{}
 
@@ -433,6 +467,10 @@ type EmailWorker struct {
 	c   chan core.Key
 }
 
+func (w EmailWorker) String() string {
+	return "dahua.EmailWorker"
+}
+
 func (w EmailWorker) Serve(ctx context.Context) error {
 	return sutureext.SanitizeError(ctx, w.serve(ctx))
 }
@@ -452,7 +490,7 @@ func (w EmailWorker) serve(ctx context.Context) error {
 }
 
 func (w EmailWorker) Register() EmailWorker {
-	bus.Subscribe("RegisterEmailToEndpoints", func(ctx context.Context, event bus.EmailCreated) error {
+	bus.Subscribe(w.String(), func(ctx context.Context, event bus.EmailCreated) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -482,7 +520,7 @@ type EmailRule struct {
 	Template *template.Template
 }
 
-func (r EmailRule) Match(email EmailTemplate) (bool, error) {
+func (r EmailRule) Match(email EmailPayload) (bool, error) {
 	var buffer bytes.Buffer
 	err := r.Template.Execute(&buffer, email)
 	if err != nil {
@@ -492,10 +530,10 @@ func (r EmailRule) Match(email EmailTemplate) (bool, error) {
 	return strconv.ParseBool(buffer.String())
 }
 
-func NewEmailTemplate(message EmailMessage, attachments []EmailAttachment) EmailTemplate {
-	v := []EmailTemplateAttachment{}
+func NewEmailPayload(message EmailMessage, attachments []EmailAttachment) EmailPayload {
+	v := []EmailPayloadAttachment{}
 	for _, a := range attachments {
-		v = append(v, EmailTemplateAttachment{
+		v = append(v, EmailPayloadAttachment{
 			UUID:     a.UUID,
 			FileName: a.File_Name,
 			Size:     a.Size,
@@ -503,8 +541,8 @@ func NewEmailTemplate(message EmailMessage, attachments []EmailAttachment) Email
 		})
 
 	}
-	return EmailTemplate{
-		Message: EmailTemplateMessage{
+	return EmailPayload{
+		Message: EmailPayloadMessage{
 			UUID:              message.UUID,
 			Date:              message.Date.Time,
 			From:              message.From,
@@ -520,12 +558,12 @@ func NewEmailTemplate(message EmailMessage, attachments []EmailAttachment) Email
 	}
 }
 
-type EmailTemplate struct {
-	Message     EmailTemplateMessage
-	Attachments []EmailTemplateAttachment
+type EmailPayload struct {
+	Message     EmailPayloadMessage
+	Attachments []EmailPayloadAttachment
 }
 
-type EmailTemplateMessage struct {
+type EmailPayloadMessage struct {
 	UUID              string
 	Date              time.Time
 	From              string
@@ -538,14 +576,14 @@ type EmailTemplateMessage struct {
 	CreatedAt         time.Time
 }
 
-type EmailTemplateAttachment struct {
+type EmailPayloadAttachment struct {
 	UUID     string
 	FileName string
 	Size     int64
 	Mime     string
 }
 
-func EmailRenderTemplate(tmpl string, data EmailTemplate) (string, error) {
+func EmailRenderTemplate(tmpl string, data EmailPayload) (string, error) {
 	t, err := template.New("").Parse(tmpl)
 	if err != nil {
 		return "", err
@@ -559,7 +597,7 @@ func EmailRenderTemplate(tmpl string, data EmailTemplate) (string, error) {
 	return buffer.String(), nil
 }
 
-func NewSender(email EmailTemplate, titleTemplate string, bodyTemplate string, attachments bool) (EmailSender, error) {
+func NewSender(email EmailPayload, titleTemplate string, bodyTemplate string, attachments bool) (EmailSender, error) {
 	title, err := EmailRenderTemplate(titleTemplate, email)
 	if err != nil {
 		return EmailSender{}, err
@@ -579,7 +617,7 @@ func NewSender(email EmailTemplate, titleTemplate string, bodyTemplate string, a
 }
 
 type EmailSender struct {
-	Email       EmailTemplate
+	Email       EmailPayload
 	Title       string
 	Body        string
 	Attachments bool

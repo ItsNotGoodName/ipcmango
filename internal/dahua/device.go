@@ -41,6 +41,49 @@ func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (core
 	return deviceKey, nil
 }
 
+func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]core.Key, error) {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var deletedKeys []core.Key
+	err = db.SelectContext(ctx, &deletedKeys, `
+		DELETE FROM dahua_devices RETURNING id, uuid
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	var keys []core.Key
+	for _, arg := range args {
+		key, err := createDevice(ctx, tx, arg)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	for _, deletedKey := range deletedKeys {
+		bus.Publish(bus.DeviceDeleted{
+			DeviceKey: deletedKey,
+		})
+	}
+
+	for _, key := range keys {
+		bus.Publish(bus.DeviceCreated{
+			DeviceKey: key,
+		})
+	}
+
+	return keys, nil
+}
+
 func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDeviceArgs) (core.Key, error) {
 	uuid := uuid.NewString()
 	createdAt := types.NewTime(time.Now())
@@ -95,49 +138,6 @@ func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDevice
 	}
 
 	return deviceKey, nil
-}
-
-func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]core.Key, error) {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	var deletedKeys []core.Key
-	err = db.SelectContext(ctx, &deletedKeys, `
-		DELETE FROM dahua_devices RETURNING id, uuid
-	`)
-	if err != nil {
-		return nil, err
-	}
-
-	var keys []core.Key
-	for _, arg := range args {
-		key, err := createDevice(ctx, tx, arg)
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, key)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	for _, deletedKey := range deletedKeys {
-		bus.Publish(bus.DeviceDeleted{
-			DeviceKey: deletedKey,
-		})
-	}
-
-	for _, key := range keys {
-		bus.Publish(bus.DeviceCreated{
-			DeviceKey: key,
-		})
-	}
-
-	return keys, nil
 }
 
 type UpdateDeviceArgs struct {

@@ -62,21 +62,9 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Method:  http.MethodGet,
 		Path:    "/api/devices",
 	}, func(ctx context.Context, input *struct{}) (*ListDevicesOutput, error) {
-		rows, err := db.QueryxContext(ctx, `
-			SELECT * FROM dahua_devices
-		`)
+		body, err := ListDevices(ctx, db)
 		if err != nil {
 			return nil, err
-		}
-		defer rows.Close()
-
-		body := []Device{}
-		for rows.Next() {
-			var v dahua.DahuaDevice
-			if err := rows.StructScan(&v); err != nil {
-				return nil, err
-			}
-			body = append(body, NewDevice(v))
 		}
 
 		return &ListDevicesOutput{
@@ -125,7 +113,7 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Summary: "Put devices",
 		Method:  http.MethodPut,
 		Path:    "/api/devices",
-	}, func(ctx context.Context, input *PutDevicesInput) (*PutDevicesOutput, error) {
+	}, func(ctx context.Context, input *PutDevicesInput) (*ListDevicesOutput, error) {
 		var args []dahua.CreateDeviceArgs
 		for _, arg := range input.Body {
 			args = append(args, arg.Convert())
@@ -136,24 +124,12 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 			return nil, err
 		}
 
-		rows, err := db.QueryxContext(ctx, `
-			SELECT * FROM dahua_devices
-		`)
+		body, err := ListDevices(ctx, db)
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
 
-		body := []Device{}
-		for rows.Next() {
-			var v dahua.DahuaDevice
-			if err := rows.StructScan(&v); err != nil {
-				return nil, err
-			}
-			body = append(body, NewDevice(v))
-		}
-
-		return &PutDevicesOutput{
+		return &ListDevicesOutput{
 			Body: body,
 		}, nil
 	})
@@ -732,65 +708,28 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 			Body: body,
 		}, nil
 	})
-	{
-		setDeviceCoaxialState := func(ctx context.Context, uuid string, channel int, typE coaxialcontrolio.Type, action string) error {
-			device, err := useDeviceByUUID(ctx, db, uuid)
-			if err != nil {
-				return err
-			}
-
-			client, err := useClient(ctx, dahuaStore, device)
-			if err != nil {
-				return err
-			}
-
-			control := coaxialcontrolio.ControlRequest{
-				Type:        typE,
-				IO:          coaxialcontrolio.Off,
-				TriggerMode: coaxialcontrolio.TriggerModeManual,
-			}
-			switch action {
-			case "on":
-				control.IO = coaxialcontrolio.On
-			case "off":
-				control.IO = coaxialcontrolio.Off
-			default:
-				status, err := dahua.GetCoaxialStatus(ctx, client.RPC, channel)
-				if err != nil {
-					return err
-				}
-				if status.WhiteLight {
-					control.IO = coaxialcontrolio.Off
-				} else {
-					control.IO = coaxialcontrolio.On
-				}
-			}
-
-			return coaxialcontrolio.Control(ctx, client.RPC, channel, control)
-		}
-		huma.Register(api, huma.Operation{
-			Summary: "Set device white light state",
-			Method:  http.MethodPost,
-			Path:    "/api/devices/{uuid}/coaxial/white-light",
-		}, func(ctx context.Context, input *struct {
-			UUID    string `path:"uuid" format:"uuid"`
-			Channel int    `query:"channel"`
-			Action  string `query:"action" enum:"on,off,toggle"`
-		}) (*struct{}, error) {
-			return &struct{}{}, setDeviceCoaxialState(ctx, input.UUID, input.Channel, coaxialcontrolio.TypeWhiteLight, input.Action)
-		})
-		huma.Register(api, huma.Operation{
-			Summary: "Set device speaker state",
-			Method:  http.MethodPost,
-			Path:    "/api/devices/{uuid}/coaxial/speaker",
-		}, func(ctx context.Context, input *struct {
-			UUID    string `path:"uuid" format:"uuid"`
-			Channel int    `query:"channel"`
-			Action  string `query:"action" enum:"on,off,toggle"`
-		}) (*struct{}, error) {
-			return &struct{}{}, setDeviceCoaxialState(ctx, input.UUID, input.Channel, coaxialcontrolio.TypeSpeaker, input.Action)
-		})
-	}
+	huma.Register(api, huma.Operation{
+		Summary: "Set device white light state",
+		Method:  http.MethodPost,
+		Path:    "/api/devices/{uuid}/coaxial/white-light",
+	}, func(ctx context.Context, input *struct {
+		UUID    string `path:"uuid" format:"uuid"`
+		Channel int    `query:"channel"`
+		Action  string `query:"action" enum:"on,off,toggle"`
+	}) (*struct{}, error) {
+		return &struct{}{}, SetDeviceCoaxialState(ctx, dahuaStore, db, input.UUID, input.Channel, coaxialcontrolio.TypeWhiteLight, input.Action)
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Set device speaker state",
+		Method:  http.MethodPost,
+		Path:    "/api/devices/{uuid}/coaxial/speaker",
+	}, func(ctx context.Context, input *struct {
+		UUID    string `path:"uuid" format:"uuid"`
+		Channel int    `query:"channel"`
+		Action  string `query:"action" enum:"on,off,toggle"`
+	}) (*struct{}, error) {
+		return &struct{}{}, SetDeviceCoaxialState(ctx, dahuaStore, db, input.UUID, input.Channel, coaxialcontrolio.TypeSpeaker, input.Action)
+	})
 	huma.Register(api, huma.Operation{
 		Summary: "Get settings",
 		Method:  http.MethodGet,
@@ -850,27 +789,9 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Method:  http.MethodGet,
 		Path:    "/api/email-endpoints",
 	}, func(ctx context.Context, i *struct{}) (*ListEmailEndpointsOutput, error) {
-		rows, err := db.QueryxContext(ctx, `
-			SELECT * FROM dahua_email_endpoints
-		`)
+		body, err := ListEmailEndpoints(ctx, db)
 		if err != nil {
 			return nil, err
-		}
-		defer rows.Close()
-
-		body := []EmailEndpoint{}
-		for rows.Next() {
-			var v dahua.EmailEndpoint
-			if err := rows.StructScan(&v); err != nil {
-				return nil, err
-			}
-
-			deviceUUIDs, err := dahua.GetEmailEndpointDeviceUUIDs(ctx, db, v.Key)
-			if err != nil {
-				return nil, err
-			}
-
-			body = append(body, NewEmailEndpoint(v, deviceUUIDs))
 		}
 
 		return &ListEmailEndpointsOutput{
@@ -880,20 +801,11 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 	huma.Register(api, huma.Operation{
 		Summary: "Create email endpoint",
 		Method:  http.MethodPost,
-		Path:    "/api/email-endpoints",
+		Path:    "/api/email-endpoints/create",
 	}, func(ctx context.Context, input *struct {
 		Body CreateEmailEndpoint
 	}) (*CreateEmailEndpointOutput, error) {
-		key, err := dahua.CreateEmailEndpoint(ctx, db, dahua.CreateEmailEndpointArgs{
-			Global:        input.Body.Global,
-			Expression:    input.Body.Expression,
-			TitleTemplate: input.Body.TitleTemplate,
-			BodyTemplate:  input.Body.BodyTemplate,
-			Attachments:   input.Body.Attachments,
-			URLs:          types.NewSlice(input.Body.URLs),
-			DeviceUUIDs:   input.Body.DeviceUUIDs,
-			Disabled:      input.Body.Disabled,
-		})
+		key, err := dahua.CreateEmailEndpoint(ctx, db, input.Body.Convert())
 		if err != nil {
 			return nil, err
 		}
@@ -913,6 +825,32 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 
 		return &CreateEmailEndpointOutput{
 			Body: NewEmailEndpoint(endpoint, deviceUUIDs),
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Put email endpoints",
+		Method:  http.MethodPut,
+		Path:    "/api/email-endpoints",
+	}, func(ctx context.Context, input *struct {
+		Body []CreateEmailEndpoint
+	}) (*ListEmailEndpointsOutput, error) {
+		var args []dahua.CreateEmailEndpointArgs
+		for _, v := range input.Body {
+			args = append(args, v.Convert())
+		}
+
+		_, err := dahua.PutEmailEndpoints(ctx, db, args)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := ListEmailEndpoints(ctx, db)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ListEmailEndpointsOutput{
+			Body: body,
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
@@ -1206,12 +1144,25 @@ type DeviceEventsOutput struct {
 type CreateEmailEndpoint struct {
 	URLs          []string `json:"urls"`
 	Expression    string   `json:"expression,omitempty"`
-	TitleTemplate string   `json:"title_template,omitempty" default:"{{.Message.Subject}}"`
-	BodyTemplate  string   `json:"body_template,omitempty" default:"{{.Message.Text}}"`
+	TitleTemplate *string  `json:"title_template,omitempty"`
+	BodyTemplate  *string  `json:"body_template,omitempty"`
 	Attachments   bool     `json:"attachments,omitempty"`
 	DeviceUUIDs   []string `json:"device_uuids,omitempty"`
 	Global        bool     `json:"global,omitempty"`
 	Disabled      bool     `json:"disabled,omitempty" default:"false"`
+}
+
+func (i CreateEmailEndpoint) Convert() dahua.CreateEmailEndpointArgs {
+	return dahua.CreateEmailEndpointArgs{
+		Global:        i.Global,
+		Expression:    i.Expression,
+		TitleTemplate: core.Optional(i.TitleTemplate, "{{.Message.Subject}}"),
+		BodyTemplate:  core.Optional(i.BodyTemplate, "{{.Message.Text}}"),
+		Attachments:   i.Attachments,
+		URLs:          types.NewSlice(i.URLs),
+		DeviceUUIDs:   i.DeviceUUIDs,
+		Disabled:      i.Disabled,
+	}
 }
 
 type ListEmailEndpointsOutput struct {
@@ -1234,4 +1185,88 @@ type GetHomePage struct {
 	DB_Usage     int         `json:"db_usage"`
 	FileUsage    int64       `json:"file_usage"`
 	Build        build.Build `json:"build"`
+}
+
+func ListEmailEndpoints(ctx context.Context, db *sqlx.DB) ([]EmailEndpoint, error) {
+	rows, err := db.QueryxContext(ctx, `
+		SELECT * FROM dahua_email_endpoints
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	body := []EmailEndpoint{}
+	for rows.Next() {
+		var v dahua.EmailEndpoint
+		if err := rows.StructScan(&v); err != nil {
+			return nil, err
+		}
+
+		deviceUUIDs, err := dahua.GetEmailEndpointDeviceUUIDs(ctx, db, v.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		body = append(body, NewEmailEndpoint(v, deviceUUIDs))
+	}
+
+	return body, nil
+}
+
+func ListDevices(ctx context.Context, db *sqlx.DB) ([]Device, error) {
+	rows, err := db.QueryxContext(ctx, `
+		SELECT * FROM dahua_devices
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	body := []Device{}
+	for rows.Next() {
+		var v dahua.DahuaDevice
+		if err := rows.StructScan(&v); err != nil {
+			return nil, err
+		}
+		body = append(body, NewDevice(v))
+	}
+
+	return body, nil
+}
+
+func SetDeviceCoaxialState(ctx context.Context, dahuaStore *dahua.Store, db *sqlx.DB, uuid string, channel int, typE coaxialcontrolio.Type, action string) error {
+	device, err := useDeviceByUUID(ctx, db, uuid)
+	if err != nil {
+		return err
+	}
+
+	client, err := useClient(ctx, dahuaStore, device)
+	if err != nil {
+		return err
+	}
+
+	control := coaxialcontrolio.ControlRequest{
+		Type:        typE,
+		IO:          coaxialcontrolio.Off,
+		TriggerMode: coaxialcontrolio.TriggerModeManual,
+	}
+	switch action {
+	case "on":
+		control.IO = coaxialcontrolio.On
+	case "off":
+		control.IO = coaxialcontrolio.Off
+	default:
+		status, err := dahua.GetCoaxialStatus(ctx, client.RPC, channel)
+		if err != nil {
+			return err
+		}
+		if status.WhiteLight {
+			control.IO = coaxialcontrolio.Off
+		} else {
+			control.IO = coaxialcontrolio.On
+		}
+	}
+
+	return coaxialcontrolio.Control(ctx, client.RPC, channel, control)
 }

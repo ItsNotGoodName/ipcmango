@@ -21,9 +21,10 @@
 go.work
 
 # Custom
-.env
 tmp
+.env
 dist
+fixtures
 *.db
 *.db-journal
 *.db-shm
