@@ -98,24 +98,50 @@
         },
         "type": "object"
       },
-      "CreateEndpoint": {
+      "CreateEmailEndpoint": {
         "additionalProperties": false,
         "properties": {
           "$schema": {
             "description": "A URL to the JSON Schema for this object.",
             "examples": [
-              "https://example.com/schemas/CreateEndpoint.json"
+              "https://example.com/schemas/CreateEmailEndpoint.json"
             ],
             "format": "uri",
             "readOnly": true,
             "type": "string"
           },
-          "gorise_url": {
+          "attachments": {
+            "type": "boolean"
+          },
+          "body_template": {
+            "default": "{{.Message.Text}}",
             "type": "string"
+          },
+          "device_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expression": {
+            "type": "string"
+          },
+          "global": {
+            "type": "boolean"
+          },
+          "title_template": {
+            "default": "{{.Message.Subject}}",
+            "type": "string"
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "gorise_url"
+          "urls"
         ],
         "type": "object"
       },
@@ -749,38 +775,57 @@
         },
         "type": "object"
       },
-      "Endpoint": {
+      "EmailEndpoint": {
         "additionalProperties": false,
         "properties": {
           "$schema": {
             "description": "A URL to the JSON Schema for this object.",
             "examples": [
-              "https://example.com/schemas/Endpoint.json"
+              "https://example.com/schemas/EmailEndpoint.json"
             ],
             "format": "uri",
             "readOnly": true,
             "type": "string"
           },
-          "CreatedAt": {
+          "attachments": {
+            "type": "boolean"
+          },
+          "body_template": {
+            "type": "string"
+          },
+          "created_at": {
             "format": "date-time",
             "type": "string"
           },
-          "GoriseURL": {
+          "expression": {
             "type": "string"
           },
-          "UUID": {
+          "title_template": {
             "type": "string"
           },
-          "UpdatedAt": {
+          "updated_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "uuid": {
             "type": "string"
           }
         },
         "required": [
-          "UUID",
-          "GoriseURL",
-          "CreatedAt",
-          "UpdatedAt"
+          "uuid",
+          "expression",
+          "urls",
+          "title_template",
+          "body_template",
+          "attachments",
+          "created_at",
+          "updated_at"
         ],
         "type": "object"
       },
@@ -2122,7 +2167,7 @@
         "summary": "Sync device VideoInMode"
       }
     },
-    "/api/endpoints": {
+    "/api/email-endpoints": {
       "get": {
         "responses": {
           "200": {
@@ -2130,7 +2175,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/Endpoint"
+                    "$ref": "#/components/schemas/EmailEndpoint"
                   },
                   "type": "array"
                 }
@@ -2149,14 +2194,14 @@
             "description": "Error"
           }
         },
-        "summary": "List endpoints"
+        "summary": "List email endpoints"
       },
       "post": {
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateEndpoint"
+                "$ref": "#/components/schemas/CreateEmailEndpoint"
               }
             }
           },
@@ -2167,7 +2212,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Endpoint"
+                  "$ref": "#/components/schemas/EmailEndpoint"
                 }
               }
             },
@@ -2184,7 +2229,7 @@
             "description": "Error"
           }
         },
-        "summary": "Create endpoint"
+        "summary": "Create email endpoint"
       }
     },
     "/api/endpoints/{uuid}": {

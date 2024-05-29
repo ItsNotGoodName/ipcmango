@@ -89,21 +89,47 @@ export const $CreateDevice = {
     type: 'object'
 } as const;
 
-export const $CreateEndpoint = {
+export const $CreateEmailEndpoint = {
     additionalProperties: false,
     properties: {
         '$schema': {
             description: 'A URL to the JSON Schema for this object.',
-            examples: ['https://example.com/schemas/CreateEndpoint.json'],
+            examples: ['https://example.com/schemas/CreateEmailEndpoint.json'],
             format: 'uri',
             readOnly: true,
             type: 'string'
         },
-        gorise_url: {
+        attachments: {
+            type: 'boolean'
+        },
+        body_template: {
+            default: '{{.Message.Text}}',
             type: 'string'
+        },
+        device_uuids: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        },
+        expression: {
+            type: 'string'
+        },
+        global: {
+            type: 'boolean'
+        },
+        title_template: {
+            default: '{{.Message.Subject}}',
+            type: 'string'
+        },
+        urls: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
         }
     },
-    required: ['gorise_url'],
+    required: ['urls'],
     type: 'object'
 } as const;
 
@@ -612,32 +638,47 @@ export const $DeviceVideoInModeSync = {
     type: 'object'
 } as const;
 
-export const $Endpoint = {
+export const $EmailEndpoint = {
     additionalProperties: false,
     properties: {
         '$schema': {
             description: 'A URL to the JSON Schema for this object.',
-            examples: ['https://example.com/schemas/Endpoint.json'],
+            examples: ['https://example.com/schemas/EmailEndpoint.json'],
             format: 'uri',
             readOnly: true,
             type: 'string'
         },
-        CreatedAt: {
+        attachments: {
+            type: 'boolean'
+        },
+        body_template: {
+            type: 'string'
+        },
+        created_at: {
             format: 'date-time',
             type: 'string'
         },
-        GoriseURL: {
+        expression: {
             type: 'string'
         },
-        UUID: {
+        title_template: {
             type: 'string'
         },
-        UpdatedAt: {
+        updated_at: {
             format: 'date-time',
+            type: 'string'
+        },
+        urls: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        },
+        uuid: {
             type: 'string'
         }
     },
-    required: ['UUID', 'GoriseURL', 'CreatedAt', 'UpdatedAt'],
+    required: ['uuid', 'expression', 'urls', 'title_template', 'body_template', 'attachments', 'created_at', 'updated_at'],
     type: 'object'
 } as const;
 

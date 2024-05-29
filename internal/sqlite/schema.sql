@@ -192,6 +192,7 @@ CREATE TABLE dahua_email_attachments (
 CREATE TABLE dahua_email_endpoints (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   uuid TEXT NOT NULL,
+  global BOOLEAN NOT NULL,
   expression TEXT NOT NULL,
   title_template TEXT NOT NULL,
   body_template TEXT NOT NULL,

@@ -879,10 +879,11 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Body CreateEmailEndpoint
 	}) (*CreateEmailEndpointOutput, error) {
 		key, err := dahua.CreateEmailEndpoint(ctx, db, dahua.CreateEmailEndpointsArgs{
-			Expression:    "",
-			TitleTemplate: "{{.Message.Subject}}",
-			BodyTemplate:  "{{.Message.Text}}",
-			Attachments:   false,
+			Global:        input.Body.Global,
+			Expression:    input.Body.Expression,
+			TitleTemplate: input.Body.TitleTemplate,
+			BodyTemplate:  input.Body.BodyTemplate,
+			Attachments:   input.Body.Attachments,
 			URLs:          types.NewSlice(input.Body.URLs),
 			DeviceUUIds:   input.Body.DeviceUUIDs,
 		})
@@ -1185,8 +1186,13 @@ type DeviceEventsOutput struct {
 }
 
 type CreateEmailEndpoint struct {
-	URLs        []string `json:"urls"`
-	DeviceUUIDs []string `json:"device_uuids"`
+	URLs          []string `json:"urls"`
+	Expression    string   `json:"expression,omitempty"`
+	TitleTemplate string   `json:"title_template,omitempty" default:"{{.Message.Subject}}"`
+	BodyTemplate  string   `json:"body_template,omitempty" default:"{{.Message.Text}}"`
+	Attachments   bool     `json:"attachments,omitempty"`
+	DeviceUUIDs   []string `json:"device_uuids,omitempty"`
+	Global        bool     `json:"global,omitempty"`
 }
 
 type ListEmailEndpointsOutput struct {

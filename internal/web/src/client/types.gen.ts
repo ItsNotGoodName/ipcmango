@@ -29,12 +29,18 @@ export type CreateDevice = {
     username?: string;
 };
 
-export type CreateEndpoint = {
+export type CreateEmailEndpoint = {
     /**
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    gorise_url: string;
+    attachments?: boolean;
+    body_template?: string;
+    device_uuids?: Array<(string)>;
+    expression?: string;
+    global?: boolean;
+    title_template?: string;
+    urls: Array<(string)>;
 };
 
 export type Device = {
@@ -213,15 +219,19 @@ export type DeviceVideoInModeSync = {
     sunset_offset?: string;
 };
 
-export type Endpoint = {
+export type EmailEndpoint = {
     /**
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    CreatedAt: string;
-    GoriseURL: string;
-    UUID: string;
-    UpdatedAt: string;
+    attachments: boolean;
+    body_template: string;
+    created_at: string;
+    expression: string;
+    title_template: string;
+    updated_at: string;
+    urls: Array<(string)>;
+    uuid: string;
 };
 
 export type ErrorDetail = {
@@ -482,13 +492,13 @@ export type PostApiDevicesByUuidVideoInModeSyncData = {
 
 export type PostApiDevicesByUuidVideoInModeSyncResponse = DeviceVideoInMode;
 
-export type GetApiEndpointsResponse = Array<Endpoint>;
+export type GetApiEmailEndpointsResponse = Array<EmailEndpoint>;
 
-export type PostApiEndpointsData = {
-    requestBody: CreateEndpoint;
+export type PostApiEmailEndpointsData = {
+    requestBody: CreateEmailEndpoint;
 };
 
-export type PostApiEndpointsResponse = Endpoint;
+export type PostApiEmailEndpointsResponse = EmailEndpoint;
 
 export type DeleteApiEndpointsByUuidData = {
     uuid: string;
@@ -883,13 +893,13 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/endpoints': {
+    '/api/email-endpoints': {
         get: {
             res: {
                 /**
                  * OK
                  */
-                200: Array<Endpoint>;
+                200: Array<EmailEndpoint>;
                 /**
                  * Error
                  */
@@ -897,12 +907,12 @@ export type $OpenApiTs = {
             };
         };
         post: {
-            req: PostApiEndpointsData;
+            req: PostApiEmailEndpointsData;
             res: {
                 /**
                  * OK
                  */
-                200: Endpoint;
+                200: EmailEndpoint;
                 /**
                  * Error
                  */

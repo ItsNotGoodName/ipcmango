@@ -19,11 +19,13 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/gorise"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/k0kubun/pp/v3"
 	"github.com/spf13/afero"
 )
 
 type EmailEndpoint struct {
 	core.Key
+	Global         bool
 	Expression     string
 	URLs           types.Slice[string]
 	Title_Template string
@@ -34,6 +36,7 @@ type EmailEndpoint struct {
 }
 
 type CreateEmailEndpointsArgs struct {
+	Global        bool
 	Expression    string
 	TitleTemplate string
 	BodyTemplate  string
@@ -64,6 +67,7 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 	err = tx.GetContext(ctx, &key, `
 		INSERT INTO dahua_email_endpoints (
 			uuid,
+			global,
 			expression,
 			title_template,
 			body_template,
@@ -72,10 +76,11 @@ func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpo
 			created_at,
 			updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, uuid
 	`,
 		endpointUUID,
+		args.Global,
 		args.Expression,
 		args.TitleTemplate,
 		args.BodyTemplate,
@@ -337,12 +342,13 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageKey core
 	var endpoints []EmailEndpoint
 	err = sqlx.Select(db, &endpoints, `
 		SELECT t.* FROM dahua_email_endpoints AS t
-		LEFT JOIN dahua_devices_to_email_endpoints AS r ON r.email_endpoint_id = t.id
-		WHERE r.device_id = ?
+		WHERE t.global IS TRUE OR t.id IN (SELECT id FROM dahua_devices_to_email_endpoints AS r WHERE r.device_id = ?)
 	`, message.Device_ID)
 	if err != nil {
 		return err
 	}
+
+	pp.Println(endpoints)
 
 	var attachments []EmailAttachment
 	err = sqlx.SelectContext(ctx, db, &attachments, `
