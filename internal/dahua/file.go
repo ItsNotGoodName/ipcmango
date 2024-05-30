@@ -11,6 +11,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -210,10 +211,12 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 						continue
 					}
 
+					fileUUID := uuid.NewString()
 					storage := StorageFromFilePath(v.FilePath)
 
 					_, err = db.ExecContext(ctx, `
 						INSERT INTO dahua_files (
+							uuid,
 							device_id,
 							channel,
 							start_time,
@@ -235,9 +238,10 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 							storage,
 							updated_at
 						)
-						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 						ON CONFLICT (start_time) DO UPDATE SET id = id RETURNING id -- Assume that files with the same time are really rare
 					`,
+						fileUUID,
 						deviceID,
 						v.Channel,
 						types.NewTime(startTime),
