@@ -11,24 +11,26 @@ import (
 	"github.com/maragudk/goqite/jobs"
 )
 
-func NewJobService(runner *jobs.Runner) JobService {
-	return JobService{
+func NewJobClient(queue *goqite.Queue, runner *jobs.Runner) JobClient {
+	return JobClient{
+		queue:  queue,
 		runner: runner,
 	}
 }
 
-type JobService struct {
+type JobClient struct {
+	queue  *goqite.Queue
 	runner *jobs.Runner
 }
 
-func (s JobService) Serve(ctx context.Context) error {
+func (s JobClient) Serve(ctx context.Context) error {
 	s.runner.Start(ctx)
 	return nil
 }
 
-func NewJob[T any](queue *goqite.Queue, runner *jobs.Runner, job func(ctx context.Context, data T) error) Job[T] {
+func NewJob[T any](client JobClient, job func(ctx context.Context, data T) error) Job[T] {
 	action := fmt.Sprintf("%T", *new(T))
-	runner.Register(action, func(ctx context.Context, m []byte) error {
+	client.runner.Register(action, func(ctx context.Context, m []byte) error {
 		var data T
 		if err := gob.NewDecoder(bytes.NewReader(m)).Decode(&data); err != nil {
 			return err
@@ -37,7 +39,7 @@ func NewJob[T any](queue *goqite.Queue, runner *jobs.Runner, job func(ctx contex
 	})
 	return Job[T]{
 		action: action,
-		queue:  queue,
+		queue:  client.queue,
 	}
 }
 

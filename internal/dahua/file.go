@@ -313,7 +313,7 @@ type FileScanJob struct {
 	EndTime   time.Time
 }
 
-func RegisterFileScanJob(ctx context.Context, db *sqlx.DB, dahuaStore *Store) (core.Job[FileScanJob], core.JobService) {
+func NewFileScanJobClient(db *sqlx.DB) core.JobClient {
 	timeout := 30 * time.Second
 	queue := goqite.New(goqite.NewOpts{
 		DB:      db.DB,
@@ -327,7 +327,11 @@ func RegisterFileScanJob(ctx context.Context, db *sqlx.DB, dahuaStore *Store) (c
 		PollInterval: time.Second,
 		Queue:        queue,
 	})
-	job := core.NewJob(queue, runner, func(ctx context.Context, data FileScanJob) error {
+	return core.NewJobClient(queue, runner)
+}
+
+func RegisterFileScanJob(client core.JobClient, db *sqlx.DB, dahuaStore *Store) core.Job[FileScanJob] {
+	return core.NewJob(client, func(ctx context.Context, data FileScanJob) error {
 		var device DahuaDevice
 		err := db.GetContext(ctx, &device, `
 			SELECT * FROM dahua_devices WHERE id = ?
@@ -348,5 +352,4 @@ func RegisterFileScanJob(ctx context.Context, db *sqlx.DB, dahuaStore *Store) (c
 
 		return nil
 	})
-	return job, core.NewJobService(runner)
 }

@@ -96,8 +96,9 @@ func main() {
 			root.Add(dahuaStore)
 
 			// Create file scan job
-			dahuaFileScanJob, dahuaFileScanJobService := dahua.RegisterFileScanJob(ctx, db, dahuaStore)
-			root.Add(dahuaFileScanJobService)
+			dahuaFileScanJobClient := dahua.NewFileScanJobClient(db)
+			dahuaFileScanJob := dahua.RegisterFileScanJob(dahuaFileScanJobClient, db, dahuaStore)
+			root.Add(dahuaFileScanJobClient)
 
 			// Create dahua event manager
 			root.Add(dahua.NewEventManager(root, db).Register())
