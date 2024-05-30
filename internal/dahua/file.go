@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
@@ -87,11 +88,13 @@ func (r *FileScanRange) Next() bool {
 	if r.ascending {
 		cursor = r.cursor.Add(r.period)
 		if cursor.After(r.end) {
+			r.cursor = r.end
 			return false
 		}
 	} else {
 		cursor = r.cursor.Add(-r.period)
 		if cursor.Before(r.start) {
+			r.cursor = r.start
 			return false
 		}
 	}
@@ -121,12 +124,13 @@ type FileScanResult struct {
 
 func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, start, end time.Time) (FileScanResult, error) {
 	var data struct {
+		core.Key
 		Location types.Location
 		Seed     int64
 		Name     string
 	}
 	err := db.GetContext(ctx, &data, `
-		SELECT coalesce(d.location, s.location) AS location, d.seed, d.name
+		SELECT d.uuid, d.id, coalesce(d.location, s.location) AS location, d.seed, d.name
 		FROM dahua_devices AS d, settings as s
 		WHERE d.id = ?
 	`, deviceID)
@@ -149,6 +153,11 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 
 	// For each time range
 	for scanRange.Next() {
+		progress := scanRange.Percent()
+		bus.Publish(bus.FileScanProgress{
+			DeviceKey: data.Key,
+			Progress:  progress,
+		})
 		condition := NewCondition(ctx, scanRange, data.Location.Location)
 
 		// For picture and video conditions
@@ -261,6 +270,11 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 			stream.Close()
 		}
 	}
+	progress := scanRange.Percent()
+	bus.Publish(bus.FileScanProgress{
+		DeviceKey: data.Key,
+		Progress:  progress,
+	})
 
 	// Delete stale files
 	result, err := db.ExecContext(ctx, `

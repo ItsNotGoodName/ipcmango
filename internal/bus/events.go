@@ -33,3 +33,8 @@ type EmailCreated struct {
 	DeviceKey  core.Key
 	MessageKey core.Key
 }
+
+type FileScanProgress struct {
+	DeviceKey core.Key
+	Progress  float64
+}
