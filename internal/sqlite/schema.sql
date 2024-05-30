@@ -110,8 +110,7 @@ CREATE TABLE dahua_event_device_rules (
 );
 
 CREATE TABLE dahua_files (
-  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  uuid TEXT NOT NULL,
+  id TEXT NOT NULL PRIMARY KEY,
   device_id INTEGER NOT NULL,
   --
   channel INTEGER NOT NULL,
