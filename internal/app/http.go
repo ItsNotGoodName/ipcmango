@@ -8,23 +8,23 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 )
 
-func NewHTTPServer(httpServer *http.Server, certificate *system.Certificate) HTTPServer {
-	return HTTPServer{
+func NewServer(httpServer *http.Server, certificate *system.Certificate) Server {
+	return Server{
 		server:      httpServer,
 		certificate: certificate,
 	}
 }
 
-type HTTPServer struct {
+type Server struct {
 	server      *http.Server
 	certificate *system.Certificate
 }
 
-func (s HTTPServer) String() string {
-	return "app.HTTPServer"
+func (s Server) String() string {
+	return "app.Server"
 }
 
-func (s HTTPServer) Serve(ctx context.Context) error {
+func (s Server) Serve(ctx context.Context) error {
 	slog.Info("Starting HTTP server", "address", s.server.Addr)
 
 	errC := make(chan error, 1)

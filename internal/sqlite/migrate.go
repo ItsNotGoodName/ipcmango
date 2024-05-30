@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -11,17 +12,25 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+//go:embed trigger.sql
+var trigger string
+
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-func Migrate(db *sql.DB) (*sql.DB, error) {
+func Migrate(ctx context.Context, db *sql.DB) (*sql.DB, error) {
 	goose.SetBaseFS(migrations)
 
 	if err := goose.SetDialect("sqlite3"); err != nil {
 		return nil, err
 	}
 
-	if err := goose.Up(db, "migrations"); err != nil {
+	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
+		return nil, err
+	}
+
+	_, err := db.ExecContext(ctx, trigger)
+	if err != nil {
 		return nil, err
 	}
 

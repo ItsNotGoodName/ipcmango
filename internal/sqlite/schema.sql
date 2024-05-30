@@ -10,7 +10,7 @@ CREATE TABLE settings (
 );
 
 ------------
--- Auth
+-- Goqite - https://github.com/maragudk/goqite/blob/main/schema.sql
 ------------
 create table goqite (
   id text primary key default ('m_' || lower(hex(randomblob(16)))),

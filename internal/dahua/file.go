@@ -12,6 +12,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
 	"github.com/jmoiron/sqlx"
+	"github.com/k0kubun/pp/v3"
 	"github.com/maragudk/goqite"
 	"github.com/maragudk/goqite/jobs"
 	"github.com/oklog/ulid/v2"
@@ -328,18 +329,21 @@ func (q FileScanQueue) Serve(ctx context.Context) error {
 
 func NewFileScanQueue(ctx context.Context, db *sqlx.DB, dahuaStore *Store) FileScanQueue {
 	queue := goqite.New(goqite.NewOpts{
-		DB:   db.DB,
-		Name: "jobs",
+		DB:      db.DB,
+		Name:    "jobs",
+		Timeout: 30 * time.Second,
 	})
 
 	r := jobs.NewRunner(jobs.NewRunnerOpts{
+		Extend:       30 * time.Second,
 		Limit:        5,
 		Log:          slog.Default(),
-		PollInterval: 10 * time.Millisecond,
+		PollInterval: time.Second,
 		Queue:        queue,
 	})
 
 	FileScanJob.Register(ctx, r, func(ctx context.Context, data FileScanJobData) error {
+		pp.Println("RECV")
 		var device DahuaDevice
 		err := db.GetContext(ctx, &device, `
 			SELECT * FROM dahua_devices WHERE id = ?

@@ -14,6 +14,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/dahua"
+	"github.com/ItsNotGoodName/ipcmanview/internal/smtp"
 	"github.com/ItsNotGoodName/ipcmanview/internal/sqlite"
 	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 	"github.com/ItsNotGoodName/ipcmanview/internal/web"
@@ -79,12 +80,12 @@ func main() {
 			core.Must(os.MkdirAll(dir, 0755))
 
 			// Create database
-			db := sqlx.NewDb(core.Must2(sqlite.Migrate(core.Must2(sqlite.New(filepath.Join(dir, "sqlite.db"))))), sqlite.Driver)
+			db := sqlx.NewDb(core.Must2(sqlite.Migrate(ctx, core.Must2(sqlite.New(filepath.Join(dir, "sqlite.db"))))), sqlite.Driver)
 
 			// Create afero filesystem
-			afsPath := filepath.Join(dir, "afero")
-			core.Must(os.MkdirAll(afsPath, 0755))
-			afs := afero.NewBasePathFs(afero.NewOsFs(), afsPath)
+			afsDirectory := filepath.Join(dir, "afero")
+			core.Must(os.MkdirAll(afsDirectory, 0755))
+			afs := afero.NewBasePathFs(afero.NewOsFs(), afsDirectory)
 
 			// Create quartz scheduler
 			scheduler := quartzext.NewServiceScheduler(quartz.NewStdScheduler())
@@ -122,10 +123,16 @@ func main() {
 			api := humachi.New(router, app.NewHumaConfig())
 
 			// Register handlers
-			app.Register(api, db, afs, afsPath, queue, dahuaStore)
+			app.Register(api, app.App{
+				DB:           db,
+				AFS:          afs,
+				AFSDirectory: afsDirectory,
+				Queue:        queue,
+				DahuaStore:   dahuaStore,
+			})
 
 			// Create HTTP server
-			root.Add(app.NewHTTPServer(&http.Server{
+			root.Add(app.NewServer(&http.Server{
 				Addr:    core.Address(options.HttpHost, options.HttpPort),
 				Handler: router,
 			}, nil))
@@ -138,13 +145,13 @@ func main() {
 			core.Must(certificate.GenerateIfNotExist())
 
 			// Create HTTPS server
-			root.Add(app.NewHTTPServer(&http.Server{
+			root.Add(app.NewServer(&http.Server{
 				Addr:    core.Address(options.HttpsHost, options.HttpsPort),
 				Handler: router,
 			}, &certificate))
 
 			// Create SMTP server
-			root.Add(app.NewSMTPServer(db, afs, core.Address(options.SmtpHost, options.SmtpPort)))
+			root.Add(smtp.NewServer(db, afs, core.Address(options.SmtpHost, options.SmtpPort)))
 
 			core.Must(system.InitializeSettings(ctx, db))
 
@@ -175,7 +182,7 @@ func main() {
 		Short: "Print the OpenAPI spec",
 		Run: func(cmd *cobra.Command, args []string) {
 			api := humachi.New(chi.NewMux(), app.NewHumaConfig())
-			app.Register(api, nil, nil, "", dahua.FileScanQueue{}, nil)
+			app.Register(api, app.App{})
 			b, _ := json.MarshalIndent(api.OpenAPI(), "", "  ")
 			fmt.Println(string(b))
 		},

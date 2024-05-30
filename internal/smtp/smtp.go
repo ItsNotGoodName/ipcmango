@@ -1,4 +1,4 @@
-package app
+package smtp
 
 import (
 	"context"
@@ -20,13 +20,13 @@ import (
 	"github.com/spf13/afero"
 )
 
-type SMTPServer struct {
+type Server struct {
 	server *smtp.Server
 	db     *sqlx.DB
 	afs    afero.Fs
 }
 
-func NewSMTPServer(db *sqlx.DB, afs afero.Fs, address string) SMTPServer {
+func NewServer(db *sqlx.DB, afs afero.Fs, address string) Server {
 	server := smtp.NewServer(nil)
 
 	server.Addr = address
@@ -37,25 +37,25 @@ func NewSMTPServer(db *sqlx.DB, afs afero.Fs, address string) SMTPServer {
 	server.MaxRecipients = 50
 	server.AllowInsecureAuth = true
 
-	return SMTPServer{
+	return Server{
 		server: server,
 		db:     db,
 		afs:    afs,
 	}
 }
 
-func (SMTPServer) String() string {
-	return "app.SMTPServer"
+func (Server) String() string {
+	return "smtp.Server"
 }
 
-func (s SMTPServer) Serve(ctx context.Context) error {
+func (s Server) Serve(ctx context.Context) error {
 	slog.Info("Starting SMTP server", "address", s.server.Addr)
 
 	s.server.Backend = smtp.BackendFunc(func(c *smtp.Conn) (smtp.Session, error) {
 		address := c.Conn().RemoteAddr().String()
 		log := slog.With("address", address)
 
-		return &SMTPSession{
+		return &Session{
 			ctx:     ctx,
 			log:     log,
 			db:      s.db,
@@ -81,8 +81,8 @@ func (s SMTPServer) Serve(ctx context.Context) error {
 	return nil
 }
 
-// SMTPSession is returned after EHLO.
-type SMTPSession struct {
+// Session is returned after EHLO.
+type Session struct {
 	ctx     context.Context
 	log     *slog.Logger
 	db      *sqlx.DB
@@ -92,23 +92,23 @@ type SMTPSession struct {
 	to      string
 }
 
-func (s *SMTPSession) AuthPlain(username, password string) error {
+func (s *Session) AuthPlain(username, password string) error {
 	return nil
 }
 
-func (s *SMTPSession) Mail(from string, opts *smtp.MailOptions) error {
+func (s *Session) Mail(from string, opts *smtp.MailOptions) error {
 	s.from = from
 
 	return nil
 }
 
-func (s *SMTPSession) Rcpt(to string, opts *smtp.RcptOptions) error {
+func (s *Session) Rcpt(to string, opts *smtp.RcptOptions) error {
 	s.to = to
 
 	return nil
 }
 
-func (s *SMTPSession) Data(r io.Reader) error {
+func (s *Session) Data(r io.Reader) error {
 	ctx := s.ctx
 	slog := s.log
 	db := s.db
@@ -192,20 +192,20 @@ func (s *SMTPSession) Data(r io.Reader) error {
 	return nil
 }
 
-func (s *SMTPSession) Reset() {
+func (s *Session) Reset() {
 }
 
-func (s *SMTPSession) Logout() error {
+func (s *Session) Logout() error {
 	return nil
 }
 
-func (s *SMTPSession) AuthMechanisms() []string {
+func (s *Session) AuthMechanisms() []string {
 	return []string{
 		sasl.Login,
 	}
 }
 
-func (s *SMTPSession) Auth(mech string) (sasl.Server, error) {
+func (s *Session) Auth(mech string) (sasl.Server, error) {
 	return sasl.NewLoginServer(func(username, password string) error {
 		return s.AuthPlain(username, password)
 	}), nil
