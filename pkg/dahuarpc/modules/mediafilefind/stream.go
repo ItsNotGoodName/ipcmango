@@ -3,18 +3,13 @@ package mediafilefind
 import (
 	"context"
 	"errors"
+	"log/slog"
+	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 )
 
-type Stream struct {
-	conn   dahuarpc.Conn
-	object int64
-	count  int
-	closed bool
-}
-
-func NewStream(ctx context.Context, c dahuarpc.Conn, condtion Condition) (*Stream, error) {
+func OpenStream(ctx context.Context, c dahuarpc.Conn, condtion Condition) (*Stream, error) {
 	object, err := Create(ctx, c)
 	if err != nil {
 		return nil, err
@@ -43,6 +38,13 @@ func NewStream(ctx context.Context, c dahuarpc.Conn, condtion Condition) (*Strea
 		count:  64,
 		closed: closed,
 	}, nil
+}
+
+type Stream struct {
+	conn   dahuarpc.Conn
+	object int64
+	count  int
+	closed bool
 }
 
 func (s *Stream) Next(ctx context.Context) ([]FindNextFileInfo, bool, error) {
@@ -74,11 +76,14 @@ func (s *Stream) Close() {
 	}
 	s.closed = true
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	if _, err := Close(ctx, s.conn, s.object); err != nil {
-		return
+		slog.Error("Failed to close stream", "error", err)
 	}
 
-	Destroy(ctx, s.conn, s.object)
+	if _, err := Destroy(ctx, s.conn, s.object); err != nil {
+		slog.Error("Failed to destroy stream", "error", err)
+	}
 }

@@ -645,6 +645,25 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
+		Summary: "Reboot device",
+		Method:  http.MethodPost,
+		Path:    "/api/devices/{uuid}/reboot",
+	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
+	}) (*struct{}, error) {
+		device, err := useDeviceByUUID(ctx, db, input.UUID)
+		if err != nil {
+			return nil, err
+		}
+
+		client, err := useClient(ctx, dahuaStore, device)
+		if err != nil {
+			return nil, err
+		}
+
+		return &struct{}{}, dahua.RebootDevice(ctx, client.RPC)
+	})
+	huma.Register(api, huma.Operation{
 		Summary: "Get device VideoInMode",
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/video-in-mode",
@@ -667,6 +686,32 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		}
 
 		return &DeviceVideoInModeOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Scan files",
+		Method:  http.MethodPost,
+		Path:    "/api/files/scan",
+	}, func(ctx context.Context, input *struct {
+		Body FileScan
+	}) (*FileScanOutput, error) {
+		device, err := useDeviceByUUID(ctx, db, input.Body.DeviceUUID)
+		if err != nil {
+			return nil, err
+		}
+
+		client, err := useClient(ctx, dahuaStore, device)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := dahua.FileScan(ctx, db, client.RPC, device.ID, input.Body.StartTime, core.Optional(input.Body.EndTime, time.Now()))
+		if err != nil {
+			return nil, err
+		}
+
+		return &FileScanOutput{
 			Body: body,
 		}, nil
 	})
@@ -1269,4 +1314,14 @@ func SetDeviceCoaxialState(ctx context.Context, dahuaStore *dahua.Store, db *sql
 	}
 
 	return coaxialcontrolio.Control(ctx, client.RPC, channel, control)
+}
+
+type FileScan struct {
+	DeviceUUID string     `json:"device_uuid" format:"uuid"`
+	StartTime  time.Time  `json:"start_time"`
+	EndTime    *time.Time `json:"end_time,omitempty"`
+}
+
+type FileScanOutput struct {
+	Body dahua.FileScanResult
 }

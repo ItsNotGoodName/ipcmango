@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -607,4 +608,33 @@ func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey core.Key, event dah
 	bus.Publish(busEvent)
 
 	return nil
+}
+
+func RebootDevice(ctx context.Context, c dahuarpc.Conn) error {
+	_, err := magicbox.Reboot(ctx, c)
+	return err
+}
+
+const (
+	StorageLocal = "local"
+	StorageSFTP  = "sftp"
+	StorageFTP   = "ftp"
+	StorageNFS   = "nfs"
+	StorageSMB   = "smb"
+)
+
+func StorageFromFilePath(filePath string) string {
+	if strings.HasPrefix(filePath, "sftp://") {
+		return StorageSFTP
+	}
+	if strings.HasPrefix(filePath, "ftp://") {
+		return StorageFTP
+	}
+	if strings.HasPrefix(filePath, "nfs://") {
+		return StorageNFS
+	}
+	if strings.HasPrefix(filePath, "smb://") {
+		return StorageSMB
+	}
+	return StorageLocal
 }
