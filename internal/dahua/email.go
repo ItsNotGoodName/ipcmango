@@ -49,6 +49,7 @@ func GetEmailEndpointDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey c
 }
 
 type CreateEmailEndpointArgs struct {
+	UUID          string
 	Global        bool
 	Expression    string
 	TitleTemplate string
@@ -108,7 +109,6 @@ func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpo
 		}
 	}
 
-	endpointUUID := uuid.NewString()
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
 	var disabledAt *types.Time
@@ -134,7 +134,7 @@ func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpo
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, uuid
 	`,
-		endpointUUID,
+		args.UUID,
 		args.Global,
 		args.Expression,
 		args.TitleTemplate,

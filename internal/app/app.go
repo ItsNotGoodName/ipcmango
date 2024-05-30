@@ -24,6 +24,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/coaxialcontrolio"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/sse"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/afero"
 )
@@ -1039,6 +1040,7 @@ func NewDevice(v dahua.DahuaDevice) Device {
 }
 
 type CreateDevice struct {
+	UUID            *string         `json:"uuid,omitempty" format:"uuid"`
 	Name            string          `json:"name,omitempty"`
 	IP              string          `json:"ip,omitempty" format:"ipv4"`
 	Username        string          `json:"username,omitempty"`
@@ -1077,6 +1079,7 @@ func (i *CreateDevice) Resolve(ctx huma.Context) []error {
 
 func (i *CreateDevice) Convert() dahua.CreateDeviceArgs {
 	return dahua.CreateDeviceArgs{
+		UUID:            core.Optional(i.UUID, uuid.NewString()),
 		Name:            i.Name,
 		IP:              i.IP,
 		Username:        i.Username,
@@ -1187,6 +1190,7 @@ type DeviceEventsOutput struct {
 }
 
 type CreateEmailEndpoint struct {
+	UUID          *string  `json:"uuid,omitempty" format:"uuid"`
 	URLs          []string `json:"urls"`
 	Expression    string   `json:"expression,omitempty"`
 	TitleTemplate *string  `json:"title_template,omitempty"`
@@ -1199,6 +1203,7 @@ type CreateEmailEndpoint struct {
 
 func (i CreateEmailEndpoint) Convert() dahua.CreateEmailEndpointArgs {
 	return dahua.CreateEmailEndpointArgs{
+		UUID:          core.Optional(i.UUID, uuid.NewString()),
 		Global:        i.Global,
 		Expression:    i.Expression,
 		TitleTemplate: core.Optional(i.TitleTemplate, "{{.Message.Subject}}"),

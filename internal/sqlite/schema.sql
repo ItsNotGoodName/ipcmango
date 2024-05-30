@@ -59,7 +59,7 @@ CREATE TABLE tokens (
 ------------
 CREATE TABLE dahua_devices (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  uuid TEXT NOT NULL,
+  uuid TEXT NOT NULL UNIQUE,
   seed INTEGER NOT NULL UNIQUE,
 
   name TEXT NOT NULL UNIQUE,
@@ -192,7 +192,7 @@ CREATE TABLE dahua_email_attachments (
 
 CREATE TABLE dahua_email_endpoints (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  uuid TEXT NOT NULL,
+  uuid TEXT NOT NULL UNIQUE,
   global BOOLEAN NOT NULL,
   expression TEXT NOT NULL,
   title_template TEXT NOT NULL,

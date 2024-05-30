@@ -9,11 +9,11 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
 type CreateDeviceArgs struct {
+	UUID            string
 	Name            string
 	IP              string
 	Username        string
@@ -85,7 +85,6 @@ func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]co
 }
 
 func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDeviceArgs) (core.Key, error) {
-	uuid := uuid.NewString()
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
 
@@ -117,7 +116,7 @@ func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDevice
 		VALUES ((SELECT value FROM generate_series WHERE value NOT IN (SELECT seed from dahua_devices) LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
 		RETURNING id, uuid;
 	`,
-		uuid,
+		args.UUID,
 		args.Name,
 		args.IP,
 		args.Username,
