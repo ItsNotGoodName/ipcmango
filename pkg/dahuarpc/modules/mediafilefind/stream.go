@@ -45,34 +45,33 @@ func NewStream(ctx context.Context, c dahuarpc.Conn, condtion Condition) (*Strea
 	}, nil
 }
 
-func (s *Stream) Next(ctx context.Context) ([]FindNextFileInfo, error) {
+func (s *Stream) Next(ctx context.Context) ([]FindNextFileInfo, bool, error) {
 	if s.closed {
-		return nil, nil
+		return nil, false, nil
 	}
 
 	files, err := FindNextFile(ctx, s.conn, s.object, s.count)
 	if err != nil {
 		s.Close()
-		return nil, err
+		return nil, false, err
 	}
 
 	if files.Infos == nil {
 		s.Close()
-		return nil, nil
+		return nil, false, nil
 	}
 
 	if files.Found < s.count {
 		s.Close()
 	}
 
-	return files.Infos, nil
+	return files.Infos, true, nil
 }
 
 func (s *Stream) Close() {
 	if s.closed {
 		return
 	}
-
 	s.closed = true
 
 	ctx := context.Background()

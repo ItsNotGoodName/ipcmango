@@ -1,10 +1,17 @@
 package dahua
 
 import (
+	"context"
 	"time"
+
+	"github.com/ItsNotGoodName/ipcmanview/internal/core"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
 )
 
-const MaxFileScanPeriod = 30 * 24 * time.Hour
+var FileScanEpoch time.Time = core.Must2(time.ParseInLocation(time.DateTime, "2009-12-31 00:00:00", time.UTC))
+
+const FileScanMaxPeriod = 30 * 24 * time.Hour
 
 func NewFileScanRange(start, end time.Time, period time.Duration, ascending bool) *FileScanRange {
 	if period <= 0 {
@@ -90,74 +97,96 @@ func (r *FileScanRange) Next() bool {
 	return true
 }
 
-// func NewScaner(ctx context.Context, conn dahuarpc.Conn, start, end time.Time) (*Scanner, error) {
-// 	return &Scanner{
-// 		maxScannerPeriod: 30 * 24 * time.Hour,
-// 		conn:             conn,
-// 		start:            start,
-// 		end:              end,
-// 		closed:           false,
-// 		cursor:           end,
-// 		streams:          []mediafilefind.Stream{},
-// 	}, nil
-// }
-//
-// type Scanner struct {
-// 	maxScannerPeriod time.Duration
-// 	conn             dahuarpc.Conn
-//
-// 	closed  bool
-// 	cursor  time.Time
-// 	streams []mediafilefind.Stream
-// }
-//
-// func (s *Scanner) Cursor() time.Time {
-// 	return s.cursor
-// }
-//
-// func (s *Scanner) Next(ctx context.Context) ([]mediafilefind.FindNextFileInfo, error) {
-// 	if s.closed {
-// 		return nil, nil
-// 	}
-//
-// 	// fetch
-// 	for _, stream := range s.streams {
-// 		files, err := stream.Next(ctx)
-// 		if files == nil && err == nil {
-// 			continue
-// 		}
-// 	}
-//
-// 	// next
-// 	if s.start.Equal(s.cursor) {
-// 		return ScannerPeriod{}, false
-// 	}
-//
-// 	cursor := s.cursor.Add(-s.maxScannerPeriod)
-// 	start := cursor.Add(-s.maxScannerPeriod)
-// 	if start.Before(s.start) {
-// 		start = s.start
-// 	}
-//
-// 	s.cursor = cursor
-//
-// 	stream1, err := mediafilefind.NewStream(ctx, s.conn, mediafilefind.Condition{})
-// 	stream2, err := mediafilefind.NewStream(ctx, s.conn, mediafilefind.Condition{})
-//
-// 	// Only mutation in this struct
-// 	s.cursor = cursor
-//
-// 	s.closed = true
-// 	return nil, nil
-// }
-//
-// func (s *Scanner) Close() {
-// 	if s.closed {
-// 		return
-// 	}
-//
-// 	for _, stream := range s.streams {
-// 		stream.Close()
-// 	}
-// 	s.closed = true
-// }
+func NewFileScanner(ctx context.Context, conn dahuarpc.Conn, location *time.Location, scanRange *FileScanRange) *FileScanner {
+	return &FileScanner{
+		conn:      conn,
+		location:  location,
+		scanRange: scanRange,
+		streams:   [2]*mediafilefind.Stream{},
+		closed:    false,
+	}
+}
+
+type FileScanner struct {
+	conn     dahuarpc.Conn
+	location *time.Location
+
+	scanRange *FileScanRange
+	streams   [2]*mediafilefind.Stream
+	closed    bool
+}
+
+func (s *FileScanner) Next(ctx context.Context) ([]mediafilefind.FindNextFileInfo, bool, error) {
+	if s.closed {
+		return nil, false, nil
+	}
+
+	for i := range s.streams {
+		// Check if stream exists
+		if s.streams[i] == nil {
+			continue
+		}
+
+		files, next, err := s.streams[i].Next(ctx)
+		if err != nil {
+			s.Close()
+			return nil, false, err
+		}
+
+		// Check if stream has more files
+		if !next {
+			s.streams[i] = nil
+			continue
+		}
+
+		return files, true, nil
+	}
+
+	// Check if done scanning
+	if !s.scanRange.Next() {
+		s.Close()
+		return nil, false, nil
+	}
+
+	// Get next scan range
+	start, end := s.scanRange.Range()
+	startTS, endTS := dahuarpc.NewTimestamp(start, s.location), dahuarpc.NewTimestamp(end, s.location)
+	condition := mediafilefind.NewCondtion(startTS, endTS)
+	if s.scanRange.ascending {
+		condition.Order = mediafilefind.ConditionOrderAscent
+	} else {
+		condition.Order = mediafilefind.ConditionOrderDescent
+	}
+
+	// Open picture files stream
+	pictureStream, err := mediafilefind.NewStream(ctx, s.conn, condition.Picture())
+	if err != nil {
+		s.Close()
+		return nil, false, err
+	}
+	s.streams[0] = pictureStream
+
+	// Open video files stream
+	videoStream, err := mediafilefind.NewStream(ctx, s.conn, condition.Video())
+	if err != nil {
+		s.Close()
+		return nil, false, err
+	}
+	s.streams[1] = videoStream
+
+	return s.Next(ctx)
+}
+
+func (s *FileScanner) Close() {
+	if s.closed {
+		return
+	}
+	s.closed = true
+
+	for _, stream := range s.streams {
+		if stream == nil {
+			continue
+		}
+		stream.Close()
+	}
+}
