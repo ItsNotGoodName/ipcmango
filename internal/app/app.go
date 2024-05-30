@@ -56,7 +56,7 @@ func NewHumaConfig() huma.Config {
 	return huma.DefaultConfig("IPCManView API", "1.0.0")
 }
 
-func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahuaStore *dahua.Store) {
+func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, queue dahua.FileScanQueue, dahuaStore *dahua.Store) {
 	// Devices
 	huma.Register(api, huma.Operation{
 		Summary: "List devices",
@@ -696,25 +696,19 @@ func Register(api huma.API, db *sqlx.DB, afs afero.Fs, afsDirectory string, dahu
 		Path:    "/api/files/scan",
 	}, func(ctx context.Context, input *struct {
 		Body FileScan
-	}) (*FileScanOutput, error) {
+	}) (*struct{}, error) {
 		device, err := useDeviceByUUID(ctx, db, input.Body.DeviceUUID)
 		if err != nil {
 			return nil, err
 		}
 
-		client, err := useClient(ctx, dahuaStore, device)
-		if err != nil {
-			return nil, err
-		}
+		dahua.FileScanJob.Create(ctx, queue.Queue, dahua.FileScanJobData{
+			DeviceID:  device.ID,
+			StartTime: input.Body.StartTime,
+			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
+		})
 
-		body, err := dahua.FileScan(ctx, db, client.RPC, device.ID, input.Body.StartTime, core.Optional(input.Body.EndTime, time.Now()))
-		if err != nil {
-			return nil, err
-		}
-
-		return &FileScanOutput{
-			Body: body,
-		}, nil
+		return &struct{}{}, nil
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Sync device VideoInMode",

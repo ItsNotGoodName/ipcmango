@@ -3,6 +3,10 @@
 CREATE TABLE `settings` (`id` integer NULL DEFAULT 0, `location` text NOT NULL, `latitude` real NOT NULL, `longitude` real NOT NULL, `sunrise_offset` text NOT NULL, `sunset_offset` text NOT NULL, `sync_video_in_mode` bool NOT NULL, `updated_at` datetime NOT NULL);
 -- create index "settings_id" to table: "settings"
 CREATE UNIQUE INDEX `settings_id` ON `settings` (`id`);
+-- create "goqite" table
+CREATE TABLE `goqite` (`id` text NOT NULL DEFAULT ('m_' || lower(hex(randomblob(16)))), `created` text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ')), `updated` text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ')), `queue` text NOT NULL, `body` blob NOT NULL, `timeout` text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ')), `received` integer NOT NULL DEFAULT 0, PRIMARY KEY (`id`)) STRICT;
+-- create index "goqite_queue_created_idx" to table: "goqite"
+CREATE INDEX `goqite_queue_created_idx` ON `goqite` (`queue`, `created`);
 -- create "users" table
 CREATE TABLE `users` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `email` text NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `disabled_at` datetime NULL);
 -- create index "users_email" to table: "users"
@@ -125,6 +129,10 @@ DROP INDEX `users_username`;
 DROP INDEX `users_email`;
 -- reverse: create "users" table
 DROP TABLE `users`;
+-- reverse: create index "goqite_queue_created_idx" to table: "goqite"
+DROP INDEX `goqite_queue_created_idx`;
+-- reverse: create "goqite" table
+DROP TABLE `goqite`;
 -- reverse: create index "settings_id" to table: "settings"
 DROP INDEX `settings_id`;
 -- reverse: create "settings" table

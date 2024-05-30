@@ -78,10 +78,8 @@ func main() {
 			dir := core.Must2(filepath.Abs(options.Dir))
 			core.Must(os.MkdirAll(dir, 0755))
 
-			// Create sqlite database
-			sqliteDB := core.Must2(sqlite.New(filepath.Join(dir, "sqlite.db")))
-			core.Must(sqlite.Migrate(sqliteDB))
-			db := sqlx.NewDb(sqliteDB, sqlite.Driver)
+			// Create database
+			db := sqlx.NewDb(core.Must2(sqlite.Migrate(core.Must2(sqlite.New(filepath.Join(dir, "sqlite.db"))))), sqlite.Driver)
 
 			// Create afero filesystem
 			afsPath := filepath.Join(dir, "afero")
@@ -95,6 +93,9 @@ func main() {
 			// Create dahua store
 			dahuaStore := dahua.NewStore()
 			root.Add(dahuaStore)
+
+			queue := dahua.NewFileScanQueue(ctx, db, dahuaStore)
+			root.Add(queue)
 
 			// Create dahua event manager
 			root.Add(dahua.NewEventManager(root, db).Register())
@@ -121,7 +122,7 @@ func main() {
 			api := humachi.New(router, app.NewHumaConfig())
 
 			// Register handlers
-			app.Register(api, db, afs, afsPath, dahuaStore)
+			app.Register(api, db, afs, afsPath, queue, dahuaStore)
 
 			// Create HTTP server
 			root.Add(app.NewHTTPServer(&http.Server{
@@ -174,7 +175,7 @@ func main() {
 		Short: "Print the OpenAPI spec",
 		Run: func(cmd *cobra.Command, args []string) {
 			api := humachi.New(chi.NewMux(), app.NewHumaConfig())
-			app.Register(api, nil, nil, "", nil)
+			app.Register(api, nil, nil, "", dahua.FileScanQueue{}, nil)
 			b, _ := json.MarshalIndent(api.OpenAPI(), "", "  ")
 			fmt.Println(string(b))
 		},

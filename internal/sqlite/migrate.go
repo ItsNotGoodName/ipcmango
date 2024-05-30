@@ -14,18 +14,18 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-func Migrate(sqlDB *sql.DB) error {
+func Migrate(db *sql.DB) (*sql.DB, error) {
 	goose.SetBaseFS(migrations)
 
 	if err := goose.SetDialect("sqlite3"); err != nil {
-		return err
+		return nil, err
 	}
 
-	if err := goose.Up(sqlDB, "migrations"); err != nil {
-		return err
+	if err := goose.Up(db, "migrations"); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return db, nil
 }
 
 func init() {

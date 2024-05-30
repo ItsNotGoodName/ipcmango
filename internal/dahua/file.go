@@ -12,6 +12,8 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
 	"github.com/jmoiron/sqlx"
+	"github.com/maragudk/goqite"
+	"github.com/maragudk/goqite/jobs"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -303,4 +305,65 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 		UpdatedCount: updatedCount,
 		DeletedCount: deletedCount,
 	}, err
+}
+
+type FileScanJobData struct {
+	DeviceID  int64
+	StartTime time.Time
+	EndTime   time.Time
+}
+
+var FileScanJob = core.NewJobBuilder[FileScanJobData]("FileScanJob")
+
+type FileScanQueue struct {
+	core.JobBuilder[FileScanJobData]
+	*goqite.Queue
+	*jobs.Runner
+}
+
+func (q FileScanQueue) Serve(ctx context.Context) error {
+	q.Start(ctx)
+	return nil
+}
+
+func NewFileScanQueue(ctx context.Context, db *sqlx.DB, dahuaStore *Store) FileScanQueue {
+	queue := goqite.New(goqite.NewOpts{
+		DB:   db.DB,
+		Name: "jobs",
+	})
+
+	r := jobs.NewRunner(jobs.NewRunnerOpts{
+		Limit:        5,
+		Log:          slog.Default(),
+		PollInterval: 10 * time.Millisecond,
+		Queue:        queue,
+	})
+
+	FileScanJob.Register(ctx, r, func(ctx context.Context, data FileScanJobData) error {
+		var device DahuaDevice
+		err := db.GetContext(ctx, &device, `
+			SELECT * FROM dahua_devices WHERE id = ?
+		`, data.DeviceID)
+		if err != nil {
+			return err
+		}
+
+		conn, err := dahuaStore.GetClient(ctx, NewConn(device))
+		if err != nil {
+			return err
+		}
+
+		_, err = FileScan(ctx, db, conn.RPC, data.DeviceID, data.StartTime, data.EndTime)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return FileScanQueue{
+		JobBuilder: FileScanJob,
+		Queue:      queue,
+		Runner:     r,
+	}
 }
