@@ -27,6 +27,7 @@ export type CreateDevice = {
     sunset_offset?: string;
     sync_video_in_mode?: boolean;
     username?: string;
+    uuid?: string;
 };
 
 export type CreateEmailEndpoint = {
@@ -37,10 +38,12 @@ export type CreateEmailEndpoint = {
     attachments?: boolean;
     body_template?: string;
     device_uuids?: Array<(string)>;
+    disabled?: boolean;
     expression?: string;
     global?: boolean;
     title_template?: string;
     urls: Array<(string)>;
+    uuid?: string;
 };
 
 export type Device = {
@@ -228,6 +231,7 @@ export type EmailEndpoint = {
     body_template: string;
     created_at: string;
     device_uuids: Array<(string)>;
+    disabled: boolean;
     expression: string;
     global: boolean;
     title_template: string;
@@ -280,6 +284,16 @@ export type ErrorModel = {
      * A URI reference to human-readable documentation for the error.
      */
     type?: string;
+};
+
+export type FileScan = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    device_uuid: string;
+    end_time?: string;
+    start_time: string;
 };
 
 export type GetHomePage = {
@@ -437,6 +451,12 @@ export type GetApiDevicesByUuidPtzPresetsData = {
 
 export type GetApiDevicesByUuidPtzPresetsResponse = Array<DevicePTZPreset>;
 
+export type PostApiDevicesByUuidRebootData = {
+    uuid: string;
+};
+
+export type PostApiDevicesByUuidRebootResponse = void;
+
 export type GetApiDevicesByUuidSnapshotData = {
     channel?: number;
     type?: number;
@@ -496,11 +516,17 @@ export type PostApiDevicesByUuidVideoInModeSyncResponse = DeviceVideoInMode;
 
 export type GetApiEmailEndpointsResponse = Array<EmailEndpoint>;
 
-export type PostApiEmailEndpointsData = {
+export type PutApiEmailEndpointsData = {
+    requestBody: Array<CreateEmailEndpoint>;
+};
+
+export type PutApiEmailEndpointsResponse = Array<EmailEndpoint>;
+
+export type PostApiEmailEndpointsCreateData = {
     requestBody: CreateEmailEndpoint;
 };
 
-export type PostApiEmailEndpointsResponse = EmailEndpoint;
+export type PostApiEmailEndpointsCreateResponse = EmailEndpoint;
 
 export type DeleteApiEndpointsByUuidData = {
     uuid: string;
@@ -528,6 +554,12 @@ export type GetApiEventsResponse = Array<({
      */
     retry?: number;
 })>;
+
+export type PostApiFilesScanData = {
+    requestBody: FileScan;
+};
+
+export type PostApiFilesScanResponse = void;
 
 export type GetApiPagesHomeResponse = GetHomePage;
 
@@ -760,6 +792,21 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/devices/{uuid}/reboot': {
+        post: {
+            req: PostApiDevicesByUuidRebootData;
+            res: {
+                /**
+                 * No Content
+                 */
+                204: void;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
     '/api/devices/{uuid}/snapshot': {
         get: {
             req: GetApiDevicesByUuidSnapshotData;
@@ -908,8 +955,23 @@ export type $OpenApiTs = {
                 default: ErrorModel;
             };
         };
+        put: {
+            req: PutApiEmailEndpointsData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<EmailEndpoint>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/email-endpoints/create': {
         post: {
-            req: PostApiEmailEndpointsData;
+            req: PostApiEmailEndpointsCreateData;
             res: {
                 /**
                  * OK
@@ -959,6 +1021,21 @@ export type $OpenApiTs = {
      */
     retry?: number;
 })>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/files/scan': {
+        post: {
+            req: PostApiFilesScanData;
+            res: {
+                /**
+                 * No Content
+                 */
+                204: void;
                 /**
                  * Error
                  */

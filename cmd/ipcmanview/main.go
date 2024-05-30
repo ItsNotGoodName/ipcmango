@@ -95,8 +95,9 @@ func main() {
 			dahuaStore := dahua.NewStore()
 			root.Add(dahuaStore)
 
-			queue := dahua.NewFileScanQueue(ctx, db, dahuaStore)
-			root.Add(queue)
+			// Create file scan job
+			dahuaFileScanJob, dahuaFileScanJobService := dahua.RegisterFileScanJob(ctx, db, dahuaStore)
+			root.Add(dahuaFileScanJobService)
 
 			// Create dahua event manager
 			root.Add(dahua.NewEventManager(root, db).Register())
@@ -127,7 +128,7 @@ func main() {
 				DB:           db,
 				AFS:          afs,
 				AFSDirectory: afsDirectory,
-				Queue:        queue,
+				FIleScanJob:  dahuaFileScanJob,
 				DahuaStore:   dahuaStore,
 			})
 

@@ -84,6 +84,10 @@ export const $CreateDevice = {
         },
         username: {
             type: 'string'
+        },
+        uuid: {
+            format: 'uuid',
+            type: 'string'
         }
     },
     type: 'object'
@@ -103,7 +107,6 @@ export const $CreateEmailEndpoint = {
             type: 'boolean'
         },
         body_template: {
-            default: '{{.Message.Text}}',
             type: 'string'
         },
         device_uuids: {
@@ -112,6 +115,10 @@ export const $CreateEmailEndpoint = {
             },
             type: 'array'
         },
+        disabled: {
+            default: false,
+            type: 'boolean'
+        },
         expression: {
             type: 'string'
         },
@@ -119,7 +126,6 @@ export const $CreateEmailEndpoint = {
             type: 'boolean'
         },
         title_template: {
-            default: '{{.Message.Subject}}',
             type: 'string'
         },
         urls: {
@@ -127,6 +133,10 @@ export const $CreateEmailEndpoint = {
                 type: 'string'
             },
             type: 'array'
+        },
+        uuid: {
+            format: 'uuid',
+            type: 'string'
         }
     },
     required: ['urls'],
@@ -664,6 +674,9 @@ export const $EmailEndpoint = {
             },
             type: 'array'
         },
+        disabled: {
+            type: 'boolean'
+        },
         expression: {
             type: 'string'
         },
@@ -687,7 +700,7 @@ export const $EmailEndpoint = {
             type: 'string'
         }
     },
-    required: ['uuid', 'global', 'device_uuids', 'expression', 'urls', 'title_template', 'body_template', 'attachments', 'created_at', 'updated_at'],
+    required: ['uuid', 'global', 'device_uuids', 'expression', 'urls', 'title_template', 'body_template', 'attachments', 'created_at', 'updated_at', 'disabled'],
     type: 'object'
 } as const;
 
@@ -756,6 +769,33 @@ export const $ErrorModel = {
             type: 'string'
         }
     },
+    type: 'object'
+} as const;
+
+export const $FileScan = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/FileScan.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        device_uuid: {
+            format: 'uuid',
+            type: 'string'
+        },
+        end_time: {
+            format: 'date-time',
+            type: 'string'
+        },
+        start_time: {
+            format: 'date-time',
+            type: 'string'
+        }
+    },
+    required: ['device_uuid', 'start_time'],
     type: 'object'
 } as const;
 

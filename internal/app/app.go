@@ -33,7 +33,7 @@ type App struct {
 	DB           *sqlx.DB
 	AFS          afero.Fs
 	AFSDirectory string
-	Queue        dahua.FileScanQueue
+	FIleScanJob  core.Job[dahua.FileScanJob]
 	DahuaStore   *dahua.Store
 }
 
@@ -710,7 +710,7 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		dahua.FileScanJob.Create(ctx, app.Queue.Queue, dahua.FileScanJobData{
+		app.FIleScanJob.Create(ctx, dahua.FileScanJob{
 			DeviceID:  device.ID,
 			StartTime: input.Body.StartTime,
 			EndTime:   core.Optional(input.Body.EndTime, time.Now()),

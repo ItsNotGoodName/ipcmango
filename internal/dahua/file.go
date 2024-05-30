@@ -12,7 +12,6 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
 	"github.com/jmoiron/sqlx"
-	"github.com/k0kubun/pp/v3"
 	"github.com/maragudk/goqite"
 	"github.com/maragudk/goqite/jobs"
 	"github.com/oklog/ulid/v2"
@@ -308,42 +307,27 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 	}, err
 }
 
-type FileScanJobData struct {
+type FileScanJob struct {
 	DeviceID  int64
 	StartTime time.Time
 	EndTime   time.Time
 }
 
-var FileScanJob = core.NewJobBuilder[FileScanJobData]("FileScanJob")
-
-type FileScanQueue struct {
-	core.JobBuilder[FileScanJobData]
-	*goqite.Queue
-	*jobs.Runner
-}
-
-func (q FileScanQueue) Serve(ctx context.Context) error {
-	q.Start(ctx)
-	return nil
-}
-
-func NewFileScanQueue(ctx context.Context, db *sqlx.DB, dahuaStore *Store) FileScanQueue {
+func RegisterFileScanJob(ctx context.Context, db *sqlx.DB, dahuaStore *Store) (core.Job[FileScanJob], core.JobService) {
+	timeout := 30 * time.Second
 	queue := goqite.New(goqite.NewOpts{
 		DB:      db.DB,
-		Name:    "jobs",
-		Timeout: 30 * time.Second,
+		Name:    "dahua_file_scan_jobs",
+		Timeout: timeout,
 	})
-
-	r := jobs.NewRunner(jobs.NewRunnerOpts{
-		Extend:       30 * time.Second,
+	runner := jobs.NewRunner(jobs.NewRunnerOpts{
+		Extend:       timeout,
 		Limit:        5,
 		Log:          slog.Default(),
 		PollInterval: time.Second,
 		Queue:        queue,
 	})
-
-	FileScanJob.Register(ctx, r, func(ctx context.Context, data FileScanJobData) error {
-		pp.Println("RECV")
+	job := core.NewJob(queue, runner, func(ctx context.Context, data FileScanJob) error {
 		var device DahuaDevice
 		err := db.GetContext(ctx, &device, `
 			SELECT * FROM dahua_devices WHERE id = ?
@@ -364,10 +348,5 @@ func NewFileScanQueue(ctx context.Context, db *sqlx.DB, dahuaStore *Store) FileS
 
 		return nil
 	})
-
-	return FileScanQueue{
-		JobBuilder: FileScanJob,
-		Queue:      queue,
-		Runner:     r,
-	}
+	return job, core.NewJobService(runner)
 }
