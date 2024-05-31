@@ -48,7 +48,7 @@ CREATE UNIQUE INDEX `dahua_files_device_id_file_path` ON `dahua_files` (`device_
 -- create index "dahua_files_device_id_start_time_idx" to table: "dahua_files"
 CREATE INDEX `dahua_files_device_id_start_time_idx` ON `dahua_files` (`device_id`, `start_time`);
 -- create "dahua_file_cursors" table
-CREATE TABLE `dahua_file_cursors` (`device_id` integer NOT NULL, `quick_cursor` datetime NOT NULL, `full_cursor` datetime NOT NULL, `full_epoch` datetime NOT NULL, `full_complete` boolean NOT NULL AS (full_cursor <= full_epoch) STORED, `scanning` boolean NOT NULL, `scan_percent` real NOT NULL, `scan_type` text NOT NULL, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+CREATE TABLE `dahua_file_cursors` (`device_id` integer NOT NULL, `quick_cursor` datetime NOT NULL, `full_cursor` datetime NOT NULL, `full_epoch` datetime NOT NULL, `full_complete` boolean NOT NULL AS (full_cursor <= full_epoch) STORED, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
 -- create index "dahua_file_cursors_device_id" to table: "dahua_file_cursors"
 CREATE UNIQUE INDEX `dahua_file_cursors_device_id` ON `dahua_file_cursors` (`device_id`);
 -- create "dahua_file_scan_jobs" table
@@ -71,16 +71,16 @@ CREATE TABLE `dahua_email_attachments` (`id` integer NOT NULL PRIMARY KEY AUTOIN
 CREATE TABLE `dahua_email_endpoints` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `global` boolean NOT NULL, `expression` text NOT NULL, `title_template` text NOT NULL, `body_template` text NOT NULL, `attachments` boolean NOT NULL, `urls` json NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `disabled_at` datetime NULL);
 -- create index "dahua_email_endpoints_uuid" to table: "dahua_email_endpoints"
 CREATE UNIQUE INDEX `dahua_email_endpoints_uuid` ON `dahua_email_endpoints` (`uuid`);
--- create "dahua_devices_to_email_endpoints" table
-CREATE TABLE `dahua_devices_to_email_endpoints` (`device_id` integer NOT NULL, `email_endpoint_id` integer NOT NULL, CONSTRAINT `0` FOREIGN KEY (`email_endpoint_id`) REFERENCES `dahua_email_endpoints` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `1` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
--- create index "dahua_devices_to_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_email_endpoints"
-CREATE UNIQUE INDEX `dahua_devices_to_email_endpoints_device_id_email_endpoint_id` ON `dahua_devices_to_email_endpoints` (`device_id`, `email_endpoint_id`);
+-- create "dahua_devices_to_dahua_email_endpoints" table
+CREATE TABLE `dahua_devices_to_dahua_email_endpoints` (`device_id` integer NOT NULL, `email_endpoint_id` integer NOT NULL, CONSTRAINT `0` FOREIGN KEY (`email_endpoint_id`) REFERENCES `dahua_email_endpoints` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `1` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+-- create index "dahua_devices_to_dahua_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_dahua_email_endpoints"
+CREATE UNIQUE INDEX `dahua_devices_to_dahua_email_endpoints_device_id_email_endpoint_id` ON `dahua_devices_to_dahua_email_endpoints` (`device_id`, `email_endpoint_id`);
 
 -- +goose Down
--- reverse: create index "dahua_devices_to_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_email_endpoints"
-DROP INDEX `dahua_devices_to_email_endpoints_device_id_email_endpoint_id`;
--- reverse: create "dahua_devices_to_email_endpoints" table
-DROP TABLE `dahua_devices_to_email_endpoints`;
+-- reverse: create index "dahua_devices_to_dahua_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_dahua_email_endpoints"
+DROP INDEX `dahua_devices_to_dahua_email_endpoints_device_id_email_endpoint_id`;
+-- reverse: create "dahua_devices_to_dahua_email_endpoints" table
+DROP TABLE `dahua_devices_to_dahua_email_endpoints`;
 -- reverse: create index "dahua_email_endpoints_uuid" to table: "dahua_email_endpoints"
 DROP INDEX `dahua_email_endpoints_uuid`;
 -- reverse: create "dahua_email_endpoints" table

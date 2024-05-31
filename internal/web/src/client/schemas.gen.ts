@@ -143,6 +143,41 @@ export const $CreateEmailEndpoint = {
     type: 'object'
 } as const;
 
+export const $CreateStorageDestination = {
+    additionalProperties: false,
+    properties: {
+        name: {
+            type: 'string'
+        },
+        password: {
+            type: 'string'
+        },
+        port: {
+            format: 'int64',
+            type: 'integer'
+        },
+        remote_directory: {
+            type: 'string'
+        },
+        server_address: {
+            type: 'string'
+        },
+        storage: {
+            enum: ['sftp', 'ftp'],
+            type: 'string'
+        },
+        username: {
+            type: 'string'
+        },
+        uuid: {
+            format: 'uuid',
+            type: 'string'
+        }
+    },
+    required: ['name', 'storage', 'server_address', 'port', 'username', 'password', 'remote_directory'],
+    type: 'object'
+} as const;
+
 export const $Device = {
     additionalProperties: false,
     properties: {
@@ -883,6 +918,47 @@ export const $Settings = {
     type: 'object'
 } as const;
 
+export const $StorageDestination = {
+    additionalProperties: false,
+    properties: {
+        created_at: {
+            format: 'date-time',
+            type: 'string'
+        },
+        name: {
+            type: 'string'
+        },
+        password: {
+            type: 'string'
+        },
+        port: {
+            format: 'int64',
+            type: 'integer'
+        },
+        remote_directory: {
+            type: 'string'
+        },
+        server_address: {
+            type: 'string'
+        },
+        storage: {
+            type: 'string'
+        },
+        updated_at: {
+            format: 'date-time',
+            type: 'string'
+        },
+        username: {
+            type: 'string'
+        },
+        uuid: {
+            type: 'string'
+        }
+    },
+    required: ['uuid', 'name', 'storage', 'server_address', 'port', 'username', 'password', 'remote_directory', 'created_at', 'updated_at'],
+    type: 'object'
+} as const;
+
 export const $UpdateDevice = {
     additionalProperties: false,
     properties: {
@@ -941,6 +1017,52 @@ export const $UpdateDevice = {
         }
     },
     required: ['name', 'ip', 'username', 'latitude', 'longitude'],
+    type: 'object'
+} as const;
+
+export const $UpdateEmailEndpoint = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/UpdateEmailEndpoint.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        attachments: {
+            type: 'boolean'
+        },
+        body_template: {
+            type: 'string'
+        },
+        device_uuids: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        },
+        disabled: {
+            default: false,
+            type: 'boolean'
+        },
+        expression: {
+            type: 'string'
+        },
+        global: {
+            type: 'boolean'
+        },
+        title_template: {
+            type: 'string'
+        },
+        urls: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        }
+    },
+    required: ['urls'],
     type: 'object'
 } as const;
 

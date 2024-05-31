@@ -39,7 +39,7 @@ type EmailEndpoint struct {
 func GetEmailEndpointDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey types.Key) ([]string, error) {
 	var deviceUUIDs []string
 	err := db.SelectContext(ctx, &deviceUUIDs, `
-		SELECT d.uuid FROM dahua_devices_to_email_endpoints AS t
+		SELECT d.uuid FROM dahua_devices_to_dahua_email_endpoints AS t
 		LEFT JOIN dahua_devices AS d ON t.device_id = d.id
 		WHERE t.email_endpoint_id = ?;
 	`, endpointKey.ID)
@@ -209,7 +209,7 @@ func UpdateEmailEndpoint(ctx context.Context, db *sqlx.DB, args UpdateEmailEndpo
 	}
 
 	_, err = tx.ExecContext(ctx, `
-		DELETE FROM dahua_devices_to_email_endpoints WHERE email_endpoint_id = ?
+		DELETE FROM dahua_devices_to_dahua_email_endpoints WHERE email_endpoint_id = ?
 	`, key.ID)
 	if err != nil {
 		return types.Key{}, err
@@ -232,7 +232,7 @@ func DeleteEmailEndpoint(ctx context.Context, db *sqlx.DB, uuid string) error {
 func associateEmailEndpointWithDevices(ctx context.Context, tx *sqlx.Tx, emailEndpointKey types.Key, deviceUUIDs []string) error {
 	if len(deviceUUIDs) != 0 {
 		query, queryArgs, err := sqlx.In(`
-			INSERT INTO dahua_devices_to_email_endpoints (device_id, email_endpoint_id)
+			INSERT INTO dahua_devices_to_dahua_email_endpoints (device_id, email_endpoint_id)
 			SELECT id, ? FROM dahua_devices WHERE uuid IN (?)
 		`, emailEndpointKey.ID, deviceUUIDs)
 		_, err = tx.ExecContext(ctx, tx.Rebind(query), queryArgs...)
@@ -473,7 +473,7 @@ func HandleEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, messageID int64
 	var endpoints []EmailEndpoint
 	err = sqlx.Select(db, &endpoints, `
 		SELECT t.* FROM dahua_email_endpoints AS t
-		WHERE (t.global IS TRUE OR t.id IN (SELECT id FROM dahua_devices_to_email_endpoints AS r WHERE r.device_id = ?))
+		WHERE (t.global IS TRUE OR t.id IN (SELECT id FROM dahua_devices_to_dahua_email_endpoints AS r WHERE r.device_id = ?))
 		AND t.disabled_at IS NULL
 	`, message.Device_ID)
 	if err != nil {

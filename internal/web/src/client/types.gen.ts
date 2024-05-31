@@ -46,6 +46,19 @@ export type CreateEmailEndpoint = {
     uuid?: string;
 };
 
+export type CreateStorageDestination = {
+    name: string;
+    password: string;
+    port: number;
+    remote_directory: string;
+    server_address: string;
+    storage: 'sftp' | 'ftp';
+    username: string;
+    uuid?: string;
+};
+
+export type storage = 'sftp' | 'ftp';
+
 export type Device = {
     /**
      * A URL to the JSON Schema for this object.
@@ -324,6 +337,19 @@ export type Settings = {
     updated_at: string;
 };
 
+export type StorageDestination = {
+    created_at: string;
+    name: string;
+    password: string;
+    port: number;
+    remote_directory: string;
+    server_address: string;
+    storage: string;
+    updated_at: string;
+    username: string;
+    uuid: string;
+};
+
 export type UpdateDevice = {
     /**
      * A URL to the JSON Schema for this object.
@@ -341,6 +367,21 @@ export type UpdateDevice = {
     sunset_offset?: string;
     sync_video_in_mode?: boolean;
     username: string;
+};
+
+export type UpdateEmailEndpoint = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    attachments?: boolean;
+    body_template?: string;
+    device_uuids?: Array<(string)>;
+    disabled?: boolean;
+    expression?: string;
+    global?: boolean;
+    title_template?: string;
+    urls: Array<(string)>;
 };
 
 export type UpdateSettings = {
@@ -534,6 +575,19 @@ export type DeleteApiEndpointsByUuidData = {
 
 export type DeleteApiEndpointsByUuidResponse = void;
 
+export type GetApiEndpointsByUuidData = {
+    uuid: string;
+};
+
+export type GetApiEndpointsByUuidResponse = EmailEndpoint;
+
+export type PostApiEndpointsByUuidData = {
+    requestBody: UpdateEmailEndpoint;
+    uuid: string;
+};
+
+export type PostApiEndpointsByUuidResponse = EmailEndpoint;
+
 export type GetApiEventsData = {
     codes?: Array<(string)>;
     deviceUuids?: Array<(string)>;
@@ -572,6 +626,14 @@ export type PutApiSettingsData = {
 };
 
 export type PutApiSettingsResponse = Settings;
+
+export type GetApiStorageDestinationsResponse = Array<StorageDestination>;
+
+export type PutApiStorageDestinationsData = {
+    requestBody: Array<CreateStorageDestination>;
+};
+
+export type PutApiStorageDestinationsResponse = Array<StorageDestination>;
 
 export type $OpenApiTs = {
     '/api/devices': {
@@ -998,6 +1060,32 @@ export type $OpenApiTs = {
                 default: ErrorModel;
             };
         };
+        get: {
+            req: GetApiEndpointsByUuidData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: EmailEndpoint;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+        post: {
+            req: PostApiEndpointsByUuidData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: EmailEndpoint;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
     };
     '/api/events': {
         get: {
@@ -1089,6 +1177,33 @@ export type $OpenApiTs = {
                  * OK
                  */
                 200: Settings;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/storage-destinations': {
+        get: {
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<StorageDestination>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+        put: {
+            req: PutApiStorageDestinationsData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<StorageDestination>;
                 /**
                  * Error
                  */

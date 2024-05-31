@@ -160,9 +160,6 @@ CREATE TABLE dahua_file_cursors (
   full_cursor DATETIME NOT NULL, -- (not scanned) <- full_cursor -> (scanned)
   full_epoch DATETIME NOT NULL,
   full_complete BOOLEAN NOT NULL GENERATED ALWAYS AS (full_cursor <= full_epoch) STORED,
-  scanning BOOLEAN NOT NULL,
-  scan_percent REAL NOT NULL,
-  scan_type TEXT NOT NULL,
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -229,7 +226,7 @@ CREATE TABLE dahua_email_endpoints (
   disabled_at DATETIME
 );
 
-CREATE TABLE dahua_devices_to_email_endpoints (
+CREATE TABLE dahua_devices_to_dahua_email_endpoints (
   device_id INTEGER NOT NULL,
   email_endpoint_id INTEGER NOT NULL,
   UNIQUE (device_id, email_endpoint_id),
