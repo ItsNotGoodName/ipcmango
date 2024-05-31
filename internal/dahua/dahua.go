@@ -578,9 +578,13 @@ func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey core.Key, event dah
 		CreatedAt:  time.Now(),
 	}
 	if !busEvent.IgnoreDB {
-		data := types.NewJSON(core.IgnoreError(json.MarshalIndent(busEvent.Event.Data, "", "  ")))
+		v, err := json.MarshalIndent(busEvent.Event.Data, "", "  ")
+		if err != nil {
+			return err
+		}
+		data := types.NewJSON(v)
 		createdAt := types.NewTime(busEvent.CreatedAt)
-		_, err := db.ExecContext(ctx, `
+		_, err = db.ExecContext(ctx, `
 			INSERT INTO dahua_events (
 				id,
 				device_id,

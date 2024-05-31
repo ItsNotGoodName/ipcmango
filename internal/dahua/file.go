@@ -13,7 +13,6 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/jobs"
 	"github.com/jmoiron/sqlx"
-	"github.com/k0kubun/pp/v3"
 	"github.com/maragudk/goqite"
 	"github.com/oklog/ulid/v2"
 )
@@ -120,13 +119,7 @@ func NewCondition(ctx context.Context, scanRange *FileScanRange, location *time.
 	return condition
 }
 
-type FileScanResult struct {
-	CreatedCount int64 `json:"created_count"`
-	UpdatedCount int64 `json:"updated_count"`
-	DeletedCount int64 `json:"deleted_count"`
-}
-
-func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, start, end time.Time) (FileScanResult, error) {
+func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, start, end time.Time) error {
 	var data struct {
 		core.Key
 		Location types.Location
@@ -139,7 +132,7 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 		WHERE d.id = ?
 	`, deviceID)
 	if err != nil {
-		return FileScanResult{}, err
+		return err
 	}
 
 	updatedAt := types.NewTime(time.Now())
@@ -158,7 +151,7 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 	// For each time range
 	for scanRange.Next() {
 		progress := scanRange.Percent()
-		bus.Publish(bus.FileScanProgress{
+		bus.Publish(bus.FileScanProgressed{
 			DeviceKey: data.Key,
 			Progress:  progress,
 		})
@@ -170,12 +163,12 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 			case "picture":
 				stream, err = mediafilefind.OpenStream(ctx, conn, condition.Picture())
 				if err != nil {
-					return FileScanResult{}, err
+					return err
 				}
 			case "video":
 				stream, err = mediafilefind.OpenStream(ctx, conn, condition.Video())
 				if err != nil {
-					return FileScanResult{}, err
+					return err
 				}
 			default:
 				panic(fmt.Sprintf("invalid kind %s", kind))
@@ -185,7 +178,7 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 			for {
 				files, next, err := stream.Next(ctx)
 				if err != nil {
-					return FileScanResult{}, err
+					return err
 				}
 				if !next {
 					break
@@ -197,11 +190,11 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 						UPDATE dahua_files SET updated_at = ? WHERE device_id = ? AND file_path = ?
 					`, updatedAt, deviceID, v.FilePath)
 					if err != nil {
-						return FileScanResult{}, err
+						return err
 					}
 					count, err := result.RowsAffected()
 					if err != nil {
-						return FileScanResult{}, err
+						return err
 					}
 					if count != 0 {
 						updatedCount++
@@ -267,7 +260,7 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 						updatedAt,
 					)
 					if err != nil {
-						return FileScanResult{}, err
+						return err
 					}
 
 					createdCount++
@@ -278,7 +271,7 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 		}
 	}
 	progress := scanRange.Percent()
-	bus.Publish(bus.FileScanProgress{
+	bus.Publish(bus.FileScanProgressed{
 		DeviceKey: data.Key,
 		Progress:  progress,
 	})
@@ -293,19 +286,22 @@ func FileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 			AND updated_at < ?
 	`, deviceID, types.NewTime(start), types.NewTime(end), updatedAt)
 	if err != nil {
-		return FileScanResult{}, err
+		return err
 	}
 
 	deletedCount, err := result.RowsAffected()
 	if err != nil {
-		return FileScanResult{}, err
+		return err
 	}
 
-	return FileScanResult{
+	bus.Publish(bus.FileScanFinished{
+		DeviceKey:    data.Key,
 		CreatedCount: createdCount,
 		UpdatedCount: updatedCount,
 		DeletedCount: deletedCount,
-	}, err
+	})
+
+	return err
 }
 
 type FileScanJob struct {
@@ -315,16 +311,17 @@ type FileScanJob struct {
 }
 
 func NewFileScanJobClient(db *sqlx.DB) core.JobClient {
+	name := "dahua_file_scan_jobs"
 	timeout := 30 * time.Second
 	queue := goqite.New(goqite.NewOpts{
 		DB:      db.DB,
-		Name:    "dahua_file_scan_jobs",
+		Name:    name,
 		Timeout: timeout,
 	})
 	runner := jobs.NewRunner(jobs.NewRunnerOpts{
 		Extend:       timeout,
 		Limit:        5,
-		Log:          slog.Default(),
+		Log:          slog.Default().With("name", name),
 		PollInterval: time.Second,
 		Queue:        queue,
 	})
@@ -346,14 +343,7 @@ func RegisterFileScanJob(client core.JobClient, db *sqlx.DB, dahuaStore *Store) 
 			return err
 		}
 
-		result, err := FileScan(ctx, db, conn.RPC, data.DeviceID, data.StartTime, data.EndTime)
-		if err != nil {
-			return err
-		}
-
-		pp.Println(device.Name, result)
-
-		return nil
+		return fileScan(ctx, db, conn.RPC, data.DeviceID, data.StartTime, data.EndTime)
 	})
 }
 
@@ -370,7 +360,7 @@ func CreateFileScanJob(ctx context.Context, db *sqlx.DB, fileScanJob core.Job[Fi
 	}
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO dahua_file_scan_queue (device_id, goqite_id) VALUES (?, ?)
+		INSERT INTO dahua_file_scan_jobs (device_id, goqite_id) VALUES (?, ?)
 	`, args.DeviceID, goqiteID)
 	if err != nil {
 		return err

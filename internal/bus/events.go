@@ -34,7 +34,14 @@ type EmailCreated struct {
 	MessageKey core.Key
 }
 
-type FileScanProgress struct {
+type FileScanProgressed struct {
 	DeviceKey core.Key
 	Progress  float64
+}
+
+type FileScanFinished struct {
+	DeviceKey    core.Key
+	CreatedCount int64
+	UpdatedCount int64
+	DeletedCount int64
 }

@@ -166,7 +166,7 @@ CREATE TABLE dahua_file_cursors (
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE dahua_file_scan_queue (
+CREATE TABLE dahua_file_scan_jobs (
   device_id TEXT UNIQUE,
   goqite_id TEXT UNIQUE,
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE,

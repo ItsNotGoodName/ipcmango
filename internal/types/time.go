@@ -47,33 +47,3 @@ func (dst *Time) Scan(src any) error {
 func (src Time) Value() (driver.Value, error) {
 	return src.Time.UTC().Format(timeFormats[0]), nil
 }
-
-// NullTime will always UTC.
-type NullTime struct {
-	Time
-	Valid bool // Valid is true if Time is not NULL
-}
-
-func (dst *NullTime) Scan(src any) error {
-	if src == nil {
-		dst.Time, dst.Valid = Time{}, false
-		return nil
-	}
-
-	t := &Time{}
-	err := t.Scan(src)
-	if err != nil {
-		return err
-	}
-	dst.Time = *t
-	dst.Valid = true
-
-	return nil
-}
-
-func (src NullTime) Value() (driver.Value, error) {
-	if !src.Valid {
-		return nil, nil
-	}
-	return src.Time.Value()
-}

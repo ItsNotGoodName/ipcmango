@@ -33,7 +33,7 @@ type App struct {
 	DB           *sqlx.DB
 	AFS          afero.Fs
 	AFSDirectory string
-	FIleScanJob  core.Job[dahua.FileScanJob]
+	FileScanJob  core.Job[dahua.FileScanJob]
 	DahuaStore   *dahua.Store
 }
 
@@ -60,7 +60,7 @@ func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.DahuaD
 	return client, nil
 }
 
-func NewHumaConfig() huma.Config {
+func NewConfig() huma.Config {
 	return huma.DefaultConfig("IPCManView API", "1.0.0")
 }
 
@@ -710,7 +710,7 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		err = dahua.CreateFileScanJob(ctx, app.DB, app.FIleScanJob, dahua.FileScanJob{
+		err = dahua.CreateFileScanJob(ctx, app.DB, app.FileScanJob, dahua.FileScanJob{
 			DeviceID:  device.ID,
 			StartTime: input.Body.StartTime,
 			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
@@ -1330,8 +1330,4 @@ type FileScan struct {
 	DeviceUUID string     `json:"device_uuid" format:"uuid"`
 	StartTime  time.Time  `json:"start_time"`
 	EndTime    *time.Time `json:"end_time,omitempty"`
-}
-
-type FileScanOutput struct {
-	Body dahua.FileScanResult
 }

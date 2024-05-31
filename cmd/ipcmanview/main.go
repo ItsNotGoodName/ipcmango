@@ -122,14 +122,14 @@ func main() {
 			router.Use(web.FS("/api", "/openapi", "/docs"))
 
 			// Create api
-			api := humachi.New(router, app.NewHumaConfig())
+			api := humachi.New(router, app.NewConfig())
 
 			// Register handlers
 			app.Register(api, app.App{
 				DB:           db,
 				AFS:          afs,
 				AFSDirectory: afsDirectory,
-				FIleScanJob:  dahuaFileScanJob,
+				FileScanJob:  dahuaFileScanJob,
 				DahuaStore:   dahuaStore,
 			})
 
@@ -183,7 +183,7 @@ func main() {
 		Use:   "openapi",
 		Short: "Print the OpenAPI spec",
 		Run: func(cmd *cobra.Command, args []string) {
-			api := humachi.New(chi.NewMux(), app.NewHumaConfig())
+			api := humachi.New(chi.NewMux(), app.NewConfig())
 			app.Register(api, app.App{})
 			b, _ := json.MarshalIndent(api.OpenAPI(), "", "  ")
 			fmt.Println(string(b))

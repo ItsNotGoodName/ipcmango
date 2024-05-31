@@ -51,6 +51,12 @@ CREATE INDEX `dahua_files_device_id_start_time_idx` ON `dahua_files` (`device_id
 CREATE TABLE `dahua_file_cursors` (`device_id` integer NOT NULL, `quick_cursor` datetime NOT NULL, `full_cursor` datetime NOT NULL, `full_epoch` datetime NOT NULL, `full_complete` boolean NOT NULL AS (full_cursor <= full_epoch) STORED, `scanning` boolean NOT NULL, `scan_percent` real NOT NULL, `scan_type` text NOT NULL, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
 -- create index "dahua_file_cursors_device_id" to table: "dahua_file_cursors"
 CREATE UNIQUE INDEX `dahua_file_cursors_device_id` ON `dahua_file_cursors` (`device_id`);
+-- create "dahua_file_scan_jobs" table
+CREATE TABLE `dahua_file_scan_jobs` (`device_id` text NULL, `goqite_id` text NULL, CONSTRAINT `0` FOREIGN KEY (`goqite_id`) REFERENCES `goqite` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `1` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+-- create index "dahua_file_scan_jobs_device_id" to table: "dahua_file_scan_jobs"
+CREATE UNIQUE INDEX `dahua_file_scan_jobs_device_id` ON `dahua_file_scan_jobs` (`device_id`);
+-- create index "dahua_file_scan_jobs_goqite_id" to table: "dahua_file_scan_jobs"
+CREATE UNIQUE INDEX `dahua_file_scan_jobs_goqite_id` ON `dahua_file_scan_jobs` (`goqite_id`);
 -- create "dahua_storage_destinations" table
 CREATE TABLE `dahua_storage_destinations` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `name` text NOT NULL, `storage` text NOT NULL, `server_address` text NOT NULL, `port` integer NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `remote_directory` text NOT NULL);
 -- create index "dahua_storage_destinations_name" to table: "dahua_storage_destinations"
@@ -67,20 +73,8 @@ CREATE UNIQUE INDEX `dahua_email_endpoints_uuid` ON `dahua_email_endpoints` (`uu
 CREATE TABLE `dahua_devices_to_email_endpoints` (`device_id` integer NOT NULL, `email_endpoint_id` integer NOT NULL, CONSTRAINT `0` FOREIGN KEY (`email_endpoint_id`) REFERENCES `dahua_email_endpoints` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `1` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
 -- create index "dahua_devices_to_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_email_endpoints"
 CREATE UNIQUE INDEX `dahua_devices_to_email_endpoints_device_id_email_endpoint_id` ON `dahua_devices_to_email_endpoints` (`device_id`, `email_endpoint_id`);
--- create "dahua_file_scan_queue" table
-CREATE TABLE `dahua_file_scan_queue` (`device_id` text NULL, `goqite_id` text NULL, CONSTRAINT `0` FOREIGN KEY (`goqite_id`) REFERENCES `goqite` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `1` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
--- create index "dahua_file_scan_queue_device_id" to table: "dahua_file_scan_queue"
-CREATE UNIQUE INDEX `dahua_file_scan_queue_device_id` ON `dahua_file_scan_queue` (`device_id`);
--- create index "dahua_file_scan_queue_goqite_id" to table: "dahua_file_scan_queue"
-CREATE UNIQUE INDEX `dahua_file_scan_queue_goqite_id` ON `dahua_file_scan_queue` (`goqite_id`);
 
 -- +goose Down
--- reverse: create index "dahua_file_scan_queue_goqite_id" to table: "dahua_file_scan_queue"
-DROP INDEX `dahua_file_scan_queue_goqite_id`;
--- reverse: create index "dahua_file_scan_queue_device_id" to table: "dahua_file_scan_queue"
-DROP INDEX `dahua_file_scan_queue_device_id`;
--- reverse: create "dahua_file_scan_queue" table
-DROP TABLE `dahua_file_scan_queue`;
 -- reverse: create index "dahua_devices_to_email_endpoints_device_id_email_endpoint_id" to table: "dahua_devices_to_email_endpoints"
 DROP INDEX `dahua_devices_to_email_endpoints_device_id_email_endpoint_id`;
 -- reverse: create "dahua_devices_to_email_endpoints" table
@@ -97,6 +91,12 @@ DROP TABLE `dahua_email_messages`;
 DROP INDEX `dahua_storage_destinations_name`;
 -- reverse: create "dahua_storage_destinations" table
 DROP TABLE `dahua_storage_destinations`;
+-- reverse: create index "dahua_file_scan_jobs_goqite_id" to table: "dahua_file_scan_jobs"
+DROP INDEX `dahua_file_scan_jobs_goqite_id`;
+-- reverse: create index "dahua_file_scan_jobs_device_id" to table: "dahua_file_scan_jobs"
+DROP INDEX `dahua_file_scan_jobs_device_id`;
+-- reverse: create "dahua_file_scan_jobs" table
+DROP TABLE `dahua_file_scan_jobs`;
 -- reverse: create index "dahua_file_cursors_device_id" to table: "dahua_file_cursors"
 DROP INDEX `dahua_file_cursors_device_id`;
 -- reverse: create "dahua_file_cursors" table
