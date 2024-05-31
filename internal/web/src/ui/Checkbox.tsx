@@ -24,8 +24,8 @@ export function CheckboxControl(props: Omit<ComponentProps<typeof Checkbox.Contr
       )}
       {...rest}
     >
-      <Checkbox.Indicator class="flex items-center justify-center text-current">
-        <RiSystemCheckLine class="h-4 w-4" />
+      <Checkbox.Indicator class="flex justify-center items-center text-current">
+        <RiSystemCheckLine class="w-4 h-4" />
       </Checkbox.Indicator>
     </Checkbox.Control>
   </>

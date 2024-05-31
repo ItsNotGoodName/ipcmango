@@ -67,15 +67,15 @@ type HeaderProps = {
 
 function Header(props: HeaderProps) {
   return (
-    <div class="bg-background text-foreground border-b-border z-10 h-12 w-full overflow-x-hidden border-b">
-      <div class="flex h-full items-center gap-1 px-1">
+    <div class="overflow-x-hidden z-10 w-full h-12 border-b bg-background text-foreground border-b-border">
+      <div class="flex gap-1 items-center px-1 h-full">
         <div onClick={props.onMobileMenuClick} title="Menu" class={cn(menuLinkVariants(), "md:hidden")}>
           <RiSystemMenuLine class="size-6" />
         </div>
         <button onClick={props.onMenuClick} title="Menu" class={cn(menuLinkVariants(), "hidden md:inline-flex")}>
           <RiSystemMenuLine class="size-6" />
         </button>
-        <div class="flex flex-1 items-baseline gap-2 truncate">
+        <div class="flex flex-1 gap-2 items-baseline truncate">
           <A href="/" class="flex items-center text-xl">
             IPCManView
           </A>
@@ -147,7 +147,7 @@ export function Root(props: RouteSectionProps) {
         />
         <div class="flex">
           <div data-open={menu.open()} class="border-border w-0 shrink-0 border-r-0 transition-all duration-300 md:data-[open=true]:w-48 md:data-[open=true]:border-r">
-            <div class="sticky top-0 max-h-screen overflow-y-auto overflow-x-clip">
+            <div class="overflow-y-auto sticky top-0 max-h-screen overflow-x-clip">
               <div class="p-2">
                 <MenuLinks />
               </div>

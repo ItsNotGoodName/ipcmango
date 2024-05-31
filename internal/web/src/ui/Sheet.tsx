@@ -55,8 +55,8 @@ export function SheetContent(props: ComponentProps<typeof Dialog.Content> & Vari
       {...rest}
     >
       {props.children}
-      <Dialog.CloseButton class="ring-offset-background focus:ring-ring ui-expanded:bg-secondary absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none">
-        <RiSystemCloseLine class="h-4 w-4" />
+      <Dialog.CloseButton class="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none ring-offset-background ui-expanded:bg-secondary focus:ring-ring">
+        <RiSystemCloseLine class="w-4 h-4" />
         <span class="sr-only">Close</span>
       </Dialog.CloseButton>
     </Dialog.Content>

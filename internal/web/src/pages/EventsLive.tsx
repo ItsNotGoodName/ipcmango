@@ -58,7 +58,7 @@ export function EventsLive() {
                 <TableHead>Index</TableHead>
                 <TableHead>
                   <Button data-expanded={dataOpen()} onClick={() => setDataOpen(!dataOpen())} title="Data" size="icon" variant="ghost" class="[&[data-expanded=true]>svg]:rotate-180">
-                    <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
+                    <RiArrowsArrowDownSLine class="w-5 h-5 transition-transform duration-200 shrink-0" />
                   </Button>
                 </TableHead>
               </TableRow>
@@ -100,7 +100,7 @@ export function EventsLive() {
                         </TableCell>
                         <TableCell>
                           <Button data-expanded={rowDataOpen()} onClick={() => setRowDataOpen(!rowDataOpen())} title="Data" size="icon" variant="ghost" class="[&[data-expanded=true]>svg]:rotate-180">
-                            <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
+                            <RiArrowsArrowDownSLine class="w-5 h-5 transition-transform duration-200 shrink-0" />
                           </Button>
                         </TableCell>
                       </TableRow>

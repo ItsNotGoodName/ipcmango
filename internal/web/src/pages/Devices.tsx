@@ -36,7 +36,7 @@ function LoadingTableCell(props: { colspan: number }) {
 function ErrorTableCell(props: { colspan: number, error: Error }) {
   return (
     <TableCell colspan={props.colspan} class="py-0">
-      <div class="bg-destructive text-destructive-foreground rounded p-2">
+      <div class="p-2 rounded bg-destructive text-destructive-foreground">
         {props.error.message}
       </div>
     </TableCell>
@@ -273,7 +273,7 @@ function SnapshotGrid(props: { devices?: GetApiDevicesResponse }) {
           return (
             <div>
               <div class="flex flex-col rounded-t border">
-                <div class="flex items-center justify-between gap-2 border-b p-2">
+                <div class="flex gap-2 justify-between items-center p-2 border-b">
                   <Button size="icon" variant="ghost">
                     <RiSystemRefreshLine class="size-5" onClick={refresh} />
                   </Button>
@@ -284,7 +284,7 @@ function SnapshotGrid(props: { devices?: GetApiDevicesResponse }) {
                 <Image>
                   <Image.Img src={src()} />
                   <Image.Fallback>
-                    <RiMediaImageLine class="h-full w-full" />
+                    <RiMediaImageLine class="w-full h-full" />
                   </Image.Fallback>
                 </Image>
               </div>

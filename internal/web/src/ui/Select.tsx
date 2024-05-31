@@ -50,7 +50,7 @@ export function SelectTrigger(props: ComponentProps<typeof Select.Trigger>) {
     {...rest}
   >
     {props.children}
-    <Select.Icon as={RiArrowsArrowDownSLine} class="h-4 w-4 opacity-50" />
+    <Select.Icon as={RiArrowsArrowDownSLine} class="w-4 h-4 opacity-50" />
   </Select.Trigger>
 }
 
@@ -78,9 +78,9 @@ export function SelectItem(props: ComponentProps<typeof Select.Item>) {
     class={cn("focus:bg-accent focus:text-accent-foreground ui-disabled:pointer-events-none ui-disabled:opacity-50 relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none", props.class)}
     {...rest}
   >
-    <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span class="flex absolute left-2 justify-center items-center w-3.5 h-3.5">
       <Select.ItemIndicator>
-        <RiSystemCheckLine class="h-4 w-4" />
+        <RiSystemCheckLine class="w-4 h-4" />
       </Select.ItemIndicator>
     </span>
     <Select.ItemLabel>{props.children}</Select.ItemLabel>

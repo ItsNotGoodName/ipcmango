@@ -8,8 +8,8 @@ export function JSONTableRow(props: { colspan?: number, expanded?: boolean, data
   return (
     <tr class="border-b">
       <td colspan={props.colspan} class="p-0">
-        <div class="relative overflow-y-hidden">
-          <Button onClick={() => writeClipboard(props.data)} title="Copy" size="icon" variant="ghost" class="absolute right-4 top-2">
+        <div class="overflow-y-hidden relative">
+          <Button onClick={() => writeClipboard(props.data)} title="Copy" size="icon" variant="ghost" class="absolute top-2 right-4">
             <RiDocumentClipboardLine class="size-5" />
           </Button>
           <pre>

@@ -9,7 +9,7 @@ import { cn } from "~/lib/utils"
 
 export function TableRoot(props: JSX.HTMLAttributes<HTMLTableElement>) {
   const [_, rest] = splitProps(props, ["class"])
-  return <div class="relative w-full overflow-auto">
+  return <div class="overflow-auto relative w-full">
     <table
       class={cn("w-full caption-bottom text-sm", props.class)}
       {...rest}

@@ -76,7 +76,7 @@ export function ToastCloseButton(props: ComponentProps<typeof Toast.CloseButton>
       )}
 
       {...rest}>
-      <RiSystemCloseLine class="h-4 w-4" />
+      <RiSystemCloseLine class="w-4 h-4" />
     </Toast.CloseButton>
   )
 }

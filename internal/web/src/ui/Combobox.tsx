@@ -35,8 +35,8 @@ export function ComboboxItem(props: ComponentProps<typeof Combobox.Item>) {
     class={cn("ui-highlighted:bg-accent ui-highlighted:text-accent-foreground hover:bg-accent hover:text-accent-foreground ui-disabled:pointer-events-none ui-disabled:opacity-50 group relative flex w-full cursor-default select-none items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors", props.class)}
     {...rest}
   >
-    <div class="size-4 border-primary group-data-[selected]:bg-primary group-data-[selected]:text-primary-foreground flex shrink-0 items-center justify-center rounded-sm border">
-      <Combobox.ItemIndicator class="flex items-center justify-center text-current">
+    <div class="flex justify-center items-center rounded-sm border size-4 border-primary group-data-[selected]:bg-primary group-data-[selected]:text-primary-foreground shrink-0">
+      <Combobox.ItemIndicator class="flex justify-center items-center text-current">
         <RiSystemCheckLine class="size-4" />
       </Combobox.ItemIndicator>
     </div>
@@ -117,12 +117,12 @@ export function ComboboxContent(props: ComponentProps<typeof Combobox.Content>) 
 }
 
 export function ComboboxInput(props: Omit<ComponentProps<typeof Combobox.Input>, "class">) {
-  return <div class="flex items-center gap-2 border-b px-3">
-    <RiSystemSearchLine class="size-4 shrink-0 opacity-50" />
-    <Combobox.Input class="placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50" {...props} />
+  return <div class="flex gap-2 items-center px-3 border-b">
+    <RiSystemSearchLine class="opacity-50 size-4 shrink-0" />
+    <Combobox.Input class="flex py-3 w-full h-10 text-sm bg-transparent rounded-md outline-none disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-muted-foreground" {...props} />
   </div>
 }
 
 export function ComboboxListbox<Option, OptGroup>(props: Omit<ComboboxListboxProps<Option, OptGroup>, "class">) {
-  return <Combobox.Listbox class="max-h-48 overflow-y-auto p-1" {...props} />
+  return <Combobox.Listbox class="overflow-y-auto p-1 max-h-48" {...props} />
 }

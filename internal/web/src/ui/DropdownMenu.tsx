@@ -35,7 +35,7 @@ export function DropdownMenuSubTrigger(props: ComponentProps<typeof DropdownMenu
 }
 
 export function DropdownMenuSubTriggerIndicator() {
-  return <RiArrowsArrowRightSLine class="ml-auto h-4 w-4" />
+  return <RiArrowsArrowRightSLine class="ml-auto w-4 h-4" />
 }
 
 export function DropdownMenuSubContent(props: ComponentProps<typeof DropdownMenu.SubContent>) {
@@ -87,9 +87,9 @@ export function DropdownMenuCheckboxItem(props: ComponentProps<typeof DropdownMe
 }
 
 export function DropdownMenuCheckboxItemIndicator() {
-  return <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+  return <span class="flex absolute left-2 justify-center items-center w-3.5 h-3.5">
     <DropdownMenu.ItemIndicator>
-      <RiSystemCheckLine class="h-4 w-4" />
+      <RiSystemCheckLine class="w-4 h-4" />
     </DropdownMenu.ItemIndicator>
   </span>
 }
@@ -108,9 +108,9 @@ export function DropdownMenuRadioItem(props: ComponentProps<typeof DropdownMenu.
 }
 
 export function DropdownMenuRadioItemIndicator() {
-  return <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+  return <span class="flex absolute left-2 justify-center items-center w-3.5 h-3.5">
     <DropdownMenu.ItemIndicator>
-      <RiSystemCheckboxBlankCircleFill class="h-2 w-2 fill-current" />
+      <RiSystemCheckboxBlankCircleFill class="w-2 h-2 fill-current" />
     </DropdownMenu.ItemIndicator>
   </span>
 }

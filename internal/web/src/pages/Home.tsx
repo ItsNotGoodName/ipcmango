@@ -12,7 +12,7 @@ import { createQuery } from "@tanstack/solid-query"
 import { pages } from "./data"
 
 function StatParent(props: ParentProps) {
-  return <div class="sm:max-w-48 flex-1">{props.children}</div>
+  return <div class="flex-1 sm:max-w-48">{props.children}</div>
 }
 
 function StatRoot(props: ParentProps) {
@@ -41,7 +41,7 @@ export function Home() {
             <StatParent>
               <StatRoot>
                 <A href="/devices" class="flex items-center">
-                  <BiRegularCctv class="h-8 w-8" />
+                  <BiRegularCctv class="w-8 h-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Devices</StatTitle>
@@ -52,7 +52,7 @@ export function Home() {
             <StatParent>
               <StatRoot>
                 <A href="/emails" class="flex items-center">
-                  <RiBusinessMailLine class="h-8 w-8" />
+                  <RiBusinessMailLine class="w-8 h-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Emails</StatTitle>
@@ -63,7 +63,7 @@ export function Home() {
             <StatParent>
               <StatRoot>
                 <A href="/events" class="flex items-center">
-                  <RiWeatherFlashlightLine class="h-8 w-8" />
+                  <RiWeatherFlashlightLine class="w-8 h-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Events</StatTitle>
@@ -74,7 +74,7 @@ export function Home() {
             <StatParent>
               <StatRoot>
                 <A href="/files" class="flex items-center">
-                  <RiDocumentFile2Line class="h-8 w-8" />
+                  <RiDocumentFile2Line class="w-8 h-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Files</StatTitle>
@@ -85,7 +85,7 @@ export function Home() {
             <StatParent>
               <StatRoot>
                 <div class="flex items-center">
-                  <RiDeviceHardDrive2Line class="h-8 w-8" />
+                  <RiDeviceHardDrive2Line class="w-8 h-8" />
                 </div>
                 <div class="flex-1">
                   <StatTitle>File usage</StatTitle>
@@ -96,7 +96,7 @@ export function Home() {
             <StatParent>
               <StatRoot>
                 <div class="flex items-center">
-                  <RiDeviceDatabase2Line class="h-8 w-8" />
+                  <RiDeviceDatabase2Line class="w-8 h-8" />
                 </div>
                 <div class="flex-1">
                   <StatTitle>DB usage</StatTitle>
@@ -116,11 +116,11 @@ export function Home() {
           {/*             const [createdAtAgo] = createTimeAgo(createdAt); */}
           {/**/}
           {/*             return ( */}
-          {/*               <div class="hover:bg-muted/50 flex flex-col border-b transition-colors sm:flex-row"> */}
-          {/*                 <A href={`/emails/${v.id}`} class="flex flex-1 flex-col gap-2 p-2 max-sm:pb-1 sm:flex-row sm:pr-1"> */}
-          {/*                   <div class="sm:min-w-32 flex"> */}
+          {/*               <div class="flex flex-col border-b transition-colors sm:flex-row hover:bg-muted/50"> */}
+          {/*                 <A href={`/emails/${v.id}`} class="flex flex-col flex-1 gap-2 p-2 sm:flex-row sm:pr-1 max-sm:pb-1"> */}
+          {/*                   <div class="flex sm:min-w-32"> */}
           {/*                     <TooltipRoot> */}
-          {/*                       <TooltipTrigger class="truncate text-start text-sm font-bold">{createdAtAgo()}</TooltipTrigger> */}
+          {/*                       <TooltipTrigger class="text-sm font-bold truncate text-start">{createdAtAgo()}</TooltipTrigger> */}
           {/*                       <TooltipContent> */}
           {/*                         <TooltipArrow /> */}
           {/*                         {formatDate(createdAt())} */}
@@ -132,10 +132,10 @@ export function Home() {
           {/*                   </div> */}
           {/*                 </A> */}
           {/*                 <Show when={v.attachmentCount > 0}> */}
-          {/*                   <A href={`/emails/${v.id}?tab=attachments`} class="p-2 max-sm:pt-1 sm:pl-1"> */}
+          {/*                   <A href={`/emails/${v.id}?tab=attachments`} class="p-2 sm:pl-1 max-sm:pt-1"> */}
           {/*                     <TooltipRoot> */}
-          {/*                       <TooltipTrigger class="flex h-full items-center"> */}
-          {/*                         <RiEditorAttachment2 class="h-5 w-5" /> */}
+          {/*                       <TooltipTrigger class="flex items-center h-full"> */}
+          {/*                         <RiEditorAttachment2 class="w-5 h-5" /> */}
           {/*                       </TooltipTrigger> */}
           {/*                       <TooltipContent> */}
           {/*                         <TooltipArrow /> */}
@@ -151,7 +151,7 @@ export function Home() {
           {/*       </div> */}
           {/*     </CardRoot> */}
           {/*   </div> */}
-          {/*   <div class="flex flex-1 flex-col gap-4"> */}
+          {/*   <div class="flex flex-col flex-1 gap-4"> */}
           {/*     <h1>Latest files</h1> */}
           {/*     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"> */}
           {/*       <For each={[]}> */}
@@ -161,30 +161,30 @@ export function Home() {
           {/**/}
           {/*           return ( */}
           {/*             <div> */}
-          {/*               <div class="hover:bg-accent/50 sm:max-w-48 flex w-full flex-col rounded-b border transition-all"> */}
+          {/*               <div class="flex flex-col w-full rounded-b border transition-all sm:max-w-48 hover:bg-accent/50"> */}
           {/*                 <A href={`/files/${v.id}`} > */}
-          {/*                   <Image.Root class="mx-auto max-h-48 w-full"> */}
-          {/*                     <Image.Img src={v.thumbnailUrl} class="h-full w-full object-contain" /> */}
+          {/*                   <Image.Root class="mx-auto w-full max-h-48"> */}
+          {/*                     <Image.Img src={v.thumbnailUrl} class="object-contain w-full h-full" /> */}
           {/*                     <Image.Fallback> */}
           {/*                       <Show when={v.type == "jpg"} fallback={ */}
-          {/*                         <RiMediaVideoLine class="h-full w-full object-contain" /> */}
+          {/*                         <RiMediaVideoLine class="object-contain w-full h-full" /> */}
           {/*                       }> */}
-          {/*                         <RiMediaImageLine class="h-full w-full object-contain" /> */}
+          {/*                         <RiMediaImageLine class="object-contain w-full h-full" /> */}
           {/*                       </Show> */}
           {/*                     </Image.Fallback> */}
           {/*                   </Image.Root> */}
           {/*                 </A> */}
           {/*                 <Seperator /> */}
-          {/*                 <div class="flex items-center justify-between gap-2 p-2"> */}
+          {/*                 <div class="flex gap-2 justify-between items-center p-2"> */}
           {/*                   <TooltipRoot> */}
-          {/*                     <TooltipTrigger class="truncate text-sm">{startTimeAgo()}</TooltipTrigger> */}
+          {/*                     <TooltipTrigger class="text-sm truncate">{startTimeAgo()}</TooltipTrigger> */}
           {/*                     <TooltipContent> */}
           {/*                       <TooltipArrow /> */}
           {/*                       {formatDate(startTime())} */}
           {/*                     </TooltipContent> */}
           {/*                   </TooltipRoot> */}
           {/*                   <a href={v.url} target="_blank" title="Download"> */}
-          {/*                     <RiSystemDownloadLine class="h-5 w-5" /> */}
+          {/*                     <RiSystemDownloadLine class="w-5 h-5" /> */}
           {/*                   </a> */}
           {/*                 </div> */}
           {/*               </div> */}
@@ -198,7 +198,7 @@ export function Home() {
           <div class="flex flex-col sm:flex-row">
             <CardRoot class="p-4">
               <h1>Build</h1>
-              <div class="relative overflow-x-auto">
+              <div class="overflow-x-auto relative">
                 <table class="w-full">
                   <tbody>
                     <tr class="border-b">
