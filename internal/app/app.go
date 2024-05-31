@@ -37,34 +37,13 @@ type App struct {
 	DahuaStore   *dahua.Store
 }
 
-func useDeviceByUUID(ctx context.Context, db *sqlx.DB, uuid string) (dahua.DahuaDevice, error) {
-	var device dahua.DahuaDevice
-	err := db.GetContext(ctx, &device, `
-		SELECT * FROM dahua_devices WHERE uuid = ?
-	`, uuid)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return dahua.DahuaDevice{}, huma.Error404NotFound("Device not found")
-		}
-		return dahua.DahuaDevice{}, err
-	}
-
-	return device, nil
-}
-
-func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.DahuaDevice) (dahua.Client, error) {
-	client, err := dahuaStore.GetClient(ctx, dahua.NewConn(device))
-	if err != nil {
-		return dahua.Client{}, huma.Error404NotFound("Device not found")
-	}
-	return client, nil
-}
-
 func NewConfig() huma.Config {
 	return huma.DefaultConfig("IPCManView API", "1.0.0")
 }
 
 func Register(api huma.API, app App) {
+	eventCreatedHub := bus.NewHub[bus.EventCreated]().Register()
+
 	// Devices
 	huma.Register(api, huma.Operation{
 		Summary: "List devices",
@@ -87,7 +66,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -101,15 +80,12 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/create",
 	}, func(ctx context.Context, input *CreateDeviceInput) (*CreateDevicesOutput, error) {
-		deviceKey, err := dahua.CreateDevice(ctx, app.DB, input.Body.Convert())
+		key, err := dahua.CreateDevice(ctx, app.DB, input.Body.Convert())
 		if err != nil {
 			return nil, err
 		}
 
-		var device dahua.DahuaDevice
-		err = app.DB.GetContext(ctx, &device, `
-			SELECT * FROM dahua_devices WHERE id = ?
-		`, deviceKey.ID)
+		device, err := useDevice(ctx, app.DB, key)
 		if err != nil {
 			return nil, err
 		}
@@ -166,12 +142,12 @@ func Register(api huma.API, app App) {
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return nil, huma.Error404NotFound("Device not found")
+				return nil, huma.Error404NotFound("device not found")
 			}
 			return nil, err
 		}
 
-		device, err := useDeviceByUUID(ctx, app.DB, key.UUID)
+		device, err := useDevice(ctx, app.DB, key)
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +203,7 @@ func Register(api huma.API, app App) {
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
 	}) (*GetDeviceCoaxialCapsOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +230,7 @@ func Register(api huma.API, app App) {
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
 	}) (*GetDeviceCoaxialStatusOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -280,7 +256,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceDetailOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -306,7 +282,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceLicensesOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -333,7 +309,7 @@ func Register(api huma.API, app App) {
 		UUID    string `path:"uuid" format:"uuid"`
 		Channel int    `query:"channel"`
 	}) (*ListDevicePTZPresetsOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -359,7 +335,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceSoftwareOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -385,7 +361,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceStorageOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -411,7 +387,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceUsersOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -442,7 +418,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceActiveUsersOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -473,7 +449,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*ListDeviceGroupsOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -499,7 +475,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceUptimeOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -525,7 +501,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*GetDeviceStatusOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -556,7 +532,7 @@ func Register(api huma.API, app App) {
 		Channel int    `query:"channel"`
 		Type    int    `query:"type"`
 	}) (*huma.StreamResponse, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -581,41 +557,37 @@ func Register(api huma.API, app App) {
 			},
 		}, nil
 	})
-	{
-		eventHub := bus.NewHub[bus.EventCreated]().Register()
+	sse.Register(api, huma.Operation{
+		Summary: "Listen for events",
+		Method:  http.MethodGet,
+		Path:    "/api/events",
+	}, map[string]any{
+		"message": DeviceEventsOutput{},
+	}, func(ctx context.Context, input *struct {
+		DeviceUUIDs []string `query:"device-uuids"`
+		Codes       []string `query:"codes"`
+	}, send sse.Sender) {
+		eventC, unsubscribeEventC := eventCreatedHub.Subscribe(ctx)
+		defer unsubscribeEventC()
 
-		sse.Register(api, huma.Operation{
-			Summary: "Listen for events",
-			Method:  http.MethodGet,
-			Path:    "/api/events",
-		}, map[string]any{
-			"message": DeviceEventsOutput{},
-		}, func(ctx context.Context, input *struct {
-			DeviceUUIDs []string `query:"device-uuids"`
-			Codes       []string `query:"codes"`
-		}, send sse.Sender) {
-			eventC, unsubscribeEventC := eventHub.Subscribe(ctx)
-			defer unsubscribeEventC()
-
-			for event := range eventC {
-				if len(input.DeviceUUIDs) != 0 && !slices.Contains(input.DeviceUUIDs, event.DeviceKey.UUID) {
-					continue
-				}
-				if len(input.Codes) != 0 && !slices.Contains(input.Codes, event.Event.Code) {
-					continue
-				}
-				send.Data(DeviceEventsOutput{
-					ID:         event.EventID,
-					DeviceUUID: event.DeviceKey.UUID,
-					Code:       event.Event.Code,
-					Action:     event.Event.Action,
-					Index:      int64(event.Event.Index),
-					Data:       event.Event.Data,
-					CreatedAt:  event.CreatedAt,
-				})
+		for event := range eventC {
+			if len(input.DeviceUUIDs) != 0 && !slices.Contains(input.DeviceUUIDs, event.DeviceKey.UUID) {
+				continue
 			}
-		})
-	}
+			if len(input.Codes) != 0 && !slices.Contains(input.Codes, event.Event.Code) {
+				continue
+			}
+			send.Data(DeviceEventsOutput{
+				ID:         event.EventID,
+				DeviceUUID: event.DeviceKey.UUID,
+				Code:       event.Event.Code,
+				Action:     event.Event.Action,
+				Index:      int64(event.Event.Index),
+				Data:       event.Event.Data,
+				CreatedAt:  event.CreatedAt,
+			})
+		}
+	})
 	huma.Register(api, huma.Operation{
 		Summary: "Download device file",
 		Method:  http.MethodGet,
@@ -634,7 +606,7 @@ func Register(api huma.API, app App) {
 		// TODO: this should be path param wildcard but OpenAPI is stupid
 		Name string `query:"name" required:"true"`
 	}) (*huma.StreamResponse, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -665,7 +637,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*struct{}, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -684,7 +656,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*DeviceVideoInModeOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -710,7 +682,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		Body FileScan
 	}) (*struct{}, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.Body.DeviceUUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.Body.DeviceUUID})
 		if err != nil {
 			return nil, err
 		}
@@ -734,7 +706,7 @@ func Register(api huma.API, app App) {
 		UUID string `path:"uuid" format:"uuid"`
 		Body DeviceVideoInModeSync
 	}) (*DeviceVideoInModeOutput, error) {
-		device, err := useDeviceByUUID(ctx, app.DB, input.UUID)
+		device, err := useDevice(ctx, app.DB, core.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
@@ -855,6 +827,22 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
+		Summary: "Get email endpoint",
+		Method:  http.MethodGet,
+		Path:    "/api/endpoints/{uuid}",
+	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
+	}) (*GetEmailEndpointOutput, error) {
+		body, err := GetEmailEndpoints(ctx, app.DB, core.Key{UUID: input.UUID})
+		if err != nil {
+			return nil, err
+		}
+
+		return &GetEmailEndpointOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
 		Summary: "Create email endpoint",
 		Method:  http.MethodPost,
 		Path:    "/api/email-endpoints/create",
@@ -866,21 +854,13 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		var endpoint dahua.EmailEndpoint
-		err = app.DB.GetContext(ctx, &endpoint, `
-			SELECT * FROM dahua_email_endpoints WHERE id = ?;
-		`, key.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		deviceUUIDs, err := dahua.GetEmailEndpointDeviceUUIDs(ctx, app.DB, endpoint.Key)
+		body, err := GetEmailEndpoints(ctx, app.DB, key)
 		if err != nil {
 			return nil, err
 		}
 
 		return &CreateEmailEndpointOutput{
-			Body: NewEmailEndpoint(endpoint, deviceUUIDs),
+			Body: body,
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
@@ -929,6 +909,9 @@ func Register(api huma.API, app App) {
 			Disabled:      input.Body.Disabled,
 		})
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, huma.Error404NotFound("email endpoint not found")
+			}
 			return nil, err
 		}
 
@@ -1324,9 +1307,12 @@ func ListEmailEndpoints(ctx context.Context, db *sqlx.DB) ([]EmailEndpoint, erro
 func GetEmailEndpoints(ctx context.Context, db *sqlx.DB, key core.Key) (EmailEndpoint, error) {
 	var emailEndpoint dahua.EmailEndpoint
 	err := db.GetContext(ctx, &emailEndpoint, `
-		SELECT * FROM dahua_email_endpoints WHERE id = ?
-	`, key.ID)
+		SELECT * FROM dahua_email_endpoints WHERE id = ? OR uuid = ? LIMIT 1;
+	`, key.ID, key.UUID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return EmailEndpoint{}, huma.Error404NotFound("email endpoint not found")
+		}
 		return EmailEndpoint{}, err
 	}
 
@@ -1360,7 +1346,7 @@ func ListDevices(ctx context.Context, db *sqlx.DB) ([]Device, error) {
 }
 
 func SetDeviceCoaxialState(ctx context.Context, dahuaStore *dahua.Store, db *sqlx.DB, uuid string, channel int, typE coaxialcontrolio.Type, action string) error {
-	device, err := useDeviceByUUID(ctx, db, uuid)
+	device, err := useDevice(ctx, db, core.Key{UUID: uuid})
 	if err != nil {
 		return err
 	}
@@ -1399,4 +1385,26 @@ type FileScan struct {
 	DeviceUUID string     `json:"device_uuid" format:"uuid"`
 	StartTime  time.Time  `json:"start_time"`
 	EndTime    *time.Time `json:"end_time,omitempty"`
+}
+
+func useDevice(ctx context.Context, db *sqlx.DB, key core.Key) (dahua.DahuaDevice, error) {
+	var device dahua.DahuaDevice
+	err := db.GetContext(ctx, &device, `
+		SELECT * FROM dahua_devices WHERE id = ? OR uuid = ?
+	`, key.ID, key.UUID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return dahua.DahuaDevice{}, huma.Error404NotFound("device not found")
+		}
+		return dahua.DahuaDevice{}, err
+	}
+	return device, nil
+}
+
+func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.DahuaDevice) (dahua.Client, error) {
+	client, err := dahuaStore.GetClient(ctx, dahua.NewConn(device))
+	if err != nil {
+		return dahua.Client{}, huma.Error404NotFound("device not found")
+	}
+	return client, nil
 }
