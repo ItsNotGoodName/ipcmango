@@ -3,7 +3,11 @@ package dahua
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
+	"net"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
@@ -12,10 +16,37 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/jobs"
+	"github.com/jlaffaye/ftp"
 	"github.com/jmoiron/sqlx"
 	"github.com/maragudk/goqite"
 	"github.com/oklog/ulid/v2"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
+
+type File struct {
+	ID           string
+	Device_ID    int64
+	Channel      int
+	Start_Time   types.Time
+	End_Time     types.Time
+	Length       int64
+	Type         string
+	File_Path    string
+	Duration     int64
+	Disk         int64
+	Video_Stream string
+	Flags        types.Slice[string]
+	Events       types.Slice[string]
+	Cluster      int64
+	Partition    int64
+	Pic_Index    int64
+	Repeat       int64
+	Work_Dir     string
+	Work_Dir_Sn  bool
+	Storage      Storage
+	Updated_At   types.Time
+}
 
 var FileScanEpoch time.Time = core.Must2(time.ParseInLocation(time.DateTime, "2009-12-31 00:00:00", time.UTC))
 
@@ -121,7 +152,7 @@ func NewCondition(ctx context.Context, scanRange *FileScanRange, location *time.
 
 func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, start, end time.Time) error {
 	var data struct {
-		core.Key
+		types.Key
 		Location types.Location
 		Seed     int64
 		Name     string
@@ -330,7 +361,7 @@ func NewFileScanJobClient(db *sqlx.DB) core.JobClient {
 
 func RegisterFileScanJob(client core.JobClient, db *sqlx.DB, dahuaStore *Store) core.Job[FileScanJob] {
 	return core.NewJob(client, func(ctx context.Context, data FileScanJob) error {
-		var device DahuaDevice
+		var device Device
 		err := db.GetContext(ctx, &device, `
 			SELECT * FROM dahua_devices WHERE id = ?
 		`, data.DeviceID)
@@ -367,4 +398,95 @@ func CreateFileScanJob(ctx context.Context, db *sqlx.DB, fileScanJob core.Job[Fi
 	}
 
 	return tx.Commit()
+}
+
+func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, error) {
+	urL, err := url.Parse(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var dest StorageDestination
+	err = db.GetContext(ctx, &dest, `
+		SELECT * FROM dahua_storage_destinations
+		WHERE server_address = ? AND storage = ?
+	`, urL.Host, StorageFTP)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := ftp.Dial(core.Address(dest.Server_Address, int(dest.Port)), ftp.DialWithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Login(dest.Username, dest.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	username := "/" + dest.Username
+	path, _ := strings.CutPrefix(urL.Path, username)
+
+	rd, err := c.Retr(path)
+	if err != nil {
+		c.Quit()
+		return nil, err
+	}
+
+	return core.MultiReadCloser{
+		Reader:  rd,
+		Closers: []func() error{rd.Close, c.Quit},
+	}, nil
+}
+
+func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, error) {
+	urL, err := url.Parse(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var dest StorageDestination
+	err = db.GetContext(ctx, &dest, `
+		SELECT * FROM dahua_storage_destinations
+		WHERE server_address = ? AND storage = ?
+	`, urL.Host, StorageFTP)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := ssh.Dial("tcp", core.Address(dest.Server_Address, int(dest.Port)), &ssh.ClientConfig{
+		User: dest.Username,
+		Auth: []ssh.AuthMethod{ssh.Password(dest.Password)},
+		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			// TODO: check public key
+			return nil
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := sftp.NewClient(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	username := "/" + dest.Username
+	path, _ := strings.CutPrefix(urL.Path, username)
+
+	rd, err := client.Open(path)
+	if err != nil {
+		client.Close()
+		return nil, err
+	}
+
+	return core.MultiReadCloser{
+		Reader:  rd,
+		Closers: []func() error{rd.Close, client.Close},
+	}, nil
+}
+
+func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.ReadCloser, error) {
+	return client.File.Do(ctx, dahuarpc.LoadFileURL(client.Conn.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
 }

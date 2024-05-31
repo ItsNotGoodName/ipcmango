@@ -4,15 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/k0kubun/pp/v3"
 )
 
 type StorageDestination struct {
-	core.Key
-	core.Timestamp
+	types.Key
+	types.Timestamp
 	Name             string
 	Storage          string
 	Server_Address   string
@@ -33,11 +32,11 @@ type CreateStorageDestinationArgs struct {
 	RemoteDirectory string
 }
 
-func CreateStorageDestination(ctx context.Context, db *sqlx.DB, args CreateStorageDestinationArgs) (core.Key, error) {
+func CreateStorageDestination(ctx context.Context, db *sqlx.DB, args CreateStorageDestinationArgs) (types.Key, error) {
 	return createStorageDestination(ctx, db, args)
 }
 
-func PutStorageDestinations(ctx context.Context, db *sqlx.DB, args []CreateStorageDestinationArgs) ([]core.Key, error) {
+func PutStorageDestinations(ctx context.Context, db *sqlx.DB, args []CreateStorageDestinationArgs) ([]types.Key, error) {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -51,7 +50,7 @@ func PutStorageDestinations(ctx context.Context, db *sqlx.DB, args []CreateStora
 		return nil, err
 	}
 
-	var keys []core.Key
+	var keys []types.Key
 	for _, arg := range args {
 		key, err := createStorageDestination(ctx, tx, arg)
 		if err != nil {
@@ -67,11 +66,11 @@ func PutStorageDestinations(ctx context.Context, db *sqlx.DB, args []CreateStora
 	return keys, nil
 }
 
-func createStorageDestination(ctx context.Context, db sqlx.QueryerContext, args CreateStorageDestinationArgs) (core.Key, error) {
+func createStorageDestination(ctx context.Context, db sqlx.QueryerContext, args CreateStorageDestinationArgs) (types.Key, error) {
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
 
-	var key core.Key
+	var key types.Key
 	err := sqlx.GetContext(ctx, db, &key, `
 		INSERT INTO dahua_storage_destinations (
 			uuid,
@@ -118,10 +117,10 @@ type UpdateStorageDestinationArgs struct {
 	RemoteDirectory string
 }
 
-func UpdateStorageDestination(ctx context.Context, db *sqlx.DB, args UpdateStorageDestinationArgs) (core.Key, error) {
+func UpdateStorageDestination(ctx context.Context, db *sqlx.DB, args UpdateStorageDestinationArgs) (types.Key, error) {
 	updatedAt := types.NewTime(time.Now())
 
-	var key core.Key
+	var key types.Key
 	err := db.GetContext(ctx, &key, `
 		UPDATE dahua_storage_destinations SET
 			name = ?,

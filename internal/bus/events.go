@@ -3,25 +3,25 @@ package bus
 import (
 	"time"
 
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
+	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
 )
 
 type DeviceCreated struct {
-	DeviceKey core.Key
+	DeviceKey types.Key
 }
 
 type DeviceUpdated struct {
-	DeviceKey core.Key
+	DeviceKey types.Key
 }
 
 type DeviceDeleted struct {
-	DeviceKey core.Key
+	DeviceKey types.Key
 }
 
 type EventCreated struct {
 	EventID    string
-	DeviceKey  core.Key
+	DeviceKey  types.Key
 	IgnoreDB   bool
 	IgnoreMQTT bool
 	IgnoreLive bool
@@ -30,17 +30,17 @@ type EventCreated struct {
 }
 
 type EmailCreated struct {
-	DeviceKey  core.Key
-	MessageKey core.Key
+	DeviceKey  types.Key
+	MessageKey types.Key
 }
 
 type FileScanProgressed struct {
-	DeviceKey core.Key
+	DeviceKey types.Key
 	Progress  float64
 }
 
 type FileScanFinished struct {
-	DeviceKey    core.Key
+	DeviceKey    types.Key
 	CreatedCount int64
 	UpdatedCount int64
 	DeletedCount int64

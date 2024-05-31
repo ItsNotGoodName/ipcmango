@@ -11,6 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/icholy/digest v0.1.22
 	github.com/jhillyerd/enmime v1.2.0
+	github.com/jlaffaye/ftp v0.2.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/k0kubun/pp/v3 v3.2.0
@@ -19,6 +20,7 @@ require (
 	github.com/nathan-osman/go-sunrise v1.1.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/phsym/console-slog v0.3.1
+	github.com/pkg/sftp v1.13.6
 	github.com/pressly/goose/v3 v3.20.0
 	github.com/reugn/go-quartz v0.12.0
 	github.com/spf13/afero v1.11.0
@@ -27,6 +29,7 @@ require (
 	github.com/thejerf/suture/v4 v4.0.5
 	github.com/tidwall/gjson v1.17.1
 	github.com/tidwall/sjson v1.2.5
+	golang.org/x/crypto v0.21.0
 	modernc.org/sqlite v1.29.6
 )
 
@@ -35,9 +38,12 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056 // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect

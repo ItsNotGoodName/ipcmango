@@ -7,10 +7,27 @@ import (
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/jmoiron/sqlx"
 )
+
+type Device struct {
+	types.Key
+	types.Timestamp
+	Name               string
+	IP                 string
+	Username           string
+	Password           string
+	Location           sql.Null[types.Location]
+	Features           types.Slice[Feature]
+	Email              sql.NullString
+	Seed               int64
+	Latitude           sql.Null[float64]
+	Longitude          sql.Null[float64]
+	Sunrise_Offset     sql.Null[types.Duration]
+	Sunset_Offset      sql.Null[types.Duration]
+	Sync_Video_In_Mode sql.Null[bool]
+}
 
 type CreateDeviceArgs struct {
 	UUID            string
@@ -28,7 +45,7 @@ type CreateDeviceArgs struct {
 	SyncVideoInMode sql.Null[bool]
 }
 
-func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (core.Key, error) {
+func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (types.Key, error) {
 	deviceKey, err := createDevice(ctx, db, args)
 	if err != nil {
 		return deviceKey, err
@@ -41,14 +58,14 @@ func CreateDevice(ctx context.Context, db *sqlx.DB, args CreateDeviceArgs) (core
 	return deviceKey, nil
 }
 
-func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]core.Key, error) {
+func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]types.Key, error) {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	var deletedKeys []core.Key
+	var deletedKeys []types.Key
 	err = db.SelectContext(ctx, &deletedKeys, `
 		DELETE FROM dahua_devices RETURNING id, uuid
 	`)
@@ -56,7 +73,7 @@ func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]co
 		return nil, err
 	}
 
-	var keys []core.Key
+	var keys []types.Key
 	for _, arg := range args {
 		key, err := createDevice(ctx, tx, arg)
 		if err != nil {
@@ -84,11 +101,11 @@ func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]co
 	return keys, nil
 }
 
-func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDeviceArgs) (core.Key, error) {
+func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDeviceArgs) (types.Key, error) {
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
 
-	var key core.Key
+	var key types.Key
 	err := sqlx.GetContext(ctx, db, &key, `
 		WITH RECURSIVE generate_series(value) AS (
 			SELECT 1
@@ -155,10 +172,10 @@ type UpdateDeviceArgs struct {
 	SyncVideoInMode bool
 }
 
-func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (core.Key, error) {
+func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (types.Key, error) {
 	updatedAt := types.NewTime(time.Now())
 
-	var key core.Key
+	var key types.Key
 	err := db.GetContext(ctx, &key, `
 		UPDATE dahua_devices SET
 			name = ?,
@@ -204,7 +221,7 @@ func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (core
 }
 
 func DeleteDevice(ctx context.Context, db *sqlx.DB, uuid string) error {
-	var key core.Key
+	var key types.Key
 	err := db.GetContext(ctx, &key, `
 		DELETE FROM dahua_devices WHERE uuid = ? RETURNING uuid, id
 	`, uuid)

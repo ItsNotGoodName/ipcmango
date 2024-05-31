@@ -77,7 +77,7 @@ func (m *EventManager) Start() error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var device DahuaDevice
+		var device Device
 		if err := rows.StructScan(&device); err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func (m *EventManager) Refresh(ctx context.Context, uuid string) error {
 		m.super.Remove(service.Token)
 	}
 
-	var device DahuaDevice
+	var device Device
 	err := m.db.GetContext(ctx, &device, `
 		SELECT * FROM dahua_devices WHERE uuid = ?
 	`, uuid)

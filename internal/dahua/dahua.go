@@ -17,7 +17,6 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
@@ -38,25 +37,7 @@ const (
 	FeatureCamera Feature = "camera"
 )
 
-type DahuaDevice struct {
-	core.Key
-	core.Timestamp
-	Name               string
-	IP                 string
-	Username           string
-	Password           string
-	Location           sql.Null[types.Location]
-	Features           types.Slice[Feature]
-	Email              sql.NullString
-	Seed               int64
-	Latitude           sql.Null[float64]
-	Longitude          sql.Null[float64]
-	Sunrise_Offset     sql.Null[types.Duration]
-	Sunset_Offset      sql.Null[types.Duration]
-	Sync_Video_In_Mode sql.Null[bool]
-}
-
-func NewConn(v DahuaDevice) Conn {
+func NewConn(v Device) Conn {
 	urL, _ := url.Parse("http://" + v.IP)
 	return Conn{
 		Key:       v.Key,
@@ -69,7 +50,7 @@ func NewConn(v DahuaDevice) Conn {
 }
 
 type Conn struct {
-	Key       core.Key
+	Key       types.Key
 	Name      string
 	URL       *url.URL
 	Username  string
@@ -528,7 +509,7 @@ func GetUptime(ctx context.Context, c dahuarpc.Conn) (DeviceUptime, error) {
 	}, nil
 }
 
-func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey core.Key, event dahuacgi.Event) error {
+func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey types.Key, event dahuacgi.Event) error {
 	var eventRule struct {
 		Ignore_DB   bool
 		Ignore_Live bool
@@ -618,15 +599,17 @@ func RebootDevice(ctx context.Context, c dahuarpc.Conn) error {
 	return err
 }
 
+type Storage string
+
 const (
-	StorageLocal = "local"
-	StorageSFTP  = "sftp"
-	StorageFTP   = "ftp"
-	StorageNFS   = "nfs"
-	StorageSMB   = "smb"
+	StorageLocal Storage = "local"
+	StorageSFTP  Storage = "sftp"
+	StorageFTP   Storage = "ftp"
+	StorageNFS   Storage = "nfs"
+	StorageSMB   Storage = "smb"
 )
 
-func StorageFromFilePath(filePath string) string {
+func StorageFromFilePath(filePath string) Storage {
 	if strings.HasPrefix(filePath, "sftp://") {
 		return StorageSFTP
 	}

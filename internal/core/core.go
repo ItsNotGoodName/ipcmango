@@ -3,21 +3,26 @@ package core
 import (
 	"database/sql"
 	"errors"
+	"io"
 	"net"
 	"os"
 	"strconv"
-
-	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 )
 
-type Key struct {
-	ID   int64
-	UUID string
+type MultiReadCloser struct {
+	io.Reader
+	Closers []func() error
 }
 
-type Timestamp struct {
-	Created_At types.Time
-	Updated_At types.Time
+func (c MultiReadCloser) Close() error {
+	var multiErr error
+	for _, closer := range c.Closers {
+		err := closer()
+		if err != nil {
+			multiErr = errors.Join(multiErr, err)
+		}
+	}
+	return multiErr
 }
 
 func SplitAddress(address string) (host string, port string) {

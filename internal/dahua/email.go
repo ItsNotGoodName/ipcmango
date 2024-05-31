@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
-	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/gorise"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
@@ -26,8 +25,8 @@ import (
 
 // -------------------- EmailEndpoint CRUD
 type EmailEndpoint struct {
-	core.Key
-	core.Timestamp
+	types.Key
+	types.Timestamp
 	Global         bool
 	Expression     string
 	URLs           types.Slice[string]
@@ -37,7 +36,7 @@ type EmailEndpoint struct {
 	Disabled_At    sql.Null[types.Time]
 }
 
-func GetEmailEndpointDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey core.Key) ([]string, error) {
+func GetEmailEndpointDeviceUUIDs(ctx context.Context, db *sqlx.DB, endpointKey types.Key) ([]string, error) {
 	var deviceUUIDs []string
 	err := db.SelectContext(ctx, &deviceUUIDs, `
 		SELECT d.uuid FROM dahua_devices_to_email_endpoints AS t
@@ -59,22 +58,22 @@ type CreateEmailEndpointArgs struct {
 	Disabled      bool
 }
 
-func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpointArgs) (core.Key, error) {
+func CreateEmailEndpoint(ctx context.Context, db *sqlx.DB, args CreateEmailEndpointArgs) (types.Key, error) {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
-		return core.Key{}, err
+		return types.Key{}, err
 	}
 	defer tx.Rollback()
 
 	key, err := createEmailEndpoint(ctx, tx, args)
 	if err != nil {
-		return core.Key{}, err
+		return types.Key{}, err
 	}
 
 	return key, tx.Commit()
 }
 
-func PutEmailEndpoints(ctx context.Context, db *sqlx.DB, args []CreateEmailEndpointArgs) ([]core.Key, error) {
+func PutEmailEndpoints(ctx context.Context, db *sqlx.DB, args []CreateEmailEndpointArgs) ([]types.Key, error) {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -88,7 +87,7 @@ func PutEmailEndpoints(ctx context.Context, db *sqlx.DB, args []CreateEmailEndpo
 		return nil, err
 	}
 
-	var keys []core.Key
+	var keys []types.Key
 	for _, arg := range args {
 		key, err := createEmailEndpoint(ctx, tx, arg)
 		if err != nil {
@@ -100,11 +99,11 @@ func PutEmailEndpoints(ctx context.Context, db *sqlx.DB, args []CreateEmailEndpo
 	return keys, tx.Commit()
 }
 
-func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpointArgs) (core.Key, error) {
+func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpointArgs) (types.Key, error) {
 	for _, urL := range args.URLs.V {
 		_, err := gorise.Build(urL)
 		if err != nil {
-			return core.Key{}, err
+			return types.Key{}, err
 		}
 	}
 
@@ -116,7 +115,7 @@ func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpo
 		disabledAt = &t
 	}
 
-	var key core.Key
+	var key types.Key
 	err := tx.GetContext(ctx, &key, `
 		INSERT INTO dahua_email_endpoints (
 			uuid,
@@ -145,11 +144,11 @@ func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpo
 		disabledAt,
 	)
 	if err != nil {
-		return core.Key{}, err
+		return types.Key{}, err
 	}
 
 	if err = associateEmailEndpointWithDevices(ctx, tx, key, args.DeviceUUIDs); err != nil {
-		return core.Key{}, err
+		return types.Key{}, err
 	}
 
 	return key, nil
@@ -167,10 +166,10 @@ type UpdateEmailEndpointArgs struct {
 	Disabled      bool
 }
 
-func UpdateEmailEndpoint(ctx context.Context, db *sqlx.DB, args UpdateEmailEndpointArgs) (core.Key, error) {
+func UpdateEmailEndpoint(ctx context.Context, db *sqlx.DB, args UpdateEmailEndpointArgs) (types.Key, error) {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
-		return core.Key{}, err
+		return types.Key{}, err
 	}
 	defer tx.Rollback()
 
@@ -181,7 +180,7 @@ func UpdateEmailEndpoint(ctx context.Context, db *sqlx.DB, args UpdateEmailEndpo
 		disabledAt = &t
 	}
 
-	var key core.Key
+	var key types.Key
 	err = tx.GetContext(ctx, &key, `
 		UPDATE dahua_email_endpoints SET
 			global = ?,
@@ -213,11 +212,11 @@ func UpdateEmailEndpoint(ctx context.Context, db *sqlx.DB, args UpdateEmailEndpo
 		DELETE FROM dahua_devices_to_email_endpoints WHERE email_endpoint_id = ?
 	`, key.ID)
 	if err != nil {
-		return core.Key{}, err
+		return types.Key{}, err
 	}
 
 	if err := associateEmailEndpointWithDevices(ctx, tx, key, args.DeviceUUIDs); err != nil {
-		return core.Key{}, err
+		return types.Key{}, err
 	}
 
 	return key, tx.Commit()
@@ -230,7 +229,7 @@ func DeleteEmailEndpoint(ctx context.Context, db *sqlx.DB, uuid string) error {
 	return err
 }
 
-func associateEmailEndpointWithDevices(ctx context.Context, tx *sqlx.Tx, emailEndpointKey core.Key, deviceUUIDs []string) error {
+func associateEmailEndpointWithDevices(ctx context.Context, tx *sqlx.Tx, emailEndpointKey types.Key, deviceUUIDs []string) error {
 	if len(deviceUUIDs) != 0 {
 		query, queryArgs, err := sqlx.In(`
 			INSERT INTO dahua_devices_to_email_endpoints (device_id, email_endpoint_id)
@@ -246,7 +245,7 @@ func associateEmailEndpointWithDevices(ctx context.Context, tx *sqlx.Tx, emailEn
 
 // -------------------- Email CRUD
 type EmailMessage struct {
-	core.Key
+	types.Key
 	Device_ID           int64
 	Date                types.Time
 	From                string
@@ -260,7 +259,7 @@ type EmailMessage struct {
 }
 
 type EmailAttachment struct {
-	core.Key
+	types.Key
 	Message_ID sql.Null[int64]
 	File_Name  string
 	Size       int64
@@ -268,7 +267,7 @@ type EmailAttachment struct {
 }
 
 type CreateEmailArgs struct {
-	DeviceKey         core.Key
+	DeviceKey         types.Key
 	Date              types.Time
 	From              string
 	To                types.Slice[string]
@@ -332,7 +331,7 @@ func CreateEmail(ctx context.Context, db *sqlx.DB, afs afero.Fs, args CreateEmai
 
 	bus.Publish(bus.EmailCreated{
 		DeviceKey: args.DeviceKey,
-		MessageKey: core.Key{
+		MessageKey: types.Key{
 			UUID: messageUUID,
 			ID:   messageID,
 		},

@@ -93,7 +93,7 @@ func (w SyncVideoInModeJob) Description() string {
 }
 
 func (w SyncVideoInModeJob) Execute(ctx context.Context) error {
-	var devices []DahuaDevice
+	var devices []Device
 	err := w.db.Select(&devices, `
 		SELECT d.* 
 		FROM dahua_devices AS d
@@ -110,7 +110,7 @@ func (w SyncVideoInModeJob) Execute(ctx context.Context) error {
 		slog := slog.With("device", device.Name, "service", w.Description())
 
 		wg.Add(1)
-		go func(device DahuaDevice) {
+		go func(device Device) {
 			defer wg.Done()
 
 			position, err := GetDevicePosition(ctx, w.db, device.ID)

@@ -117,7 +117,7 @@ func (s *Session) Data(r io.Reader) error {
 	// Get device by IP or email
 	ip, _ := core.SplitAddress(s.address)
 	var device struct {
-		core.Key
+		types.Key
 		Name string
 	}
 	err := db.GetContext(ctx, &device, `
