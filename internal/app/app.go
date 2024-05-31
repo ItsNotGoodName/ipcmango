@@ -17,6 +17,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/dahua"
+	"github.com/ItsNotGoodName/ipcmanview/internal/sqlite"
 	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
@@ -693,6 +694,9 @@ func Register(api huma.API, app App) {
 			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
 		})
 		if err != nil {
+			if _, ok := sqlite.AsConstraintError(err, sqlite.CONSTRAINT_UNIQUE); ok {
+				return nil, huma.Error409Conflict("file scan job already queued")
+			}
 			return nil, err
 		}
 
