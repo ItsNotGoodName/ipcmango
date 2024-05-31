@@ -175,13 +175,16 @@ CREATE TABLE dahua_file_scan_jobs (
 
 CREATE TABLE dahua_storage_destinations (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  uuid TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL UNIQUE,
   storage TEXT NOT NULL,
   server_address TEXT NOT NULL,
   port INTEGER NOT NULL,
   username TEXT NOT NULL,
   password TEXT NOT NULL,
-  remote_directory TEXT NOT NULL
+  remote_directory TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
 );
 
 CREATE TABLE dahua_email_messages (

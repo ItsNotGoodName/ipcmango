@@ -58,7 +58,9 @@ CREATE UNIQUE INDEX `dahua_file_scan_jobs_device_id` ON `dahua_file_scan_jobs` (
 -- create index "dahua_file_scan_jobs_goqite_id" to table: "dahua_file_scan_jobs"
 CREATE UNIQUE INDEX `dahua_file_scan_jobs_goqite_id` ON `dahua_file_scan_jobs` (`goqite_id`);
 -- create "dahua_storage_destinations" table
-CREATE TABLE `dahua_storage_destinations` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `name` text NOT NULL, `storage` text NOT NULL, `server_address` text NOT NULL, `port` integer NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `remote_directory` text NOT NULL);
+CREATE TABLE `dahua_storage_destinations` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `name` text NOT NULL, `storage` text NOT NULL, `server_address` text NOT NULL, `port` integer NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `remote_directory` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
+-- create index "dahua_storage_destinations_uuid" to table: "dahua_storage_destinations"
+CREATE UNIQUE INDEX `dahua_storage_destinations_uuid` ON `dahua_storage_destinations` (`uuid`);
 -- create index "dahua_storage_destinations_name" to table: "dahua_storage_destinations"
 CREATE UNIQUE INDEX `dahua_storage_destinations_name` ON `dahua_storage_destinations` (`name`);
 -- create "dahua_email_messages" table
@@ -89,6 +91,8 @@ DROP TABLE `dahua_email_attachments`;
 DROP TABLE `dahua_email_messages`;
 -- reverse: create index "dahua_storage_destinations_name" to table: "dahua_storage_destinations"
 DROP INDEX `dahua_storage_destinations_name`;
+-- reverse: create index "dahua_storage_destinations_uuid" to table: "dahua_storage_destinations"
+DROP INDEX `dahua_storage_destinations_uuid`;
 -- reverse: create "dahua_storage_destinations" table
 DROP TABLE `dahua_storage_destinations`;
 -- reverse: create index "dahua_file_scan_jobs_goqite_id" to table: "dahua_file_scan_jobs"

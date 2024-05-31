@@ -40,6 +40,7 @@ const (
 
 type DahuaDevice struct {
 	core.Key
+	core.Timestamp
 	Name               string
 	IP                 string
 	Username           string
@@ -48,8 +49,6 @@ type DahuaDevice struct {
 	Features           types.Slice[Feature]
 	Email              sql.NullString
 	Seed               int64
-	Created_At         types.Time
-	Updated_At         types.Time
 	Latitude           sql.Null[float64]
 	Longitude          sql.Null[float64]
 	Sunrise_Offset     sql.Null[types.Duration]

@@ -937,6 +937,44 @@ func Register(api huma.API, app App) {
 	}) (*struct{}, error) {
 		return &struct{}{}, dahua.DeleteEmailEndpoint(ctx, app.DB, input.UUID)
 	})
+	huma.Register(api, huma.Operation{
+		Summary: "List storage destinations",
+		Method:  http.MethodGet,
+		Path:    "/api/storage-destinations",
+	}, func(ctx context.Context, input *struct{}) (*ListStorageDestinationOutput, error) {
+		body, err := ListStorageDestinations(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ListStorageDestinationOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Put devices",
+		Method:  http.MethodPut,
+		Path:    "/api/storage-destinations",
+	}, func(ctx context.Context, input *PutCreateStorageDestinationInput) (*ListStorageDestinationOutput, error) {
+		var args []dahua.CreateStorageDestinationArgs
+		for _, arg := range input.Body {
+			args = append(args, arg.Convert())
+		}
+
+		_, err := dahua.PutStorageDestinations(ctx, app.DB, args)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := ListStorageDestinations(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ListStorageDestinationOutput{
+			Body: body,
+		}, nil
+	})
 }
 
 func NewEmailEndpoint(v dahua.EmailEndpoint, deviceUUIDs []string) EmailEndpoint {
@@ -1411,4 +1449,95 @@ func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.DahuaD
 		return dahua.Client{}, huma.Error404NotFound("device not found")
 	}
 	return client, nil
+}
+
+func NewStorageDestination(v dahua.StorageDestination) StorageDestination {
+	return StorageDestination{
+		UUID:            v.UUID,
+		Name:            v.Name,
+		Storage:         v.Storage,
+		ServerAddress:   v.Server_Address,
+		Port:            v.Port,
+		Username:        v.Username,
+		Password:        v.Password,
+		RemoteDirectory: v.Remote_Directory,
+		CreatedAt:       v.Created_At.Time,
+		UpdatedAt:       v.Updated_At.Time,
+	}
+}
+
+type StorageDestination struct {
+	UUID            string    `json:"uuid"`
+	Name            string    `json:"name"`
+	Storage         string    `json:"storage"`
+	ServerAddress   string    `json:"server_address"`
+	Port            int       `json:"port"`
+	Username        string    `json:"username"`
+	Password        string    `json:"password"`
+	RemoteDirectory string    `json:"remote_directory"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+type CreateStorageDestination struct {
+	UUID            *string `json:"uuid,omitempty" format:"uuid"`
+	Name            string  `json:"name"`
+	Storage         string  `json:"storage"`
+	ServerAddress   string  `json:"server_address"`
+	Port            int     `json:"port"`
+	Username        string  `json:"username"`
+	Password        string  `json:"password"`
+	RemoteDirectory string  `json:"remote_directory"`
+}
+
+func (i *CreateStorageDestination) Convert() dahua.CreateStorageDestinationArgs {
+	return dahua.CreateStorageDestinationArgs{
+		UUID:            core.Optional(i.UUID, uuid.NewString()),
+		Name:            i.Name,
+		Storage:         i.Storage,
+		ServerAddress:   i.ServerAddress,
+		Port:            i.Port,
+		Username:        i.Username,
+		Password:        i.Password,
+		RemoteDirectory: i.RemoteDirectory,
+	}
+}
+
+type UpdateStorageDestination struct {
+	Name            string `json:"name"`
+	Storage         string `json:"storage"`
+	ServerAddress   string `json:"server_address"`
+	Port            int    `json:"port"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	RemoteDirectory string `json:"remote_directory"`
+}
+
+type PutCreateStorageDestinationInput struct {
+	Body []CreateStorageDestination
+}
+
+func ListStorageDestinations(ctx context.Context, db *sqlx.DB) ([]StorageDestination, error) {
+	rows, err := db.QueryxContext(ctx, `
+		SELECT * FROM dahua_storage_destinations
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	body := []StorageDestination{}
+	for rows.Next() {
+		var v dahua.StorageDestination
+		if err := rows.StructScan(&v); err != nil {
+			return nil, err
+		}
+		body = append(body, NewStorageDestination(v))
+	}
+
+	return body, nil
+}
+
+type ListStorageDestinationOutput struct {
+	Body []StorageDestination
 }

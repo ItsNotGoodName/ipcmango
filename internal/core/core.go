@@ -6,11 +6,18 @@ import (
 	"net"
 	"os"
 	"strconv"
+
+	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 )
 
 type Key struct {
 	ID   int64
 	UUID string
+}
+
+type Timestamp struct {
+	Created_At types.Time
+	Updated_At types.Time
 }
 
 func SplitAddress(address string) (host string, port string) {

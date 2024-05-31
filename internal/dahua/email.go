@@ -27,14 +27,13 @@ import (
 // -------------------- EmailEndpoint CRUD
 type EmailEndpoint struct {
 	core.Key
+	core.Timestamp
 	Global         bool
 	Expression     string
 	URLs           types.Slice[string]
 	Title_Template string
 	Body_Template  string
 	Attachments    bool
-	Created_At     types.Time
-	Updated_At     types.Time
 	Disabled_At    sql.Null[types.Time]
 }
 
