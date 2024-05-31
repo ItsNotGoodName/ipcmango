@@ -88,8 +88,8 @@ func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDevice
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
 
-	var deviceKey core.Key
-	err := sqlx.GetContext(ctx, db, &deviceKey, `
+	var key core.Key
+	err := sqlx.GetContext(ctx, db, &key, `
 		WITH RECURSIVE generate_series(value) AS (
 			SELECT 1
 			UNION ALL
@@ -133,10 +133,10 @@ func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDevice
 		args.SyncVideoInMode,
 	)
 	if err != nil {
-		return deviceKey, err
+		return key, err
 	}
 
-	return deviceKey, nil
+	return key, nil
 }
 
 type UpdateDeviceArgs struct {
@@ -155,11 +155,11 @@ type UpdateDeviceArgs struct {
 	SyncVideoInMode bool
 }
 
-func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (DahuaDevice, error) {
+func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (core.Key, error) {
 	updatedAt := types.NewTime(time.Now())
 
-	var device DahuaDevice
-	err := db.GetContext(ctx, &device, `
+	var key core.Key
+	err := db.GetContext(ctx, &key, `
 		UPDATE dahua_devices SET
 			name = ?,
 			ip = ?,
@@ -175,7 +175,7 @@ func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (Dahu
 			sync_video_in_mode = ?,
 			updated_at = ?
 		WHERE uuid = ?
-		RETURNING *;
+		RETURNING id, uuid;
 	`,
 		args.Name,
 		args.IP,
@@ -193,14 +193,14 @@ func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (Dahu
 		args.UUID,
 	)
 	if err != nil {
-		return device, err
+		return key, err
 	}
 
 	bus.Publish(bus.DeviceUpdated{
-		DeviceKey: device.Key,
+		DeviceKey: key,
 	})
 
-	return device, nil
+	return key, nil
 }
 
 func DeleteDevice(ctx context.Context, db *sqlx.DB, uuid string) error {

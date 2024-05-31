@@ -149,25 +149,100 @@ func createEmailEndpoint(ctx context.Context, tx *sqlx.Tx, args CreateEmailEndpo
 		return core.Key{}, err
 	}
 
-	if len(args.DeviceUUIDs) != 0 {
-		query, queryArgs, err := sqlx.In(`
-			INSERT INTO dahua_devices_to_email_endpoints (device_id, email_endpoint_id)
-			SELECT id, ? FROM dahua_devices WHERE uuid IN (?)
-		`, key.ID, args.DeviceUUIDs)
-		_, err = tx.ExecContext(ctx, tx.Rebind(query), queryArgs...)
-		if err != nil {
-			return core.Key{}, err
-		}
+	if err = associateEmailEndpointWithDevices(ctx, tx, key, args.DeviceUUIDs); err != nil {
+		return core.Key{}, err
 	}
 
 	return key, nil
 }
 
-func DeleteEndpoint(ctx context.Context, db *sqlx.DB, uuid string) error {
+type UpdateEmailEndpointArgs struct {
+	UUID          string
+	Global        bool
+	Expression    string
+	TitleTemplate string
+	BodyTemplate  string
+	Attachments   bool
+	URLs          types.Slice[string]
+	DeviceUUIDs   []string
+	Disabled      bool
+}
+
+func UpdateEmailEndpoint(ctx context.Context, db *sqlx.DB, args UpdateEmailEndpointArgs) (core.Key, error) {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return core.Key{}, err
+	}
+	defer tx.Rollback()
+
+	updatedAt := types.NewTime(time.Now())
+	var disabledAt *types.Time
+	if args.Disabled {
+		t := types.NewTime(time.Now())
+		disabledAt = &t
+	}
+
+	var key core.Key
+	err = tx.GetContext(ctx, &key, `
+		UPDATE dahua_email_endpoints SET
+			global = ?,
+			expression = ?,
+			title_template = ?,
+			body_template = ?,
+			attachments = ?,
+			urls = ?,
+			updated_at = ?,
+			disabled_at = ?
+		WHERE uuid = ?
+		RETURNING id, uuid;
+	`,
+		args.Global,
+		args.Expression,
+		args.TitleTemplate,
+		args.BodyTemplate,
+		args.Attachments,
+		args.URLs,
+		updatedAt,
+		disabledAt,
+		args.UUID,
+	)
+	if err != nil {
+		return key, err
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		DELETE FROM dahua_devices_to_email_endpoints WHERE email_endpoint_id = ?
+	`, key.ID)
+	if err != nil {
+		return core.Key{}, err
+	}
+
+	if err := associateEmailEndpointWithDevices(ctx, tx, key, args.DeviceUUIDs); err != nil {
+		return core.Key{}, err
+	}
+
+	return key, tx.Commit()
+}
+
+func DeleteEmailEndpoint(ctx context.Context, db *sqlx.DB, uuid string) error {
 	_, err := db.ExecContext(ctx, `
 		DELETE FROM dahua_email_endpoints WHERE uuid = ?
 	`, uuid)
 	return err
+}
+
+func associateEmailEndpointWithDevices(ctx context.Context, tx *sqlx.Tx, emailEndpointKey core.Key, deviceUUIDs []string) error {
+	if len(deviceUUIDs) != 0 {
+		query, queryArgs, err := sqlx.In(`
+			INSERT INTO dahua_devices_to_email_endpoints (device_id, email_endpoint_id)
+			SELECT id, ? FROM dahua_devices WHERE uuid IN (?)
+		`, emailEndpointKey.ID, deviceUUIDs)
+		_, err = tx.ExecContext(ctx, tx.Rebind(query), queryArgs...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // -------------------- Email CRUD

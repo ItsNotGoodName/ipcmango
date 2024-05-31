@@ -150,7 +150,7 @@ func Register(api huma.API, app App) {
 		UUID string `path:"uuid" format:"uuid"`
 		Body UpdateDevice
 	}) (*UpdateDevicesOutput, error) {
-		device, err := dahua.UpdateDevice(ctx, app.DB, dahua.UpdateDeviceArgs{
+		key, err := dahua.UpdateDevice(ctx, app.DB, dahua.UpdateDeviceArgs{
 			UUID:          input.UUID,
 			Name:          input.Body.Name,
 			IP:            input.Body.IP,
@@ -168,6 +168,11 @@ func Register(api huma.API, app App) {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, huma.Error404NotFound("Device not found")
 			}
+			return nil, err
+		}
+
+		device, err := useDeviceByUUID(ctx, app.DB, key.UUID)
+		if err != nil {
 			return nil, err
 		}
 
@@ -905,13 +910,45 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
+		Summary: "Update email endpoint",
+		Method:  http.MethodPost,
+		Path:    "/api/endpoints/{uuid}",
+	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
+		Body UpdateEmailEndpoint
+	}) (*GetEmailEndpointOutput, error) {
+		key, err := dahua.UpdateEmailEndpoint(ctx, app.DB, dahua.UpdateEmailEndpointArgs{
+			UUID:          input.UUID,
+			Global:        input.Body.Global,
+			Expression:    input.Body.Expression,
+			TitleTemplate: input.Body.TitleTemplate,
+			BodyTemplate:  input.Body.BodyTemplate,
+			Attachments:   input.Body.Attachments,
+			URLs:          types.NewSlice(input.Body.URLs),
+			DeviceUUIDs:   input.Body.DeviceUUIDs,
+			Disabled:      input.Body.Disabled,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := GetEmailEndpoints(ctx, app.DB, key)
+		if err != nil {
+			return nil, err
+		}
+
+		return &GetEmailEndpointOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
 		Summary: "Delete endpoint",
 		Method:  http.MethodDelete,
 		Path:    "/api/endpoints/{uuid}",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	}) (*struct{}, error) {
-		return &struct{}{}, dahua.DeleteEndpoint(ctx, app.DB, input.UUID)
+		return &struct{}{}, dahua.DeleteEmailEndpoint(ctx, app.DB, input.UUID)
 	})
 }
 
@@ -1206,6 +1243,17 @@ type CreateEmailEndpoint struct {
 	Disabled      bool     `json:"disabled,omitempty" default:"false"`
 }
 
+type UpdateEmailEndpoint struct {
+	URLs          []string `json:"urls"`
+	Expression    string   `json:"expression,omitempty"`
+	TitleTemplate string   `json:"title_template,omitempty"`
+	BodyTemplate  string   `json:"body_template,omitempty"`
+	Attachments   bool     `json:"attachments,omitempty"`
+	DeviceUUIDs   []string `json:"device_uuids,omitempty"`
+	Global        bool     `json:"global,omitempty"`
+	Disabled      bool     `json:"disabled,omitempty" default:"false"`
+}
+
 func (i CreateEmailEndpoint) Convert() dahua.CreateEmailEndpointArgs {
 	return dahua.CreateEmailEndpointArgs{
 		UUID:          core.Optional(i.UUID, uuid.NewString()),
@@ -1222,6 +1270,10 @@ func (i CreateEmailEndpoint) Convert() dahua.CreateEmailEndpointArgs {
 
 type ListEmailEndpointsOutput struct {
 	Body []EmailEndpoint
+}
+
+type GetEmailEndpointOutput struct {
+	Body EmailEndpoint
 }
 
 type CreateEmailEndpointOutput struct {
@@ -1267,6 +1319,23 @@ func ListEmailEndpoints(ctx context.Context, db *sqlx.DB) ([]EmailEndpoint, erro
 	}
 
 	return body, nil
+}
+
+func GetEmailEndpoints(ctx context.Context, db *sqlx.DB, key core.Key) (EmailEndpoint, error) {
+	var emailEndpoint dahua.EmailEndpoint
+	err := db.GetContext(ctx, &emailEndpoint, `
+		SELECT * FROM dahua_email_endpoints WHERE id = ?
+	`, key.ID)
+	if err != nil {
+		return EmailEndpoint{}, err
+	}
+
+	deviceUUIDs, err := dahua.GetEmailEndpointDeviceUUIDs(ctx, db, emailEndpoint.Key)
+	if err != nil {
+		return EmailEndpoint{}, err
+	}
+
+	return NewEmailEndpoint(emailEndpoint, deviceUUIDs), nil
 }
 
 func ListDevices(ctx context.Context, db *sqlx.DB) ([]Device, error) {
