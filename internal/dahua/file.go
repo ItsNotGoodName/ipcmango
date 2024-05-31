@@ -11,9 +11,10 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/jobs"
 	"github.com/jmoiron/sqlx"
+	"github.com/k0kubun/pp/v3"
 	"github.com/maragudk/goqite"
-	"github.com/maragudk/goqite/jobs"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -345,11 +346,35 @@ func RegisterFileScanJob(client core.JobClient, db *sqlx.DB, dahuaStore *Store) 
 			return err
 		}
 
-		_, err = FileScan(ctx, db, conn.RPC, data.DeviceID, data.StartTime, data.EndTime)
+		result, err := FileScan(ctx, db, conn.RPC, data.DeviceID, data.StartTime, data.EndTime)
 		if err != nil {
 			return err
 		}
 
+		pp.Println(device.Name, result)
+
 		return nil
 	})
+}
+
+func CreateFileScanJob(ctx context.Context, db *sqlx.DB, fileScanJob core.Job[FileScanJob], args FileScanJob) error {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	goqiteID, err := fileScanJob.CreateAndGetIDTx(ctx, tx.Tx, args)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO dahua_file_scan_queue (device_id, goqite_id) VALUES (?, ?)
+	`, args.DeviceID, goqiteID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

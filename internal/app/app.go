@@ -710,11 +710,14 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		app.FIleScanJob.Create(ctx, dahua.FileScanJob{
+		err = dahua.CreateFileScanJob(ctx, app.DB, app.FIleScanJob, dahua.FileScanJob{
 			DeviceID:  device.ID,
 			StartTime: input.Body.StartTime,
 			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
 		})
+		if err != nil {
+			return nil, err
+		}
 
 		return &struct{}{}, nil
 	})

@@ -7,8 +7,8 @@ import (
 	"encoding/gob"
 	"fmt"
 
+	"github.com/ItsNotGoodName/ipcmanview/pkg/jobs"
 	"github.com/maragudk/goqite"
-	"github.com/maragudk/goqite/jobs"
 )
 
 func NewJobClient(queue *goqite.Queue, runner *jobs.Runner) JobClient {
@@ -62,4 +62,20 @@ func (j Job[T]) CreateTx(ctx context.Context, tx *sql.Tx, data T) error {
 		return err
 	}
 	return jobs.CreateTx(ctx, tx, j.queue, j.action, buffer.Bytes())
+}
+
+func (j Job[T]) CreateAndGetID(ctx context.Context, data T) (goqite.ID, error) {
+	var buffer bytes.Buffer
+	if err := gob.NewEncoder(&buffer).Encode(data); err != nil {
+		return "", err
+	}
+	return jobs.CreateAndGetID(ctx, j.queue, j.action, buffer.Bytes())
+}
+
+func (j Job[T]) CreateAndGetIDTx(ctx context.Context, tx *sql.Tx, data T) (goqite.ID, error) {
+	var buffer bytes.Buffer
+	if err := gob.NewEncoder(&buffer).Encode(data); err != nil {
+		return "", err
+	}
+	return jobs.CreateAndGetIDTx(ctx, tx, j.queue, j.action, buffer.Bytes())
 }

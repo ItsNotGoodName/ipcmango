@@ -22,10 +22,6 @@ create table goqite (
   received integer not null default 0
 ) strict;
 
-create trigger goqite_updated_timestamp after update on goqite begin
-  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
-end;
-
 create index goqite_queue_created_idx on goqite (queue, created);
 
 ------------
@@ -168,6 +164,13 @@ CREATE TABLE dahua_file_cursors (
   scan_percent REAL NOT NULL,
   scan_type TEXT NOT NULL,
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE dahua_file_scan_queue (
+  device_id TEXT UNIQUE,
+  goqite_id TEXT UNIQUE,
+  FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (goqite_id) REFERENCES goqite (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE dahua_storage_destinations (
