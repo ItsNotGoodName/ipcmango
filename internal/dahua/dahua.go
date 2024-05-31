@@ -50,7 +50,7 @@ func NewConn(v Device) Conn {
 }
 
 type Conn struct {
-	Key       types.Key
+	types.Key
 	Name      string
 	URL       *url.URL
 	Username  string
@@ -323,7 +323,7 @@ type DeviceCoaxialCaps struct {
 	SupportControlSpeaker        bool `json:"support_control_speaker"`
 }
 
-func GetDeviceCoaxialCaps(ctx context.Context, rpcClient dahuarpc.Conn, channel int) (DeviceCoaxialCaps, error) {
+func GetCoaxialCaps(ctx context.Context, rpcClient dahuarpc.Conn, channel int) (DeviceCoaxialCaps, error) {
 	caps, err := coaxialcontrolio.GetCaps(ctx, rpcClient, channel)
 	if err != nil && isFatalError(err) {
 		return DeviceCoaxialCaps{}, err

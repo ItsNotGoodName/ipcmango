@@ -2,139 +2,17 @@ package dahua
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
-	"sync"
 
-	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/jmoiron/sqlx"
 	"github.com/thejerf/suture/v4"
 )
-
-func NewEventManager(super *suture.Supervisor, db *sqlx.DB) *EventManager {
-	return &EventManager{
-		super:      super,
-		db:         db,
-		servicesMu: sync.Mutex{},
-		services:   make(map[string]eventService),
-	}
-}
-
-type eventService struct {
-	Token  suture.ServiceToken
-	Worker EventWorker
-}
-
-type EventManager struct {
-	super *suture.Supervisor
-	db    *sqlx.DB
-
-	servicesMu sync.Mutex
-	services   map[string]eventService
-}
-
-func (m *EventManager) String() string {
-	return "dahua.EventManager"
-}
-
-func (m *EventManager) Serve(ctx context.Context) error {
-	slog.Info("Started service", slog.String("service", m.String()))
-
-	if err := m.Start(); err != nil {
-		return err
-	}
-
-	<-ctx.Done()
-	m.Close()
-	return ctx.Err()
-}
-
-func (m *EventManager) Close() {
-	m.servicesMu.Lock()
-	for _, service := range m.services {
-		m.super.Remove(service.Token)
-	}
-	clear(m.services)
-	m.servicesMu.Unlock()
-}
-
-func (m *EventManager) Start() error {
-	m.servicesMu.Lock()
-	defer m.servicesMu.Unlock()
-
-	rows, err := m.db.QueryxContext(context.Background(), `
-		SELECT * FROM dahua_devices
-	`)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var device Device
-		if err := rows.StructScan(&device); err != nil {
-			return err
-		}
-
-		worker := NewEventWorker(NewConn(device), m.db)
-		token := m.super.Add(worker)
-		m.services[device.UUID] = eventService{
-			Token:  token,
-			Worker: worker,
-		}
-	}
-
-	return nil
-}
-
-func (m *EventManager) Refresh(ctx context.Context, uuid string) error {
-	m.servicesMu.Lock()
-	defer m.servicesMu.Unlock()
-
-	service, ok := m.services[uuid]
-	if ok {
-		m.super.Remove(service.Token)
-	}
-
-	var device Device
-	err := m.db.GetContext(ctx, &device, `
-		SELECT * FROM dahua_devices WHERE uuid = ?
-	`, uuid)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil
-		}
-		return err
-	}
-
-	worker := NewEventWorker(NewConn(device), m.db)
-	token := m.super.Add(worker)
-	m.services[device.UUID] = eventService{
-		Token:  token,
-		Worker: worker,
-	}
-
-	return nil
-}
-
-func (m *EventManager) Register() *EventManager {
-	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceCreated) error {
-		return m.Refresh(ctx, event.DeviceKey.UUID)
-	})
-	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceUpdated) error {
-		return m.Refresh(ctx, event.DeviceKey.UUID)
-	})
-	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceDeleted) error {
-		return m.Refresh(ctx, event.DeviceKey.UUID)
-	})
-	return m
-}
 
 func NewEventWorker(conn Conn, db *sqlx.DB) EventWorker {
 	return EventWorker{

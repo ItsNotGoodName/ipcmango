@@ -29,6 +29,13 @@ type EventCreated struct {
 	CreatedAt  time.Time
 }
 
+type CoaxialStatusUpdated struct {
+	DeviceKey  types.Key
+	Channel    int
+	WhiteLight bool
+	Speaker    bool
+}
+
 type EmailCreated struct {
 	DeviceKey  types.Key
 	MessageKey types.Key

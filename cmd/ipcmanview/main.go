@@ -101,7 +101,7 @@ func main() {
 			root.Add(dahuaFileScanJobClient)
 
 			// Create dahua event manager
-			root.Add(dahua.NewEventManager(root, db).Register())
+			root.Add(dahua.NewServiceManager(root, dahua.NewDefaultServiceFactory(db, dahuaStore)).Register())
 
 			// Create dahua email worker
 			root.Add(dahua.NewEmailWorker(db, afs).Register())

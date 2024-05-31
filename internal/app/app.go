@@ -214,7 +214,7 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		body, err := dahua.GetDeviceCoaxialCaps(ctx, client.RPC, input.Channel)
+		body, err := dahua.GetCoaxialCaps(ctx, client.RPC, input.Channel)
 		if err != nil {
 			return nil, err
 		}
