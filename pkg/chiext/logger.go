@@ -14,8 +14,7 @@ func Logger() func(next http.Handler) http.Handler {
 }
 
 // DefaultLogFormatter is a simple logger that implements a LogFormatter.
-type DefaultLogFormatter struct {
-}
+type DefaultLogFormatter struct{}
 
 // NewLogEntry creates a new LogEntry for the request.
 func (l *DefaultLogFormatter) NewLogEntry(r *http.Request) middleware.LogEntry {

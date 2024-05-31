@@ -8,9 +8,7 @@ import (
 
 type Type string
 
-var (
-	TypeBLOB Type = "BLOB"
-)
+var TypeBLOB Type = "BLOB"
 
 type Cap struct {
 	ChipType string `json:"string"`

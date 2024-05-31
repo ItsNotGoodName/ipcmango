@@ -617,7 +617,6 @@ func NewEmailPayload(message EmailMessage, attachments []EmailAttachment) EmailP
 			Size:     a.Size,
 			Mime:     a.Mime_Type,
 		})
-
 	}
 	return EmailPayload{
 		Message: EmailPayloadMessage{

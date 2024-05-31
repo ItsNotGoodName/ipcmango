@@ -66,7 +66,7 @@ func (c Certificate) Generate() error {
 		Type:  "CERTIFICATE",
 		Bytes: certBytes,
 	})
-	if err := os.WriteFile(c.CertFile, certPEM.Bytes(), 0600); err != nil {
+	if err := os.WriteFile(c.CertFile, certPEM.Bytes(), 0o600); err != nil {
 		return err
 	}
 
@@ -75,7 +75,7 @@ func (c Certificate) Generate() error {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
 	})
-	if err := os.WriteFile(c.KeyFile, certPrivKeyPEM.Bytes(), 0600); err != nil {
+	if err := os.WriteFile(c.KeyFile, certPrivKeyPEM.Bytes(), 0o600); err != nil {
 		return err
 	}
 

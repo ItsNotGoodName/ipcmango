@@ -50,7 +50,7 @@ func (t Timestamp) Parse(deviceLocation *time.Location) (time.Time, error) {
 		return time.Time{}.UTC(), nil
 	}
 
-	var format = "2006-01-02 15:04:05"
+	format := "2006-01-02 15:04:05"
 	if strings.HasSuffix(string(t), "PM") || strings.HasSuffix(string(t), "AM") {
 		format = "2006-01-02 03:04:05 PM"
 	}

@@ -50,7 +50,8 @@ func Test_ExtractFilePathTags(t *testing.T) {
 		},
 		{
 			Path: "04M]0@0][0][].jpg",
-			Tags: []string{"0", ""}},
+			Tags: []string{"0", ""},
+		},
 		{
 			Path: "/mnt/dvr/mmc0p2_0/2023-04-09/0/jpg/09/44/34[M][0@0][7136][0].jpg",
 			Tags: []string{"M", "0@0", "7136", "0"},

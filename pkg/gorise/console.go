@@ -13,8 +13,7 @@ func NewConsole() Console {
 	return Console{}
 }
 
-type Console struct {
-}
+type Console struct{}
 
 func (Console) Send(ctx context.Context, msg Message) error {
 	fmt.Println(msg.Text())

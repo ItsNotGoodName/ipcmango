@@ -8,9 +8,7 @@ import (
 	"strings"
 )
 
-var (
-	ErrBuilderNotFound = fmt.Errorf("builder not found")
-)
+var ErrBuilderNotFound = fmt.Errorf("builder not found")
 
 type Message struct {
 	Title       string

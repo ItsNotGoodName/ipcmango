@@ -11,9 +11,7 @@ import (
 	"time"
 )
 
-var (
-	ErrClientClosed = errors.New("client closed")
-)
+var ErrClientClosed = errors.New("client closed")
 
 const clientKeepAliveTimeout = 60 * time.Second
 

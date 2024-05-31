@@ -39,22 +39,20 @@ const (
 
 func NewConn(v Device) Conn {
 	return Conn{
-		Key:        v.Key,
-		Name:       v.Name,
-		IP:         v.IP,
-		Username:   v.Username,
-		Password:   v.Password,
-		Updated_At: v.Updated_At.Time,
+		Key:      v.Key,
+		Name:     v.Name,
+		IP:       v.IP,
+		Username: v.Username,
+		Password: v.Password,
 	}
 }
 
 type Conn struct {
 	types.Key
-	Name       string
-	IP         string
-	Username   string
-	Password   string
-	Updated_At time.Time
+	Name     string
+	IP       string
+	Username string
+	Password string
 }
 
 func (lhs Conn) EQ(rhs Conn) bool {
@@ -399,7 +397,6 @@ func ListUsers(ctx context.Context, rpcClient dahuarpc.Conn, location *time.Loca
 		passwordModifiedTime, err := u.PasswordModifiedTime.Parse(location)
 		if err != nil {
 			return nil, err
-
 		}
 		res = append(res, DeviceUser{
 			Anonymous:            u.Anonymous,

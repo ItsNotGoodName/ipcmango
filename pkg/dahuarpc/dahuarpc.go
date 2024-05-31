@@ -10,9 +10,7 @@ import (
 	"net/http"
 )
 
-var (
-	ErrRequestFailed = errors.New("request failed")
-)
+var ErrRequestFailed = errors.New("request failed")
 
 const (
 	StateLogout State = iota

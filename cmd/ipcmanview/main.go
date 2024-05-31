@@ -77,14 +77,14 @@ func main() {
 
 			// Create data directory
 			dir := core.Must2(filepath.Abs(options.Dir))
-			core.Must(os.MkdirAll(dir, 0755))
+			core.Must(os.MkdirAll(dir, 0o755))
 
 			// Create database
 			db := sqlx.NewDb(core.Must2(sqlite.Migrate(ctx, core.Must2(sqlite.New(filepath.Join(dir, "sqlite.db"))))), sqlite.Driver)
 
 			// Create afero filesystem
 			afsDirectory := filepath.Join(dir, "afero")
-			core.Must(os.MkdirAll(afsDirectory, 0755))
+			core.Must(os.MkdirAll(afsDirectory, 0o755))
 			afs := afero.NewBasePathFs(afero.NewOsFs(), afsDirectory)
 
 			// Create quartz scheduler

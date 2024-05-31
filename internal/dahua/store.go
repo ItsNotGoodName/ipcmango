@@ -65,7 +65,7 @@ func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, err
 	s.clientsMu.Lock()
 	var conn Conn
 	err := s.db.GetContext(ctx, &conn, `
-		SELECT id, uuid, name, ip, username, password, updated_at
+		SELECT id, uuid, name, ip, username, password
 		FROM dahua_devices WHERE id = ? OR uuid = ? LIMIT 1
 	`, deviceKey.ID, deviceKey.UUID)
 	if err != nil {
