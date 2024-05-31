@@ -351,8 +351,8 @@ func NewFileScanJobClient(db *sqlx.DB) core.JobClient {
 	})
 	runner := jobs.NewRunner(jobs.NewRunnerOpts{
 		Extend:       timeout,
-		Limit:        5,
-		Log:          slog.Default().With("name", name),
+		Limit:        3,
+		Log:          slog.Default().With("queue", name),
 		PollInterval: time.Second,
 		Queue:        queue,
 	})

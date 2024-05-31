@@ -54,7 +54,10 @@ function DeviceNameCell(props: { device: { uuid: string, name: string } }) {
 export function Devices() {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const data = createQuery(() => api.devices.list)
+  const data = createQuery(() => ({
+    ...api.devices.list,
+    throwOnError: true
+  }))
 
   const queryFilter = useQueryFilter("device")
   const devices = () => queryFilter.values().length == 0 ? data.data : data.data?.filter(v => queryFilter.values().includes(v.uuid))

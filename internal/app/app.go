@@ -709,20 +709,21 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Scan files",
+		Summary: "Scan device files",
 		Method:  http.MethodPost,
-		Path:    "/api/files/scan",
+		Path:    "/api/devices/{uuid}/file-scan",
 	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
 		Body FileScan
 	}) (*struct{}, error) {
-		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.Body.DeviceUUID})
+		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
 
 		err = dahua.CreateFileScanJob(ctx, app.DB, app.FileScanJob, dahua.FileScanJob{
 			DeviceID:  device.ID,
-			StartTime: input.Body.StartTime,
+			StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
 			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
 		})
 		if err != nil {
@@ -984,7 +985,7 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Put devices",
+		Summary: "Put storage destinations",
 		Method:  http.MethodPut,
 		Path:    "/api/storage-destinations",
 	}, func(ctx context.Context, input *PutCreateStorageDestinationInput) (*ListStorageDestinationOutput, error) {
@@ -1006,6 +1007,33 @@ func Register(api huma.API, app App) {
 		return &ListStorageDestinationOutput{
 			Body: body,
 		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Scan all device files",
+		Method:  http.MethodPost,
+		Path:    "/api/file-scan",
+	}, func(ctx context.Context, input *struct {
+		Body FileScan
+	}) (*struct{}, error) {
+		var deviceIDs []int64
+		err := app.DB.SelectContext(ctx, &deviceIDs, `
+			SELECT id FROM dahua_devices
+		`)
+
+		for _, deviceID := range deviceIDs {
+			err = dahua.CreateFileScanJob(ctx, app.DB, app.FileScanJob, dahua.FileScanJob{
+				DeviceID:  deviceID,
+				StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
+				EndTime:   core.Optional(input.Body.EndTime, time.Now()),
+			})
+			if err != nil {
+				if _, ok := sqlite.AsConstraintError(err, sqlite.CONSTRAINT_UNIQUE); !ok {
+					return nil, err
+				}
+			}
+		}
+
+		return &struct{}{}, nil
 	})
 }
 
@@ -1456,9 +1484,8 @@ func SetDeviceCoaxialState(ctx context.Context, dahuaStore *dahua.Store, db *sql
 }
 
 type FileScan struct {
-	DeviceUUID string     `json:"device_uuid" format:"uuid"`
-	StartTime  time.Time  `json:"start_time"`
-	EndTime    *time.Time `json:"end_time,omitempty"`
+	StartTime *time.Time `json:"start_time,omitempty"`
+	EndTime   *time.Time `json:"end_time,omitempty"`
 }
 
 func useDevice(ctx context.Context, db *sqlx.DB, key types.Key) (dahua.Device, error) {

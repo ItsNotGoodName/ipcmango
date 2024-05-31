@@ -28,7 +28,10 @@ function StatValue(props: ParentProps) {
 }
 
 export function Home() {
-  const data = createQuery(() => pages.home)
+  const data = createQuery(() => ({
+    ...pages.home,
+    throwOnError: true
+  }))
 
   return (
     <LayoutNormal>
