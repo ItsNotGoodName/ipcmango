@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 func NewFileClient(client *http.Client, concurrent int) FileClient {
@@ -29,39 +30,43 @@ func (c FileClient) Close() {
 	c.cancel()
 }
 
-func (c FileClient) Do(ctx context.Context, urL, cookie string) (io.ReadCloser, error) {
+func (c FileClient) Do(ctx context.Context, urL, cookie string) (FileResponse, error) {
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return FileResponse{}, ctx.Err()
 	case c.sema <- struct{}{}:
 	}
 
 	req, err := http.NewRequestWithContext(c.ctx, http.MethodGet, urL, nil)
 	if err != nil {
-		return nil, err
+		return FileResponse{}, err
 	}
 
 	req.Header.Add("Cookie", cookie)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return FileResponse{}, err
 	}
 
-	return fileResponse{
-		ReadCloser: resp.Body,
-		ctx:        c.ctx,
-		sema:       c.sema,
+	contentLength, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+
+	return FileResponse{
+		ReadCloser:    resp.Body,
+		ContentLength: contentLength,
+		ctx:           ctx,
+		sema:          make(<-chan struct{}),
 	}, nil
 }
 
-type fileResponse struct {
+type FileResponse struct {
 	io.ReadCloser
-	ctx  context.Context
-	sema <-chan struct{}
+	ContentLength int64
+	ctx           context.Context
+	sema          <-chan struct{}
 }
 
-func (r fileResponse) Close() error {
+func (r FileResponse) Close() error {
 	go func() {
 		// Assume the device will not send more than 1 GB
 		io.CopyN(io.Discard, r, 1024*1024*1024)

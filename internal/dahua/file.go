@@ -400,10 +400,10 @@ func CreateFileScanJob(ctx context.Context, db *sqlx.DB, fileScanJob core.Job[Fi
 	return tx.Commit()
 }
 
-func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, error) {
+func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {
 	urL, err := url.Parse(filePath)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var dest StorageDestination
@@ -412,38 +412,44 @@ func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadClos
 		WHERE server_address = ? AND storage = ?
 	`, urL.Host, StorageFTP)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	c, err := ftp.Dial(core.Address(dest.Server_Address, int(dest.Port)), ftp.DialWithContext(ctx))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	err = c.Login(dest.Username, dest.Password)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	username := "/" + dest.Username
 	path, _ := strings.CutPrefix(urL.Path, username)
 
+	contentLength, err := c.FileSize(path)
+	if err != nil {
+		c.Quit()
+		return nil, 0, err
+	}
+
 	rd, err := c.Retr(path)
 	if err != nil {
 		c.Quit()
-		return nil, err
+		return nil, 0, err
 	}
 
 	return core.MultiReadCloser{
 		Reader:  rd,
 		Closers: []func() error{rd.Close, c.Quit},
-	}, nil
+	}, contentLength, nil
 }
 
-func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, error) {
+func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {
 	urL, err := url.Parse(filePath)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var dest StorageDestination
@@ -452,7 +458,7 @@ func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadClo
 		WHERE server_address = ? AND storage = ?
 	`, urL.Host, StorageFTP)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	conn, err := ssh.Dial("tcp", core.Address(dest.Server_Address, int(dest.Port)), &ssh.ClientConfig{
@@ -464,29 +470,38 @@ func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadClo
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	client, err := sftp.NewClient(conn)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	username := "/" + dest.Username
 	path, _ := strings.CutPrefix(urL.Path, username)
 
+	var contentLength int64
+	if stat, err := client.Stat(path); err == nil {
+		contentLength = stat.Size()
+	}
+
 	rd, err := client.Open(path)
 	if err != nil {
 		client.Close()
-		return nil, err
+		return nil, 0, err
 	}
 
 	return core.MultiReadCloser{
 		Reader:  rd,
 		Closers: []func() error{rd.Close, client.Close},
-	}, nil
+	}, contentLength, nil
 }
 
-func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.ReadCloser, error) {
-	return client.File.Do(ctx, dahuarpc.LoadFileURL(client.Conn.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
+func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.ReadCloser, int64, error) {
+	v, err := client.File.Do(ctx, dahuarpc.LoadFileURL(client.Conn.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
+	if err != nil {
+		return nil, 0, err
+	}
+	return v, v.ContentLength, nil
 }

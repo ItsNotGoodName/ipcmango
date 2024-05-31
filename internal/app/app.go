@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/build"
@@ -542,12 +543,13 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
+		snapshot, err := dahuacgi.SnapshotGet(ctx, client.CGI, input.Channel, input.Type)
+		if err != nil {
+			return nil, err
+		}
+
 		return &huma.StreamResponse{
 			Body: func(ctx huma.Context) {
-				snapshot, err := dahuacgi.SnapshotGet(ctx.Context(), client.CGI, input.Channel, input.Type)
-				if err != nil {
-					return
-				}
 				defer snapshot.Close()
 
 				ctx.SetHeader("Content-Type", snapshot.ContentType)
@@ -627,20 +629,23 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		var rd io.ReadCloser
+		var (
+			rd            io.ReadCloser
+			contentLength int64
+		)
 		switch file.Storage {
 		case dahua.StorageLocal:
-			rd, err = dahua.OpenFileLocal(ctx, client, file.File_Path)
+			rd, contentLength, err = dahua.OpenFileLocal(ctx, client, file.File_Path)
 			if err != nil {
 				return nil, err
 			}
 		case dahua.StorageFTP:
-			rd, err = dahua.OpenFileFTP(ctx, app.DB, file.File_Path)
+			rd, contentLength, err = dahua.OpenFileFTP(ctx, app.DB, file.File_Path)
 			if err != nil {
 				return nil, err
 			}
 		case dahua.StorageSFTP:
-			rd, err = dahua.OpenFileSFTP(ctx, app.DB, file.File_Path)
+			rd, contentLength, err = dahua.OpenFileSFTP(ctx, app.DB, file.File_Path)
 			if err != nil {
 				return nil, err
 			}
@@ -651,6 +656,7 @@ func Register(api huma.API, app App) {
 		return &huma.StreamResponse{
 			Body: func(ctx huma.Context) {
 				defer rd.Close()
+				ctx.SetHeader("Content-Length", strconv.FormatInt(contentLength, 10))
 				ctx.SetHeader("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filepath.Base(input.Name)))
 				io.Copy(ctx.BodyWriter(), rd)
 			},
