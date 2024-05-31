@@ -361,15 +361,7 @@ func NewFileScanJobClient(db *sqlx.DB) core.JobClient {
 
 func RegisterFileScanJob(client core.JobClient, db *sqlx.DB, dahuaStore *Store) core.Job[FileScanJob] {
 	return core.NewJob(client, func(ctx context.Context, data FileScanJob) error {
-		var device Device
-		err := db.GetContext(ctx, &device, `
-			SELECT * FROM dahua_devices WHERE id = ?
-		`, data.DeviceID)
-		if err != nil {
-			return err
-		}
-
-		conn, err := dahuaStore.GetClient(ctx, NewConn(device))
+		conn, err := dahuaStore.GetClient(ctx, types.Key{ID: data.DeviceID})
 		if err != nil {
 			return err
 		}
@@ -499,7 +491,7 @@ func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadClo
 }
 
 func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.ReadCloser, int64, error) {
-	v, err := client.File.Do(ctx, dahuarpc.LoadFileURL(client.Conn.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
+	v, err := client.File.Do(ctx, dahuarpc.LoadFileURL(client.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
 	if err != nil {
 		return nil, 0, err
 	}

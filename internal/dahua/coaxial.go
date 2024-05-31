@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
+	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/jmoiron/sqlx"
 	"github.com/thejerf/suture/v4"
@@ -35,7 +36,7 @@ func (w CoaxialWorker) Serve(ctx context.Context) error {
 }
 
 func (w CoaxialWorker) serve(ctx context.Context) error {
-	client, err := w.store.GetClient(ctx, w.conn)
+	client, err := w.store.GetClient(ctx, w.conn.Key)
 	if err != nil {
 		return err
 	}
@@ -53,41 +54,36 @@ func (w CoaxialWorker) serve(ctx context.Context) error {
 
 	slog.Info("Started service", slog.String("service", w.String()))
 
-	publish := func(v DeviceCoaxialStatus) {
-		bus.Publish(bus.CoaxialStatusUpdated{
-			DeviceKey:  w.conn.Key,
-			Channel:    channel,
-			WhiteLight: v.WhiteLight,
-			Speaker:    v.Speaker,
-		})
-	}
-
-	// Get and publish initial coaxial status
-	coaxialStatus, err := GetCoaxialStatus(ctx, client.RPC, channel)
-	if err != nil {
-		return err
-	}
-	publish(coaxialStatus)
-
 	t := time.NewTicker(1 * time.Second)
 
+	var lastStatus DeviceCoaxialStatus
+
 	// Get and send coaxial status if it changes on an interval
-	for {
+	for first := true; ; first = false {
+		status, err := GetCoaxialStatus(ctx, client.RPC, channel)
+		if err != nil {
+			return err
+		}
+		if !first && lastStatus.Speaker == status.Speaker && lastStatus.WhiteLight == status.WhiteLight {
+			continue
+		}
+		lastStatus = status
+
+		HandleCoaxialStatus(ctx, w.conn.Key, channel, status)
+
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
 		}
-
-		v, err := GetCoaxialStatus(ctx, client.RPC, channel)
-		if err != nil {
-			return err
-		}
-		if coaxialStatus.Speaker == v.Speaker && coaxialStatus.WhiteLight == v.WhiteLight {
-			continue
-		}
-		coaxialStatus = v
-
-		publish(v)
 	}
+}
+
+func HandleCoaxialStatus(ctx context.Context, deviceKey types.Key, channel int, coaxialStatus DeviceCoaxialStatus) {
+	bus.Publish(bus.CoaxialStatusUpdated{
+		DeviceKey:  deviceKey,
+		Channel:    channel,
+		WhiteLight: coaxialStatus.WhiteLight,
+		Speaker:    coaxialStatus.Speaker,
+	})
 }

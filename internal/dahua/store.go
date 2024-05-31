@@ -2,28 +2,29 @@ package dahua
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"slices"
 	"sync"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
+	"github.com/ItsNotGoodName/ipcmanview/internal/types"
+	"github.com/jmoiron/sqlx"
 )
 
-func NewStore() *Store {
+func NewStore(db *sqlx.DB) *Store {
 	return &Store{
-		mu:             sync.Mutex{},
-		clients:        make(map[string]Client),
-		deletedClients: []string{},
+		db:        db,
+		clientsMu: sync.Mutex{},
+		clients:   make(map[int64]Client),
 	}
 }
 
 // Store handles creating and caching clients.
 type Store struct {
-	mu             sync.Mutex
-	clients        map[string]Client
-	deletedClients []string
+	db *sqlx.DB
+
+	clientsMu sync.Mutex
+	clients   map[int64]Client
 }
 
 func (*Store) String() string {
@@ -32,8 +33,8 @@ func (*Store) String() string {
 
 // Close closes all clients.
 func (s *Store) Close() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.clientsMu.Lock()
+	defer s.clientsMu.Unlock()
 
 	wg := sync.WaitGroup{}
 
@@ -60,22 +61,26 @@ func (s *Store) Serve(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// GetClient retrieves a cached client or creates a new one.
-func (s *Store) GetClient(ctx context.Context, conn Conn) (Client, error) {
-	s.mu.Lock()
-	if slices.Contains(s.deletedClients, conn.Key.UUID) {
-		s.mu.Unlock()
-		return Client{}, fmt.Errorf("client deleted")
+func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, error) {
+	s.clientsMu.Lock()
+	var conn Conn
+	err := s.db.GetContext(ctx, &conn, `
+		SELECT id, uuid, name, ip, username, password, updated_at
+		FROM dahua_devices WHERE id = ? OR uuid = ? LIMIT 1
+	`, deviceKey.ID, deviceKey.UUID)
+	if err != nil {
+		s.clientsMu.Unlock()
+		return Client{}, err
 	}
 
-	client, ok := s.clients[conn.Key.UUID]
+	client, ok := s.clients[conn.Key.ID]
 	if !ok {
 		// Not found
 
 		client = NewClient(conn)
-		s.clients[conn.Key.UUID] = client
-	} else if !client.Conn.EQ(conn) && client.Conn.UpdatedAt.Before(conn.UpdatedAt) {
-		// Found but not equal and old
+		s.clients[conn.Key.ID] = client
+	} else if !client.Conn.EQ(conn) {
+		// Found but not equal
 
 		err := client.CloseNoWait(ctx)
 		if err != nil {
@@ -83,22 +88,20 @@ func (s *Store) GetClient(ctx context.Context, conn Conn) (Client, error) {
 		}
 
 		client = NewClient(conn)
-		s.clients[conn.Key.UUID] = client
+		s.clients[conn.Key.ID] = client
 	}
-	s.mu.Unlock()
+	s.clientsMu.Unlock()
 
 	return client, nil
 }
 
-// DeleteClient removes a client and prevents it from being created again.
-func (s *Store) DeleteClient(ctx context.Context, deviceUUID string) error {
-	s.mu.Lock()
-	client, found := s.clients[deviceUUID]
+func (s *Store) DeleteClient(ctx context.Context, deviceID int64) error {
+	s.clientsMu.Lock()
+	client, found := s.clients[deviceID]
 	if found {
-		delete(s.clients, deviceUUID)
+		delete(s.clients, deviceID)
 	}
-	s.deletedClients = append(s.deletedClients, deviceUUID)
-	s.mu.Unlock()
+	s.clientsMu.Unlock()
 
 	if !found {
 		return nil
@@ -109,7 +112,7 @@ func (s *Store) DeleteClient(ctx context.Context, deviceUUID string) error {
 
 func (s *Store) Register() *Store {
 	bus.Subscribe(s.String(), func(ctx context.Context, event bus.DeviceDeleted) error {
-		return s.DeleteClient(ctx, event.DeviceKey.UUID)
+		return s.DeleteClient(ctx, event.DeviceKey.ID)
 	})
 	return s
 }

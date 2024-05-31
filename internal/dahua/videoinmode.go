@@ -119,7 +119,7 @@ func (w SyncVideoInModeJob) Execute(ctx context.Context) error {
 				return
 			}
 
-			client, err := w.store.GetClient(ctx, NewConn(device))
+			client, err := w.store.GetClient(ctx, device.Key)
 			if err != nil {
 				slog.Error("Failed to get client", "error", err)
 				return

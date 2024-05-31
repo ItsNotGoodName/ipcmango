@@ -128,18 +128,19 @@ func Register(api huma.API, app App) {
 		Body UpdateDevice
 	}) (*UpdateDevicesOutput, error) {
 		key, err := dahua.UpdateDevice(ctx, app.DB, dahua.UpdateDeviceArgs{
-			UUID:          input.UUID,
-			Name:          input.Body.Name,
-			IP:            input.Body.IP,
-			Username:      input.Body.Username,
-			Password:      core.NullToSQLNull(input.Body.Password),
-			Location:      input.Body.Location,
-			Features:      types.NewSlice(input.Body.Features),
-			Email:         input.Body.Email,
-			Latitude:      core.NullToSQLNull(input.Body.Latitude),
-			Longitude:     core.NullToSQLNull(input.Body.Longitude),
-			SunriseOffset: input.Body.SunriseOffset,
-			SunsetOffset:  input.Body.SunsetOffset,
+			UUID:            input.UUID,
+			Name:            input.Body.Name,
+			IP:              input.Body.IP,
+			Username:        input.Body.Username,
+			Password:        core.NullToSQLNull(input.Body.Password),
+			Location:        input.Body.Location,
+			Features:        types.NewSlice(input.Body.Features),
+			Email:           input.Body.Email,
+			Latitude:        core.NullToSQLNull(input.Body.Latitude),
+			Longitude:       core.NullToSQLNull(input.Body.Longitude),
+			SunriseOffset:   input.Body.SunriseOffset,
+			SunsetOffset:    input.Body.SunsetOffset,
+			SyncVideoInMode: core.NullToSQLNull(input.Body.SyncVideoInMode),
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -1475,7 +1476,7 @@ func useDevice(ctx context.Context, db *sqlx.DB, key types.Key) (dahua.Device, e
 }
 
 func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.Device) (dahua.Client, error) {
-	client, err := dahuaStore.GetClient(ctx, dahua.NewConn(device))
+	client, err := dahuaStore.GetClient(ctx, device.Key)
 	if err != nil {
 		return dahua.Client{}, huma.Error404NotFound("device not found")
 	}

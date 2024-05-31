@@ -38,34 +38,35 @@ const (
 )
 
 func NewConn(v Device) Conn {
-	urL, _ := url.Parse("http://" + v.IP)
 	return Conn{
-		Key:       v.Key,
-		Name:      v.Name,
-		URL:       urL,
-		Username:  v.Username,
-		Password:  v.Password,
-		UpdatedAt: v.Updated_At.Time,
+		Key:        v.Key,
+		Name:       v.Name,
+		IP:         v.IP,
+		Username:   v.Username,
+		Password:   v.Password,
+		Updated_At: v.Updated_At.Time,
 	}
 }
 
 type Conn struct {
 	types.Key
-	Name      string
-	URL       *url.URL
-	Username  string
-	Password  string
-	UpdatedAt time.Time
+	Name       string
+	IP         string
+	Username   string
+	Password   string
+	Updated_At time.Time
 }
 
 func (lhs Conn) EQ(rhs Conn) bool {
 	return lhs.Name == rhs.Name &&
-		lhs.URL.String() == rhs.URL.String() &&
+		lhs.IP == rhs.IP &&
 		lhs.Username == rhs.Username &&
 		lhs.Password == rhs.Password
 }
 
 func NewClient(conn Conn) Client {
+	urL, _ := url.Parse("http://" + conn.IP)
+
 	httpClient := http.Client{
 		Transport: &http.Transport{
 			Dial: func(network, addr string) (net.Conn, error) {
@@ -74,13 +75,14 @@ func NewClient(conn Conn) Client {
 		},
 	}
 
-	clientRPC := dahuarpc.NewClient(&httpClient, conn.URL, conn.Username, conn.Password)
+	clientRPC := dahuarpc.NewClient(&httpClient, urL, conn.Username, conn.Password)
 	clientPTZ := ptz.NewClient(clientRPC)
-	clientCGI := dahuacgi.NewClient(httpClient, conn.URL, conn.Username, conn.Password)
+	clientCGI := dahuacgi.NewClient(httpClient, urL, conn.Username, conn.Password)
 	clientFile := dahuarpc.NewFileClient(&httpClient, 10)
 
 	return Client{
 		Conn: conn,
+		URL:  urL,
 		RPC:  clientRPC,
 		PTZ:  clientPTZ,
 		CGI:  clientCGI,
@@ -90,6 +92,7 @@ func NewClient(conn Conn) Client {
 
 type Client struct {
 	Conn Conn
+	URL  *url.URL
 	RPC  dahuarpc.Client
 	PTZ  ptz.Client
 	CGI  dahuacgi.Client

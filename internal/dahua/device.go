@@ -119,16 +119,16 @@ func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDevice
 			ip, 
 			username, 
 			password, 
-			location, 
-			features,
 			email, 
-			created_at, 
-			updated_at, 
+			features,
+			location, 
 			latitude, 
 			longitude,
 			sunrise_offset,
 			sunset_offset,
-			sync_video_in_mode
+			sync_video_in_mode,
+			created_at,
+			updated_at
 		) 
 		VALUES ((SELECT value FROM generate_series WHERE value NOT IN (SELECT seed from dahua_devices) LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
 		RETURNING id, uuid;
@@ -138,16 +138,16 @@ func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDevice
 		args.IP,
 		args.Username,
 		args.Password,
-		args.Location,
-		args.Features,
 		args.Email,
-		createdAt,
-		updatedAt,
+		args.Features,
+		args.Location,
 		args.Latitude,
 		args.Longitude,
 		args.SunriseOffset,
 		args.SunsetOffset,
 		args.SyncVideoInMode,
+		createdAt,
+		updatedAt,
 	)
 	if err != nil {
 		return key, err
@@ -169,7 +169,7 @@ type UpdateDeviceArgs struct {
 	Longitude       sql.Null[float64]
 	SunriseOffset   *types.Duration
 	SunsetOffset    *types.Duration
-	SyncVideoInMode bool
+	SyncVideoInMode sql.Null[bool]
 }
 
 func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (types.Key, error) {
@@ -182,9 +182,9 @@ func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (type
 			ip = ?,
 			username = ?,
 			password = coalesce(?, password),
-			location = ?,
-			features =  ?,
 			email = ?,
+			features =  ?,
+			location = ?,
 			latitude = ?,
 			longitude = ?,
 			sunrise_offset = ?,
@@ -198,9 +198,9 @@ func UpdateDevice(ctx context.Context, db *sqlx.DB, args UpdateDeviceArgs) (type
 		args.IP,
 		args.Username,
 		args.Password,
-		args.Location,
 		args.Email,
 		args.Features,
+		args.Location,
 		args.Latitude,
 		args.Longitude,
 		args.SunriseOffset,

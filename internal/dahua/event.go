@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"slices"
 
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
@@ -38,7 +39,8 @@ func (w EventWorker) serve(ctx context.Context) error {
 	slog.Info("Started service", slog.String("service", w.String()))
 	defer slog.Info("Stopped service", slog.String("service", w.String()))
 
-	c := dahuacgi.NewClient(http.Client{}, w.conn.URL, w.conn.Username, w.conn.Password)
+	connURL, _ := url.Parse("http://" + w.conn.IP)
+	c := dahuacgi.NewClient(http.Client{}, connURL, w.conn.Username, w.conn.Password)
 
 	manager, err := dahuacgi.EventManagerGet(ctx, c, 0)
 	if err != nil {

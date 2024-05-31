@@ -92,7 +92,7 @@ func main() {
 			root.Add(scheduler)
 
 			// Create dahua store
-			dahuaStore := dahua.NewStore()
+			dahuaStore := dahua.NewStore(db)
 			root.Add(dahuaStore)
 
 			// Create file scan job
