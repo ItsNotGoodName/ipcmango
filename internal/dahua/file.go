@@ -192,33 +192,23 @@ type DefaultFileCursor struct {
 	FullEpoch   types.Time
 }
 
-func NewFileScanRange(start, end time.Time, period time.Duration, ascending bool) *FileScanRange {
-	if period <= 0 {
-		panic("period is too short")
-	}
+func NewFileScanRange(start, end time.Time) *FileScanRange {
 	if start.After(end) {
 		panic("invalid time range")
 	}
 
-	cursor := end.Add(period)
-	if ascending {
-		cursor = start.Add(-period)
-	}
+	cursor := end.Add(fileScanMaxPeriod)
 
 	return &FileScanRange{
-		start:     start,
-		end:       end,
-		period:    period,
-		ascending: ascending,
-		cursor:    cursor,
+		start:  start,
+		end:    end,
+		cursor: cursor,
 	}
 }
 
 type FileScanRange struct {
-	start     time.Time
-	end       time.Time
-	period    time.Duration
-	ascending bool
+	start time.Time
+	end   time.Time
 
 	cursor time.Time
 }
@@ -228,49 +218,25 @@ func (r *FileScanRange) Cursor() time.Time {
 }
 
 func (r *FileScanRange) Percent() float64 {
-	if r.ascending {
-		if r.cursor.Equal(r.end) {
-			return 100.0
-		}
-		return (r.cursor.Sub(r.start).Hours() / r.end.Sub(r.start).Hours()) * 100
-	} else {
-		if r.cursor.Equal(r.start) {
-			return 100.0
-		}
-		return (r.end.Sub(r.cursor).Hours() / r.end.Sub(r.start).Hours()) * 100
+	if r.cursor.Equal(r.start) {
+		return 100.0
 	}
+	return (r.end.Sub(r.cursor).Hours() / r.end.Sub(r.start).Hours()) * 100
 }
 
 func (r *FileScanRange) Range() (time.Time, time.Time) {
-	if r.ascending {
-		end := r.cursor.Add(r.period)
-		if end.After(r.end) {
-			end = r.end
-		}
-		return r.cursor, end
-	} else {
-		start := r.cursor.Add(-r.period)
-		if start.Before(r.start) {
-			start = r.start
-		}
-		return start, r.cursor
+	start := r.cursor.Add(-fileScanMaxPeriod)
+	if start.Before(r.start) {
+		start = r.start
 	}
+	return start, r.cursor
 }
 
 func (r *FileScanRange) Next() bool {
-	var cursor time.Time
-	if r.ascending {
-		cursor = r.cursor.Add(r.period)
-		if cursor.After(r.end) {
-			r.cursor = r.end
-			return false
-		}
-	} else {
-		cursor = r.cursor.Add(-r.period)
-		if cursor.Before(r.start) {
-			r.cursor = r.start
-			return false
-		}
+	cursor := r.cursor.Add(-fileScanMaxPeriod)
+	if cursor.Before(r.start) {
+		r.cursor = r.start
+		return false
 	}
 
 	r.cursor = cursor
@@ -282,16 +248,12 @@ func NewCondition(ctx context.Context, scanRange *FileScanRange, location *time.
 	start, end := scanRange.Range()
 	startTs, endTs := dahuarpc.NewTimestamp(start, location), dahuarpc.NewTimestamp(end, location)
 	condition := mediafilefind.NewCondtion(startTs, endTs)
-	if scanRange.ascending {
-		condition.Order = mediafilefind.ConditionOrderAscent
-	} else {
-		condition.Order = mediafilefind.ConditionOrderDescent
-	}
+	condition.Order = mediafilefind.ConditionOrderDescent
 	return condition
 }
 
 // fileScan assumes that no other goroutines are calling this function with the same deviceID.
-func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, start, end time.Time) error {
+func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, scanRange *FileScanRange) error {
 	var data struct {
 		types.Key
 		Location types.Location
@@ -308,8 +270,6 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 	}
 
 	updatedAt := types.NewTime(time.Now())
-
-	scanRange := NewFileScanRange(start, end, fileScanMaxPeriod, true)
 
 	var createdCount int64
 	var updatedCount int64
@@ -499,7 +459,7 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 			AND ? < start_time
 			AND start_time <= ?
 			AND updated_at < ?
-	`, deviceID, types.NewTime(start), types.NewTime(end), updatedAt)
+	`, deviceID, types.NewTime(scanRange.start), types.NewTime(scanRange.end), updatedAt)
 	if err != nil {
 		return err
 	}
@@ -519,15 +479,15 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 	return err
 }
 
-type FileScanJobQuick struct {
-	DeviceID int64
+type FileScanJob struct {
+	Command FileScanCommand
+	Data    []FileScanData
 }
 
-type FileScanJobFull struct {
-	DeviceID int64
-}
+// ENUM(quick,full,manual)
+type FileScanCommand string
 
-type FileScanJobManual struct {
+type FileScanData struct {
 	DeviceID  int64
 	StartTime time.Time
 	EndTime   time.Time
@@ -535,20 +495,16 @@ type FileScanJobManual struct {
 
 func NewFileScanService(db *sqlx.DB, store *Store) FileScanService {
 	return FileScanService{
-		db:         db,
-		store:      store,
-		manualJobs: make(chan []FileScanJobManual),
-		fullJobs:   make(chan []FileScanJobFull),
-		quickJobs:  make(chan []FileScanJobQuick),
+		db:    db,
+		store: store,
+		jobC:  make(chan FileScanJob),
 	}
 }
 
 type FileScanService struct {
-	db         *sqlx.DB
-	store      *Store
-	manualJobs chan []FileScanJobManual
-	fullJobs   chan []FileScanJobFull
-	quickJobs  chan []FileScanJobQuick
+	db    *sqlx.DB
+	store *Store
+	jobC  chan FileScanJob
 }
 
 func (w FileScanService) String() string {
@@ -567,103 +523,161 @@ func (w FileScanService) Serve(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			slog := slog.With("type", "quick")
-			slog.Info("Started file scan")
-			timer := time.Now()
-			wg := sync.WaitGroup{}
-
-			sema := make(chan struct{}, 3)
-
-			// List cursors
-			var cursors []FileScanCursor
-			err := sqlx.SelectContext(ctx, w.db, &cursors, `
-				SELECT * FROM dahua_file_cursors
-			`)
-			if err != nil {
-				return err
-			}
-
-			end := time.Now()
-
-			for _, cursor := range cursors {
-				wg.Add(1)
-
-				start := cursor.Quick_Cursor
-
-				go func(cursor FileScanCursor) {
-					defer wg.Done()
-
-					sema <- struct{}{}
-					defer func() { <-sema }()
-
-					client, err := w.store.GetClient(ctx, types.Key{ID: cursor.Device_ID})
-					if err != nil {
-						return
-					}
-					slog := slog.With("device", client.Conn.Name)
-
-					slog.Info("Starting file scan")
-
-					if err := fileScan(ctx, w.db, client.RPC, cursor.Device_ID, start.Time, end); err != nil {
-						slog.Error("Failed to scan files", "error", err)
-						return
-					}
-
-					// Update quick cursor
-					quickCursor := types.NewTime(NewFileCursorQuick(end, time.Now()))
-					_, err = w.db.ExecContext(ctx, `
-						UPDATE dahua_file_cursors SET quick_cursor = ? WHERE device_id = ?
-					`, quickCursor, cursor.Device_ID)
-					if err != nil {
-						slog.Error("Failed to update file cursor", "error", err)
-						return
-					}
-				}(cursor)
-			}
-
-			wg.Wait()
-			slog.Info("Finished file scan", "duration", time.Now().Sub(timer).String())
-		case jobs := <-w.manualJobs:
-			slog := slog.With("type", "manual")
-			slog.Info("Started file scan")
-			timer := time.Now()
-			wg := sync.WaitGroup{}
-
-			sema := make(chan struct{}, 3)
-
-			for _, job := range jobs {
-				wg.Add(1)
-
-				go func(job FileScanJobManual) {
-					defer wg.Done()
-
-					sema <- struct{}{}
-					defer func() { <-sema }()
-
-					client, err := w.store.GetClient(ctx, types.Key{ID: job.DeviceID})
-					if err != nil {
-						return
-					}
-					slog := slog.With("device", client.Conn.Name)
-
-					slog.Info("Starting file scan")
-
-					if err := fileScan(ctx, w.db, client.RPC, job.DeviceID, job.StartTime, job.EndTime); err != nil {
-						slog.Error("Failed to scan files", "error", err)
-						return
-					}
-				}(job)
-			}
-
-			wg.Wait()
-			slog.Info("Finished file scan", "duration", time.Now().Sub(timer).String())
+			w.handle(ctx, slog, FileScanJob{
+				Command: FileScanCommandQuick,
+			})
+		case job := <-w.jobC:
+			w.handle(ctx, slog, job)
 		}
 	}
 }
 
-func (w FileScanService) Queue(ctx context.Context, jobs ...FileScanJobManual) error {
+func (w FileScanService) handle(ctx context.Context, slog *slog.Logger, job FileScanJob) error {
+	type BatchJob struct {
+		DeviceID  int64
+		StartTime time.Time
+		EndTime   time.Time
+		FullEpoch time.Time
+	}
+
+	workers := 3
+	var batchJobs []BatchJob
+	switch job.Command {
+	case FileScanCommandManual:
+		slog = slog.With("type", "manual")
+		batchJobs = make([]BatchJob, 0, len(job.Data))
+
+		// Add batch jobs from job data
+		for _, data := range job.Data {
+			batchJobs = append(batchJobs, BatchJob{
+				DeviceID:  data.DeviceID,
+				StartTime: data.StartTime,
+				EndTime:   data.EndTime,
+			})
+		}
+	case FileScanCommandQuick, FileScanCommandFull:
+		// Extract devices ids
+		var deviceIDs []int64
+		for _, data := range job.Data {
+			deviceIDs = append(deviceIDs, data.DeviceID)
+		}
+
+		// Get cursors by device ids
+		var cursors []FileScanCursor
+		query, queryArgs, _ := sqlx.In(`
+			SELECT * FROM dahua_file_cursors
+			WHERE ? = 0 OR device_id IN (?)
+		`, len(deviceIDs), deviceIDs)
+		err := sqlx.SelectContext(ctx, w.db, &cursors, query, queryArgs...)
+		if err != nil {
+			return err
+		}
+
+		// Add batch jobs from cursors
+		batchJobs := make([]BatchJob, 0, len(cursors))
+		switch job.Command {
+		case FileScanCommandFull:
+			slog = slog.With("type", "full")
+
+			for _, cursor := range cursors {
+				batchJobs = append(batchJobs, BatchJob{
+					DeviceID:  cursor.Device_ID,
+					StartTime: cursor.Full_Epoch.Time,
+					EndTime:   cursor.Full_Cursor.Time,
+				})
+			}
+		case FileScanCommandQuick:
+			slog = slog.With("type", "quick")
+
+			end := time.Now()
+			for _, cursor := range cursors {
+				batchJobs = append(batchJobs, BatchJob{
+					DeviceID:  cursor.Device_ID,
+					StartTime: cursor.Quick_Cursor.Time,
+					EndTime:   end,
+				})
+			}
+		}
+	default:
+		panic("invalid command")
+	}
+
+	slog.Info("Started file scan")
+	timer := time.Now()
+	wg := sync.WaitGroup{}
+
+	sema := make(chan struct{}, workers)
+
+	for _, batchJob := range batchJobs {
+		wg.Add(1)
+
+		// Run batch job
+		go func(batchJob BatchJob) {
+			defer wg.Done()
+
+			sema <- struct{}{}
+			defer func() { <-sema }()
+
+			// Get client
+			client, err := w.store.GetClient(ctx, types.Key{ID: batchJob.DeviceID})
+			if err != nil {
+				slog.Error("Failed to get client", "error", err, "device-id", batchJob.DeviceID)
+				return
+			}
+			slog := slog.With("device", client.Conn.Name)
+
+			// Scan
+			scanRange := NewFileScanRange(batchJob.StartTime, batchJob.EndTime)
+			if err := fileScan(ctx, w.db, client.RPC, batchJob.DeviceID, scanRange); err != nil {
+				slog.Error("Failed to scan files", "error", err)
+
+				// Save file cursor when full scan fails
+				if job.Command == FileScanCommandFull {
+					cursor := types.NewTime(scanRange.Cursor())
+					_, err = w.db.ExecContext(ctx, `
+						UPDATE dahua_file_cursors SET full_cursor = ? WHERE device_id = ?
+					`, cursor, batchJob.DeviceID)
+				}
+
+				return
+			}
+
+			switch job.Command {
+			case FileScanCommandManual:
+			case FileScanCommandQuick:
+				// Update quick cursor
+				quickCursor := types.NewTime(NewFileCursorQuick(batchJob.EndTime, time.Now()))
+				_, err = w.db.ExecContext(ctx, `
+					UPDATE dahua_file_cursors SET quick_cursor = ? WHERE device_id = ?
+				`, quickCursor, batchJob.DeviceID)
+				if err != nil {
+					slog.Error("Failed to update quick cursor", "error", err)
+					return
+				}
+			case FileScanCommandFull:
+				// Update full cursor
+				fullCursor := types.NewTime(NewFileCursorFull(batchJob.StartTime, batchJob.FullEpoch))
+				_, err = w.db.ExecContext(ctx, `
+					UPDATE dahua_file_cursors SET full_cursor = ? WHERE device_id = ?
+				`, fullCursor, batchJob.DeviceID)
+				if err != nil {
+					slog.Error("Failed to update full cursor", "error", err)
+					return
+				}
+			default:
+				panic("invalid command")
+			}
+		}(batchJob)
+	}
+
+	wg.Wait()
+	slog.Info("Finished file scan", "duration", time.Now().Sub(timer).String())
+	return nil
+}
+
+func (w FileScanService) Queue(ctx context.Context, job FileScanJob) error {
 	select {
-	case w.manualJobs <- jobs:
+	case w.jobC <- job:
 		return nil
 	default:
 		return fmt.Errorf("file scan job in progress")

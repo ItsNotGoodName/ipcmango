@@ -9,6 +9,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/jmoiron/sqlx"
+	"github.com/k0kubun/pp/v3"
 )
 
 func NewStore(db *sqlx.DB) *Store {
@@ -66,9 +67,10 @@ func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, err
 	var conn Conn
 	err := s.db.GetContext(ctx, &conn, `
 		SELECT id, uuid, name, ip, username, password
-		FROM dahua_devices WHERE id = ? OR uuid = ? LIMIT 1
+		FROM dahua_devices WHERE id = ? OR uuid = ?
 	`, deviceKey.ID, deviceKey.UUID)
 	if err != nil {
+		pp.Println(err, deviceKey)
 		s.clientsMu.Unlock()
 		return Client{}, err
 	}
@@ -84,7 +86,7 @@ func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, err
 
 		err := client.CloseNoWait(ctx)
 		if err != nil {
-			slog.Error("Failed to close Client connection", slog.String("uuid", client.Conn.Key.UUID))
+			slog.Error("Failed to close Client connection", slog.String("name", client.Conn.Name))
 		}
 
 		client = NewClient(conn)

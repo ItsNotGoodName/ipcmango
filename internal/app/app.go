@@ -741,10 +741,13 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		err = app.DahuaFileScanService.Queue(ctx, dahua.FileScanJobManual{
-			DeviceID:  device.ID,
-			StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
-			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
+		err = app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
+			Command: dahua.FileScanCommandManual,
+			Data: []dahua.FileScanData{{
+				DeviceID:  device.ID,
+				StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
+				EndTime:   core.Optional(input.Body.EndTime, time.Now()),
+			}},
 		})
 		if err != nil {
 			return nil, huma.Error409Conflict("file scan already running", err)
@@ -1051,16 +1054,19 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		var jobs []dahua.FileScanJobManual
+		var data []dahua.FileScanData
 		for _, deviceID := range deviceIDs {
-			jobs = append(jobs, dahua.FileScanJobManual{
+			data = append(data, dahua.FileScanData{
 				DeviceID:  deviceID,
 				StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
 				EndTime:   core.Optional(input.Body.EndTime, time.Now()),
 			})
 		}
 
-		if err := app.DahuaFileScanService.Queue(ctx, jobs...); err != nil {
+		if err := app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
+			Command: dahua.FileScanCommandManual,
+			Data:    data,
+		}); err != nil {
 			return nil, huma.Error409Conflict("file scan already running", err)
 		}
 
