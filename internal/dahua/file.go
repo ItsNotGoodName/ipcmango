@@ -519,20 +519,30 @@ func (w FileScanService) Serve(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
+			slog.Info("implmeent quick scan you snail")
 		case jobs := <-w.jobs:
 			slog.Info("Started file scan")
+			start := time.Now()
 			wg := sync.WaitGroup{}
+
+			sema := make(chan struct{}, 3)
 
 			for _, job := range jobs {
 				wg.Add(1)
+
 				go func(job FileScanJob) {
 					defer wg.Done()
 
+					sema <- struct{}{}
+					defer func() { <-sema }()
+
 					client, err := w.store.GetClient(ctx, types.Key{ID: job.DeviceID})
 					if err != nil {
-						slog.Error("Failed to get client", "error", err)
 						return
 					}
+					slog := slog.With("device", client.Conn.Name)
+
+					slog.Info("Starting file scan")
 
 					if err := fileScan(ctx, w.db, client.RPC, job.DeviceID, job.StartTime, job.EndTime); err != nil {
 						slog.Error("Failed to scan files", "error", err)
@@ -542,7 +552,8 @@ func (w FileScanService) Serve(ctx context.Context) error {
 			}
 
 			wg.Wait()
-			slog.Info("Ended file scan")
+			end := time.Now()
+			slog.Info("Finished file scan", "duration", end.Sub(start).String())
 		}
 	}
 }

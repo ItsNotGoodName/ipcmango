@@ -31,8 +31,8 @@ func (w EventWorker) String() string {
 }
 
 func (w EventWorker) Serve(ctx context.Context) error {
-	slog.Info("Started service", slog.String("service", w.String()))
-	defer slog.Info("Stopped service", slog.String("service", w.String()))
+	slog.Info("Started service", "service", w.String())
+	defer slog.Info("Stopped service", "service", w.String())
 
 	connURL, _ := url.Parse("http://" + w.conn.IP)
 	c := dahuacgi.NewClient(http.Client{}, connURL, w.conn.Username, w.conn.Password)
