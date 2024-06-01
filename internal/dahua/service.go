@@ -7,43 +7,44 @@ import (
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/jmoiron/sqlx"
 	"github.com/thejerf/suture/v4"
 )
 
-func NewDefaultServiceFactory(db *sqlx.DB, dahuaStore *Store) DefaultServiceFactory {
-	return DefaultServiceFactory{
+func NewDefaultServiceFactory(db *sqlx.DB, dahuaStore *Store) DefaultWorkerFactory {
+	return DefaultWorkerFactory{
 		db:         db,
 		dahuaStore: dahuaStore,
 	}
 }
 
-type DefaultServiceFactory struct {
+type DefaultWorkerFactory struct {
 	db         *sqlx.DB
 	dahuaStore *Store
 }
 
-func (d DefaultServiceFactory) build(device Device) []suture.Service {
+func (d DefaultWorkerFactory) build(device Device) []sutureext.Service {
 	conn := NewConn(device)
-	return []suture.Service{
+	return []sutureext.Service{
 		NewEventWorker(conn, d.db),
 		NewCoaxialWorker(conn, d.db, d.dahuaStore),
 	}
 }
 
-func (d DefaultServiceFactory) List(ctx context.Context) ([]Service, error) {
+func (f DefaultWorkerFactory) List(ctx context.Context) ([]Worker, error) {
 	var devices []Device
-	err := d.db.SelectContext(ctx, &devices, `
+	err := f.db.SelectContext(ctx, &devices, `
 		SELECT * FROM dahua_devices
 	`)
 	if err != nil {
 		return nil, err
 	}
 
-	var services []Service
+	var services []Worker
 	for _, device := range devices {
-		for _, service := range d.build(device) {
-			services = append(services, Service{
+		for _, service := range f.build(device) {
+			services = append(services, Worker{
 				DeviceKey: device.Key,
 				Service:   service,
 			})
@@ -53,19 +54,19 @@ func (d DefaultServiceFactory) List(ctx context.Context) ([]Service, error) {
 	return services, nil
 }
 
-func (d DefaultServiceFactory) One(ctx context.Context, deviceKey types.Key) ([]Service, error) {
+func (f DefaultWorkerFactory) One(ctx context.Context, deviceKey types.Key) ([]Worker, error) {
 	var devices []Device
-	err := d.db.SelectContext(ctx, &devices, `
+	err := f.db.SelectContext(ctx, &devices, `
 		SELECT * FROM dahua_devices WHERE id = ?
 	`, deviceKey.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	var services []Service
+	var services []Worker
 	for _, device := range devices {
-		for _, service := range d.build(device) {
-			services = append(services, Service{
+		for _, service := range f.build(device) {
+			services = append(services, Worker{
 				DeviceKey: device.Key,
 				Service:   service,
 			})
@@ -75,18 +76,18 @@ func (d DefaultServiceFactory) One(ctx context.Context, deviceKey types.Key) ([]
 	return services, nil
 }
 
-type Service struct {
+type Worker struct {
 	DeviceKey types.Key
-	Service   suture.Service
+	Service   sutureext.Service
 }
 
-type ServiceFactory interface {
-	List(ctx context.Context) ([]Service, error)
-	One(ctx context.Context, deviceKey types.Key) ([]Service, error)
+type WorkerFactory interface {
+	List(ctx context.Context) ([]Worker, error)
+	One(ctx context.Context, deviceKey types.Key) ([]Worker, error)
 }
 
-func NewServiceManager(super *suture.Supervisor, serviceFactory ServiceFactory) *ManagerManager {
-	return &ManagerManager{
+func NewWorkerManager(super *suture.Supervisor, serviceFactory WorkerFactory) *WorkerManager {
+	return &WorkerManager{
 		super:          super,
 		serviceFactory: serviceFactory,
 		servicesMu:     sync.Mutex{},
@@ -94,19 +95,19 @@ func NewServiceManager(super *suture.Supervisor, serviceFactory ServiceFactory) 
 	}
 }
 
-type ManagerManager struct {
+type WorkerManager struct {
 	super          *suture.Supervisor
-	serviceFactory ServiceFactory
+	serviceFactory WorkerFactory
 
 	servicesMu sync.Mutex
 	services   map[string][]suture.ServiceToken
 }
 
-func (m *ManagerManager) String() string {
+func (m *WorkerManager) String() string {
 	return "dahua.EventManager"
 }
 
-func (m *ManagerManager) Serve(ctx context.Context) error {
+func (m *WorkerManager) Serve(ctx context.Context) error {
 	slog.Info("Started service", slog.String("service", m.String()))
 
 	if err := m.Start(ctx); err != nil {
@@ -118,7 +119,7 @@ func (m *ManagerManager) Serve(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *ManagerManager) Close() {
+func (m *WorkerManager) Close() {
 	m.servicesMu.Lock()
 	for _, tokens := range m.services {
 		for _, token := range tokens {
@@ -129,7 +130,7 @@ func (m *ManagerManager) Close() {
 	m.servicesMu.Unlock()
 }
 
-func (m *ManagerManager) Start(ctx context.Context) error {
+func (m *WorkerManager) Start(ctx context.Context) error {
 	m.servicesMu.Lock()
 	defer m.servicesMu.Unlock()
 
@@ -139,13 +140,13 @@ func (m *ManagerManager) Start(ctx context.Context) error {
 	}
 
 	for _, service := range services {
-		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], m.super.Add(service.Service))
+		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], sutureext.Add(m.super, service.Service))
 	}
 
 	return nil
 }
 
-func (m *ManagerManager) Refresh(ctx context.Context, deviceKey types.Key) error {
+func (m *WorkerManager) Refresh(ctx context.Context, deviceKey types.Key) error {
 	m.servicesMu.Lock()
 	defer m.servicesMu.Unlock()
 
@@ -165,13 +166,13 @@ func (m *ManagerManager) Refresh(ctx context.Context, deviceKey types.Key) error
 	}
 
 	for _, service := range services {
-		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], m.super.Add(service.Service))
+		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], sutureext.Add(m.super, service.Service))
 	}
 
 	return nil
 }
 
-func (m *ManagerManager) Register() *ManagerManager {
+func (m *WorkerManager) Register() *WorkerManager {
 	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceCreated) error {
 		return m.Refresh(ctx, event.DeviceKey)
 	})

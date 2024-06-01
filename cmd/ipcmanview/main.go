@@ -89,21 +89,21 @@ func main() {
 
 			// Create quartz scheduler
 			scheduler := quartzext.NewServiceScheduler(quartz.NewStdScheduler())
-			root.Add(scheduler)
+			sutureext.Add(root, scheduler)
 
 			// Create dahua store
 			dahuaStore := dahua.NewStore(db)
-			root.Add(dahuaStore)
+			sutureext.Add(root, dahuaStore)
 
 			// Create dahua file scan service
 			dahuaFileScanService := dahua.NewFileScanService(db, dahuaStore)
-			root.Add(dahuaFileScanService)
+			sutureext.Add(root, dahuaFileScanService)
 
 			// Create dahua event manager
-			root.Add(dahua.NewServiceManager(root, dahua.NewDefaultServiceFactory(db, dahuaStore)).Register())
+			sutureext.Add(root, dahua.NewWorkerManager(root, dahua.NewDefaultServiceFactory(db, dahuaStore)).Register())
 
 			// Create dahua email worker
-			root.Add(dahua.NewEmailWorker(db, afs).Register())
+			sutureext.Add(root, dahua.NewEmailWorker(db, afs).Register())
 
 			// Schedule jobs
 			core.Must(scheduler.ScheduleJob(
@@ -133,7 +133,7 @@ func main() {
 			})
 
 			// Create HTTP server
-			root.Add(app.NewServer(&http.Server{
+			sutureext.Add(root, app.NewServer(&http.Server{
 				Addr:    core.Address(options.HttpHost, options.HttpPort),
 				Handler: router,
 			}, nil))
@@ -146,13 +146,13 @@ func main() {
 			core.Must(certificate.GenerateIfNotExist())
 
 			// Create HTTPS server
-			root.Add(app.NewServer(&http.Server{
+			sutureext.Add(root, app.NewServer(&http.Server{
 				Addr:    core.Address(options.HttpsHost, options.HttpsPort),
 				Handler: router,
 			}, &certificate))
 
 			// Create SMTP server
-			root.Add(smtp.NewServer(db, afs, core.Address(options.SmtpHost, options.SmtpPort)))
+			sutureext.Add(root, smtp.NewServer(db, afs, core.Address(options.SmtpHost, options.SmtpPort)))
 
 			core.Must(system.InitializeSettings(ctx, db))
 

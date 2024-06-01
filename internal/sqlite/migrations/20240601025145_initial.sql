@@ -3,10 +3,6 @@
 CREATE TABLE `settings` (`id` integer NULL DEFAULT 0, `location` text NOT NULL, `latitude` real NOT NULL, `longitude` real NOT NULL, `sunrise_offset` text NOT NULL, `sunset_offset` text NOT NULL, `sync_video_in_mode` bool NOT NULL, `updated_at` datetime NOT NULL);
 -- create index "settings_id" to table: "settings"
 CREATE UNIQUE INDEX `settings_id` ON `settings` (`id`);
--- create "goqite" table
-CREATE TABLE `goqite` (`id` text NOT NULL DEFAULT ('m_' || lower(hex(randomblob(16)))), `created` text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ')), `updated` text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ')), `queue` text NOT NULL, `body` blob NOT NULL, `timeout` text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ')), `received` integer NOT NULL DEFAULT 0, PRIMARY KEY (`id`)) STRICT;
--- create index "goqite_queue_created_idx" to table: "goqite"
-CREATE INDEX `goqite_queue_created_idx` ON `goqite` (`queue`, `created`);
 -- create "users" table
 CREATE TABLE `users` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `email` text NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `disabled_at` datetime NULL);
 -- create index "users_email" to table: "users"
@@ -51,12 +47,6 @@ CREATE INDEX `dahua_files_device_id_start_time_idx` ON `dahua_files` (`device_id
 CREATE TABLE `dahua_file_cursors` (`device_id` integer NOT NULL, `quick_cursor` datetime NOT NULL, `full_cursor` datetime NOT NULL, `full_epoch` datetime NOT NULL, `full_complete` boolean NOT NULL AS (full_cursor <= full_epoch) STORED, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
 -- create index "dahua_file_cursors_device_id" to table: "dahua_file_cursors"
 CREATE UNIQUE INDEX `dahua_file_cursors_device_id` ON `dahua_file_cursors` (`device_id`);
--- create "dahua_file_scan_jobs" table
-CREATE TABLE `dahua_file_scan_jobs` (`device_id` text NULL, `goqite_id` text NULL, CONSTRAINT `0` FOREIGN KEY (`goqite_id`) REFERENCES `goqite` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `1` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
--- create index "dahua_file_scan_jobs_device_id" to table: "dahua_file_scan_jobs"
-CREATE UNIQUE INDEX `dahua_file_scan_jobs_device_id` ON `dahua_file_scan_jobs` (`device_id`);
--- create index "dahua_file_scan_jobs_goqite_id" to table: "dahua_file_scan_jobs"
-CREATE UNIQUE INDEX `dahua_file_scan_jobs_goqite_id` ON `dahua_file_scan_jobs` (`goqite_id`);
 -- create "dahua_storage_destinations" table
 CREATE TABLE `dahua_storage_destinations` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `name` text NOT NULL, `storage` text NOT NULL, `server_address` text NOT NULL, `port` integer NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `remote_directory` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
 -- create index "dahua_storage_destinations_uuid" to table: "dahua_storage_destinations"
@@ -95,12 +85,6 @@ DROP INDEX `dahua_storage_destinations_name`;
 DROP INDEX `dahua_storage_destinations_uuid`;
 -- reverse: create "dahua_storage_destinations" table
 DROP TABLE `dahua_storage_destinations`;
--- reverse: create index "dahua_file_scan_jobs_goqite_id" to table: "dahua_file_scan_jobs"
-DROP INDEX `dahua_file_scan_jobs_goqite_id`;
--- reverse: create index "dahua_file_scan_jobs_device_id" to table: "dahua_file_scan_jobs"
-DROP INDEX `dahua_file_scan_jobs_device_id`;
--- reverse: create "dahua_file_scan_jobs" table
-DROP TABLE `dahua_file_scan_jobs`;
 -- reverse: create index "dahua_file_cursors_device_id" to table: "dahua_file_cursors"
 DROP INDEX `dahua_file_cursors_device_id`;
 -- reverse: create "dahua_file_cursors" table
@@ -145,10 +129,6 @@ DROP INDEX `users_username`;
 DROP INDEX `users_email`;
 -- reverse: create "users" table
 DROP TABLE `users`;
--- reverse: create index "goqite_queue_created_idx" to table: "goqite"
-DROP INDEX `goqite_queue_created_idx`;
--- reverse: create "goqite" table
-DROP TABLE `goqite`;
 -- reverse: create index "settings_id" to table: "settings"
 DROP INDEX `settings_id`;
 -- reverse: create "settings" table

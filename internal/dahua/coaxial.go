@@ -8,7 +8,6 @@ import (
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/jmoiron/sqlx"
 	"github.com/thejerf/suture/v4"
 )
@@ -32,10 +31,6 @@ func (w CoaxialWorker) String() string {
 }
 
 func (w CoaxialWorker) Serve(ctx context.Context) error {
-	return sutureext.SanitizeError(ctx, w.serve(ctx))
-}
-
-func (w CoaxialWorker) serve(ctx context.Context) error {
 	client, err := w.store.GetClient(ctx, w.conn.Key)
 	if err != nil {
 		return err

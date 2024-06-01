@@ -17,7 +17,6 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/gorise"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/afero"
@@ -550,10 +549,6 @@ func (w EmailWorker) String() string {
 }
 
 func (w EmailWorker) Serve(ctx context.Context) error {
-	return sutureext.SanitizeError(ctx, w.serve(ctx))
-}
-
-func (w EmailWorker) serve(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():

@@ -16,7 +16,6 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/jlaffaye/ftp"
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
@@ -509,10 +508,6 @@ func (w FileScanService) String() string {
 }
 
 func (w FileScanService) Serve(ctx context.Context) error {
-	return sutureext.SanitizeError(ctx, w.serve(ctx))
-}
-
-func (w FileScanService) serve(ctx context.Context) error {
 	slog := slog.With("service", w.String())
 	slog.Info("Started service")
 

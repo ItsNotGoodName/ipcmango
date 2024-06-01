@@ -33,79 +33,22 @@ func EventHook() suture.EventHook {
 	}
 }
 
-type ServiceFunc struct {
-	name string
-	fn   func(ctx context.Context) error
+// Service forces the use of the String method
+type Service interface {
+	String() string
+	suture.Service
 }
 
-func NewServiceFunc(name string, fn func(ctx context.Context) error) ServiceFunc {
-	return ServiceFunc{
-		name: name,
-		fn:   fn,
-	}
+func Add(super *suture.Supervisor, service Service) suture.ServiceToken {
+	return super.Add(sanitizeService{Service: service})
 }
 
-func (s ServiceFunc) String() string {
-	return s.name
+type sanitizeService struct {
+	Service
 }
 
-func (s ServiceFunc) Serve(ctx context.Context) error {
-	return s.fn(ctx)
-}
-
-func OneShotFunc(fn func(ctx context.Context) error) func(ctx context.Context) error {
-	return func(ctx context.Context) error {
-		err := fn(ctx)
-		if err != nil {
-			return errors.Join(suture.ErrTerminateSupervisorTree, err)
-		}
-
-		return suture.ErrDoNotRestart
-	}
-}
-
-func NewServiceContext(name string) ServiceContext {
-	return ServiceContext{
-		name:  name,
-		doneC: make(chan struct{}),
-		ctxC:  make(chan context.Context),
-	}
-}
-
-type ServiceContext struct {
-	name  string
-	doneC chan struct{}
-	ctxC  chan context.Context
-}
-
-func (b ServiceContext) String() string {
-	return b.name
-}
-
-func (b ServiceContext) Serve(ctx context.Context) error {
-	select {
-	case <-b.doneC:
-		return suture.ErrDoNotRestart
-	default:
-	}
-	defer close(b.doneC)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case b.ctxC <- ctx:
-		}
-	}
-}
-
-func (b ServiceContext) Context() context.Context {
-	select {
-	case <-b.doneC:
-		return context.Background()
-	case ctx := <-b.ctxC:
-		return ctx
-	}
+func (s sanitizeService) Serve(ctx context.Context) error {
+	return SanitizeError(ctx, s.Service.Serve(ctx))
 }
 
 // SanitizeError prevents the error from being interpreted as a context error unless it
@@ -138,4 +81,24 @@ func SanitizeError(ctx context.Context, err error) error {
 	newErrs[2] = errors.New(err.Error())
 
 	return errors.Join(newErrs[:]...)
+}
+
+type ServiceFunc struct {
+	name string
+	fn   func(ctx context.Context) error
+}
+
+func NewServiceFunc(name string, fn func(ctx context.Context) error) ServiceFunc {
+	return ServiceFunc{
+		name: name,
+		fn:   fn,
+	}
+}
+
+func (s ServiceFunc) String() string {
+	return s.name
+}
+
+func (s ServiceFunc) Serve(ctx context.Context) error {
+	return s.fn(ctx)
 }

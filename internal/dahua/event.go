@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/jmoiron/sqlx"
 	"github.com/thejerf/suture/v4"
 )
@@ -32,10 +31,6 @@ func (w EventWorker) String() string {
 }
 
 func (w EventWorker) Serve(ctx context.Context) error {
-	return sutureext.SanitizeError(ctx, w.serve(ctx))
-}
-
-func (w EventWorker) serve(ctx context.Context) error {
 	slog.Info("Started service", slog.String("service", w.String()))
 	defer slog.Info("Stopped service", slog.String("service", w.String()))
 
