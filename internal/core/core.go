@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 type MultiReadCloser struct {
@@ -114,4 +115,30 @@ func DirectorySize(dir string) (int64, error) {
 	}
 
 	return dirSize, nil
+}
+
+func Oldest(times ...time.Time) time.Time {
+	if len(times) == 0 {
+		return time.Time{}
+	}
+	t := times[0]
+	for i := 1; i < len(times); i++ {
+		if t.After(times[i]) {
+			t = times[i]
+		}
+	}
+	return t
+}
+
+func Newest(times ...time.Time) time.Time {
+	if len(times) == 0 {
+		return time.Time{}
+	}
+	t := times[0]
+	for i := 1; i < len(times); i++ {
+		if t.Before(times[i]) {
+			t = times[i]
+		}
+	}
+	return t
 }

@@ -23,6 +23,112 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {
+	urL, err := url.Parse(filePath)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var dest StorageDestination
+	err = db.GetContext(ctx, &dest, `
+		SELECT * FROM dahua_storage_destinations
+		WHERE server_address = ? AND storage = ?
+	`, urL.Host, StorageFTP)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	c, err := ftp.Dial(core.Address(dest.Server_Address, int(dest.Port)), ftp.DialWithContext(ctx))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	err = c.Login(dest.Username, dest.Password)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	username := "/" + dest.Username
+	path, _ := strings.CutPrefix(urL.Path, username)
+
+	contentLength, err := c.FileSize(path)
+	if err != nil {
+		c.Quit()
+		return nil, 0, err
+	}
+
+	rd, err := c.Retr(path)
+	if err != nil {
+		c.Quit()
+		return nil, 0, err
+	}
+
+	return core.MultiReadCloser{
+		Reader:  rd,
+		Closers: []func() error{rd.Close, c.Quit},
+	}, contentLength, nil
+}
+
+func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {
+	urL, err := url.Parse(filePath)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var dest StorageDestination
+	err = db.GetContext(ctx, &dest, `
+		SELECT * FROM dahua_storage_destinations
+		WHERE server_address = ? AND storage = ?
+	`, urL.Host, StorageFTP)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	conn, err := ssh.Dial("tcp", core.Address(dest.Server_Address, int(dest.Port)), &ssh.ClientConfig{
+		User: dest.Username,
+		Auth: []ssh.AuthMethod{ssh.Password(dest.Password)},
+		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			// TODO: check public key
+			return nil
+		},
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	client, err := sftp.NewClient(conn)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	username := "/" + dest.Username
+	path, _ := strings.CutPrefix(urL.Path, username)
+
+	var contentLength int64
+	if stat, err := client.Stat(path); err == nil {
+		contentLength = stat.Size()
+	}
+
+	rd, err := client.Open(path)
+	if err != nil {
+		client.Close()
+		return nil, 0, err
+	}
+
+	return core.MultiReadCloser{
+		Reader:  rd,
+		Closers: []func() error{rd.Close, client.Close},
+	}, contentLength, nil
+}
+
+func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.ReadCloser, int64, error) {
+	v, err := client.File.Do(ctx, dahuarpc.LoadFileURL(client.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
+	if err != nil {
+		return nil, 0, err
+	}
+	return v, v.ContentLength, nil
+}
+
 type File struct {
 	ID           string
 	Device_ID    int64
@@ -47,9 +153,44 @@ type File struct {
 	Updated_At   types.Time
 }
 
+type FileScanCursor struct {
+	Device_ID     int64
+	Quick_Cursor  types.Time
+	Full_Cursor   types.Time
+	Full_Epoch    types.Time
+	Full_Complete bool
+	Updated_At    types.Time
+}
+
 var FileScanEpoch time.Time = core.Must2(time.ParseInLocation(time.DateTime, "2009-12-31 00:00:00", time.UTC))
 
-const FileScanMaxPeriod = 30 * 24 * time.Hour
+const (
+	fileScanVolatilePeriod = 8 * time.Hour
+	fileScanMaxPeriod      = 30 * 24 * time.Hour
+)
+
+func NewFileCursorQuick(end, now time.Time) time.Time {
+	return core.Oldest(end, now.Add(-fileScanVolatilePeriod))
+}
+
+func NewFileCursorFull(start, epoch time.Time) time.Time {
+	return core.Newest(start, epoch)
+}
+
+func NewDefaultFileCursor() DefaultFileCursor {
+	now := time.Now()
+	return DefaultFileCursor{
+		QuickCursor: types.NewTime(now.Add(-fileScanVolatilePeriod)),
+		FullCursor:  types.NewTime(now),
+		FullEpoch:   types.NewTime(FileScanEpoch),
+	}
+}
+
+type DefaultFileCursor struct {
+	QuickCursor types.Time
+	FullCursor  types.Time
+	FullEpoch   types.Time
+}
 
 func NewFileScanRange(start, end time.Time, period time.Duration, ascending bool) *FileScanRange {
 	if period <= 0 {
@@ -149,6 +290,7 @@ func NewCondition(ctx context.Context, scanRange *FileScanRange, location *time.
 	return condition
 }
 
+// fileScan assumes that no other goroutines are calling this function with the same deviceID.
 func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, start, end time.Time) error {
 	var data struct {
 		types.Key
@@ -167,7 +309,7 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 
 	updatedAt := types.NewTime(time.Now())
 
-	scanRange := NewFileScanRange(start, end, FileScanMaxPeriod, true)
+	scanRange := NewFileScanRange(start, end, fileScanMaxPeriod, true)
 
 	var createdCount int64
 	var updatedCount int64
@@ -377,113 +519,15 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 	return err
 }
 
-func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {
-	urL, err := url.Parse(filePath)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var dest StorageDestination
-	err = db.GetContext(ctx, &dest, `
-		SELECT * FROM dahua_storage_destinations
-		WHERE server_address = ? AND storage = ?
-	`, urL.Host, StorageFTP)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	c, err := ftp.Dial(core.Address(dest.Server_Address, int(dest.Port)), ftp.DialWithContext(ctx))
-	if err != nil {
-		return nil, 0, err
-	}
-
-	err = c.Login(dest.Username, dest.Password)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	username := "/" + dest.Username
-	path, _ := strings.CutPrefix(urL.Path, username)
-
-	contentLength, err := c.FileSize(path)
-	if err != nil {
-		c.Quit()
-		return nil, 0, err
-	}
-
-	rd, err := c.Retr(path)
-	if err != nil {
-		c.Quit()
-		return nil, 0, err
-	}
-
-	return core.MultiReadCloser{
-		Reader:  rd,
-		Closers: []func() error{rd.Close, c.Quit},
-	}, contentLength, nil
+type FileScanJobQuick struct {
+	DeviceID int64
 }
 
-func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {
-	urL, err := url.Parse(filePath)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var dest StorageDestination
-	err = db.GetContext(ctx, &dest, `
-		SELECT * FROM dahua_storage_destinations
-		WHERE server_address = ? AND storage = ?
-	`, urL.Host, StorageFTP)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	conn, err := ssh.Dial("tcp", core.Address(dest.Server_Address, int(dest.Port)), &ssh.ClientConfig{
-		User: dest.Username,
-		Auth: []ssh.AuthMethod{ssh.Password(dest.Password)},
-		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-			// TODO: check public key
-			return nil
-		},
-	})
-	if err != nil {
-		return nil, 0, err
-	}
-
-	client, err := sftp.NewClient(conn)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	username := "/" + dest.Username
-	path, _ := strings.CutPrefix(urL.Path, username)
-
-	var contentLength int64
-	if stat, err := client.Stat(path); err == nil {
-		contentLength = stat.Size()
-	}
-
-	rd, err := client.Open(path)
-	if err != nil {
-		client.Close()
-		return nil, 0, err
-	}
-
-	return core.MultiReadCloser{
-		Reader:  rd,
-		Closers: []func() error{rd.Close, client.Close},
-	}, contentLength, nil
+type FileScanJobFull struct {
+	DeviceID int64
 }
 
-func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.ReadCloser, int64, error) {
-	v, err := client.File.Do(ctx, dahuarpc.LoadFileURL(client.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
-	if err != nil {
-		return nil, 0, err
-	}
-	return v, v.ContentLength, nil
-}
-
-type FileScanJob struct {
+type FileScanJobManual struct {
 	DeviceID  int64
 	StartTime time.Time
 	EndTime   time.Time
@@ -491,16 +535,20 @@ type FileScanJob struct {
 
 func NewFileScanService(db *sqlx.DB, store *Store) FileScanService {
 	return FileScanService{
-		db:    db,
-		store: store,
-		jobs:  make(chan []FileScanJob),
+		db:         db,
+		store:      store,
+		manualJobs: make(chan []FileScanJobManual),
+		fullJobs:   make(chan []FileScanJobFull),
+		quickJobs:  make(chan []FileScanJobQuick),
 	}
 }
 
 type FileScanService struct {
-	db    *sqlx.DB
-	store *Store
-	jobs  chan []FileScanJob
+	db         *sqlx.DB
+	store      *Store
+	manualJobs chan []FileScanJobManual
+	fullJobs   chan []FileScanJobFull
+	quickJobs  chan []FileScanJobQuick
 }
 
 func (w FileScanService) String() string {
@@ -519,10 +567,66 @@ func (w FileScanService) Serve(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			slog.Info("implmeent quick scan you snail")
-		case jobs := <-w.jobs:
+			slog := slog.With("type", "quick")
 			slog.Info("Started file scan")
-			start := time.Now()
+			timer := time.Now()
+			wg := sync.WaitGroup{}
+
+			sema := make(chan struct{}, 3)
+
+			// List cursors
+			var cursors []FileScanCursor
+			err := sqlx.SelectContext(ctx, w.db, &cursors, `
+				SELECT * FROM dahua_file_cursors
+			`)
+			if err != nil {
+				return err
+			}
+
+			end := time.Now()
+
+			for _, cursor := range cursors {
+				wg.Add(1)
+
+				start := cursor.Quick_Cursor
+
+				go func(cursor FileScanCursor) {
+					defer wg.Done()
+
+					sema <- struct{}{}
+					defer func() { <-sema }()
+
+					client, err := w.store.GetClient(ctx, types.Key{ID: cursor.Device_ID})
+					if err != nil {
+						return
+					}
+					slog := slog.With("device", client.Conn.Name)
+
+					slog.Info("Starting file scan")
+
+					if err := fileScan(ctx, w.db, client.RPC, cursor.Device_ID, start.Time, end); err != nil {
+						slog.Error("Failed to scan files", "error", err)
+						return
+					}
+
+					// Update quick cursor
+					quickCursor := types.NewTime(NewFileCursorQuick(end, time.Now()))
+					_, err = w.db.ExecContext(ctx, `
+						UPDATE dahua_file_cursors SET quick_cursor = ? WHERE device_id = ?
+					`, quickCursor, cursor.Device_ID)
+					if err != nil {
+						slog.Error("Failed to update file cursor", "error", err)
+						return
+					}
+				}(cursor)
+			}
+
+			wg.Wait()
+			slog.Info("Finished file scan", "duration", time.Now().Sub(timer).String())
+		case jobs := <-w.manualJobs:
+			slog := slog.With("type", "manual")
+			slog.Info("Started file scan")
+			timer := time.Now()
 			wg := sync.WaitGroup{}
 
 			sema := make(chan struct{}, 3)
@@ -530,7 +634,7 @@ func (w FileScanService) Serve(ctx context.Context) error {
 			for _, job := range jobs {
 				wg.Add(1)
 
-				go func(job FileScanJob) {
+				go func(job FileScanJobManual) {
 					defer wg.Done()
 
 					sema <- struct{}{}
@@ -552,17 +656,38 @@ func (w FileScanService) Serve(ctx context.Context) error {
 			}
 
 			wg.Wait()
-			end := time.Now()
-			slog.Info("Finished file scan", "duration", end.Sub(start).String())
+			slog.Info("Finished file scan", "duration", time.Now().Sub(timer).String())
 		}
 	}
 }
 
-func (w FileScanService) Queue(ctx context.Context, jobs ...FileScanJob) error {
+func (w FileScanService) Queue(ctx context.Context, jobs ...FileScanJobManual) error {
 	select {
-	case w.jobs <- jobs:
+	case w.manualJobs <- jobs:
 		return nil
 	default:
 		return fmt.Errorf("file scan job in progress")
 	}
+}
+
+func ResetFileScanCursor(ctx context.Context, db sqlx.ExecerContext, deviceID int64) error {
+	cursor := NewDefaultFileCursor()
+	updatedAt := types.NewTime(time.Now())
+
+	_, err := db.ExecContext(ctx, `
+		INSERT OR REPLACE INTO dahua_file_cursors (
+			device_id,
+			quick_cursor,
+			full_cursor,
+			full_epoch,
+			updated_at
+		) VALUES (?, ?, ?, ?, ?)
+	`,
+		deviceID,
+		cursor.QuickCursor,
+		cursor.FullCursor,
+		cursor.FullEpoch,
+		updatedAt,
+	)
+	return err
 }

@@ -145,6 +145,7 @@ CREATE TABLE dahua_file_cursors (
   full_cursor DATETIME NOT NULL, -- (not scanned) <- full_cursor -> (scanned)
   full_epoch DATETIME NOT NULL,
   full_complete BOOLEAN NOT NULL GENERATED ALWAYS AS (full_cursor <= full_epoch) STORED,
+  updated_at DATETIME NOT NULL,
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 

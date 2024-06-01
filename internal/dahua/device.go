@@ -101,7 +101,7 @@ func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]ty
 	return keys, nil
 }
 
-func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDeviceArgs) (types.Key, error) {
+func createDevice(ctx context.Context, db sqlx.ExtContext, args CreateDeviceArgs) (types.Key, error) {
 	createdAt := types.NewTime(time.Now())
 	updatedAt := types.NewTime(time.Now())
 
@@ -150,7 +150,11 @@ func createDevice(ctx context.Context, db sqlx.QueryerContext, args CreateDevice
 		updatedAt,
 	)
 	if err != nil {
-		return key, err
+		return types.Key{}, err
+	}
+
+	if err := ResetFileScanCursor(ctx, db, key.ID); err != nil {
+		return types.Key{}, err
 	}
 
 	return key, nil

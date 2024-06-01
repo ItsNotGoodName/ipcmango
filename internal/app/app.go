@@ -741,7 +741,7 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		err = app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
+		err = app.DahuaFileScanService.Queue(ctx, dahua.FileScanJobManual{
 			DeviceID:  device.ID,
 			StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
 			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
@@ -1051,9 +1051,9 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		var jobs []dahua.FileScanJob
+		var jobs []dahua.FileScanJobManual
 		for _, deviceID := range deviceIDs {
-			jobs = append(jobs, dahua.FileScanJob{
+			jobs = append(jobs, dahua.FileScanJobManual{
 				DeviceID:  deviceID,
 				StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
 				EndTime:   core.Optional(input.Body.EndTime, time.Now()),
