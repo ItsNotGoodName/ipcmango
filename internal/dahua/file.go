@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
@@ -15,10 +16,9 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/jobs"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/sutureext"
 	"github.com/jlaffaye/ftp"
 	"github.com/jmoiron/sqlx"
-	"github.com/maragudk/goqite"
 	"github.com/oklog/ulid/v2"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -378,74 +378,6 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 	return err
 }
 
-type FileScanJob struct {
-	DeviceID  int64
-	StartTime time.Time
-	EndTime   time.Time
-}
-
-func NewFileScanJobClient(db *sqlx.DB) core.JobClient {
-	name := "dahua_file_scan_jobs"
-	timeout := 30 * time.Second
-	queue := goqite.New(goqite.NewOpts{
-		DB:      db.DB,
-		Name:    name,
-		Timeout: timeout,
-	})
-	runner := jobs.NewRunner(jobs.NewRunnerOpts{
-		Extend:       timeout,
-		Limit:        3,
-		Log:          slog.Default().With("queue", name),
-		PollInterval: time.Second,
-		Queue:        queue,
-	})
-	return core.NewJobClient(queue, runner)
-}
-
-func RegisterFileScanJob(client core.JobClient, db *sqlx.DB, dahuaStore *Store) core.Job[FileScanJob] {
-	return core.NewJob(client, func(ctx context.Context, data FileScanJob) error {
-		conn, err := dahuaStore.GetClient(ctx, types.Key{ID: data.DeviceID})
-		if err != nil {
-			return err
-		}
-
-		return fileScan(ctx, db, conn.RPC, data.DeviceID, data.StartTime, data.EndTime)
-	})
-}
-
-func CreateFileScanJob(ctx context.Context, db *sqlx.DB, fileScanJob core.Job[FileScanJob], args FileScanJob) error {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	goqiteID, err := fileScanJob.CreateAndGetIDTx(ctx, tx.Tx, args)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.ExecContext(ctx, `
-		INSERT INTO dahua_file_scan_jobs (device_id, goqite_id) VALUES (?, ?)
-	`, args.DeviceID, goqiteID)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-const rfc3339Milli = "2006-01-02T15:04:05.000Z07:00"
-
-func DeleteFailedFileScanJobs(ctx context.Context, db *sqlx.DB) error {
-	nowFormatted := time.Now().Format(rfc3339Milli)
-	fmt.Println(nowFormatted)
-	_, err := db.ExecContext(ctx, `
-		DELETE FROM goqite WHERE timeout <= ? AND received >= 3 AND queue = ?
-	`, nowFormatted, "dahua_file_scan_jobs")
-	return err
-}
-
 func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {
 	urL, err := url.Parse(filePath)
 	if err != nil {
@@ -550,4 +482,81 @@ func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.Read
 		return nil, 0, err
 	}
 	return v, v.ContentLength, nil
+}
+
+type FileScanJob struct {
+	DeviceID  int64
+	StartTime time.Time
+	EndTime   time.Time
+}
+
+func NewFileScanService(db *sqlx.DB, store *Store) FileScanService {
+	return FileScanService{
+		db:    db,
+		store: store,
+		jobs:  make(chan []FileScanJob),
+	}
+}
+
+type FileScanService struct {
+	db    *sqlx.DB
+	store *Store
+	jobs  chan []FileScanJob
+}
+
+func (w FileScanService) String() string {
+	return "dahua.FileScanService"
+}
+
+func (w FileScanService) Serve(ctx context.Context) error {
+	return sutureext.SanitizeError(ctx, w.serve(ctx))
+}
+
+func (w FileScanService) serve(ctx context.Context) error {
+	slog := slog.With("service", w.String())
+	slog.Info("Started service")
+
+	quickScanInterval := 30 * time.Second
+	t := time.NewTicker(quickScanInterval)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-t.C:
+		case jobs := <-w.jobs:
+			slog.Info("Started file scan")
+			wg := sync.WaitGroup{}
+
+			for _, job := range jobs {
+				wg.Add(1)
+				go func(job FileScanJob) {
+					defer wg.Done()
+
+					client, err := w.store.GetClient(ctx, types.Key{ID: job.DeviceID})
+					if err != nil {
+						slog.Error("Failed to get client", "error", err)
+						return
+					}
+
+					if err := fileScan(ctx, w.db, client.RPC, job.DeviceID, job.StartTime, job.EndTime); err != nil {
+						slog.Error("Failed to scan files", "error", err)
+						return
+					}
+				}(job)
+			}
+
+			wg.Wait()
+			slog.Info("Ended file scan")
+		}
+	}
+}
+
+func (w FileScanService) Queue(ctx context.Context, jobs ...FileScanJob) error {
+	select {
+	case w.jobs <- jobs:
+		return nil
+	default:
+		return fmt.Errorf("file scan job in progress")
+	}
 }

@@ -95,10 +95,9 @@ func main() {
 			dahuaStore := dahua.NewStore(db)
 			root.Add(dahuaStore)
 
-			// Create file scan job
-			dahuaFileScanJobClient := dahua.NewFileScanJobClient(db)
-			dahuaFileScanJob := dahua.RegisterFileScanJob(dahuaFileScanJobClient, db, dahuaStore)
-			root.Add(dahuaFileScanJobClient)
+			// Create dahua file scan service
+			dahuaFileScanService := dahua.NewFileScanService(db, dahuaStore)
+			root.Add(dahuaFileScanService)
 
 			// Create dahua event manager
 			root.Add(dahua.NewServiceManager(root, dahua.NewDefaultServiceFactory(db, dahuaStore)).Register())
@@ -126,11 +125,11 @@ func main() {
 
 			// Register handlers
 			app.Register(api, app.App{
-				DB:           db,
-				AFS:          afs,
-				AFSDirectory: afsDirectory,
-				FileScanJob:  dahuaFileScanJob,
-				DahuaStore:   dahuaStore,
+				DB:                   db,
+				AFS:                  afs,
+				AFSDirectory:         afsDirectory,
+				DahuaStore:           dahuaStore,
+				DahuaFileScanService: dahuaFileScanService,
 			})
 
 			// Create HTTP server

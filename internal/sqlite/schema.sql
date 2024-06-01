@@ -10,21 +10,6 @@ CREATE TABLE settings (
 );
 
 ------------
--- Goqite - https://github.com/maragudk/goqite/blob/main/schema.sql
-------------
-create table goqite (
-  id text primary key default ('m_' || lower(hex(randomblob(16)))),
-  created text not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
-  updated text not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
-  queue text not null,
-  body blob not null,
-  timeout text not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
-  received integer not null default 0
-) strict;
-
-create index goqite_queue_created_idx on goqite (queue, created);
-
-------------
 -- Auth
 ------------
 CREATE TABLE users (
@@ -161,13 +146,6 @@ CREATE TABLE dahua_file_cursors (
   full_epoch DATETIME NOT NULL,
   full_complete BOOLEAN NOT NULL GENERATED ALWAYS AS (full_cursor <= full_epoch) STORED,
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE dahua_file_scan_jobs (
-  device_id TEXT UNIQUE,
-  goqite_id TEXT UNIQUE,
-  FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE,
-  FOREIGN KEY (goqite_id) REFERENCES goqite (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE dahua_storage_destinations (

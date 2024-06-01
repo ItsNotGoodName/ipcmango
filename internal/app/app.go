@@ -18,7 +18,6 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
 	"github.com/ItsNotGoodName/ipcmanview/internal/dahua"
-	"github.com/ItsNotGoodName/ipcmanview/internal/sqlite"
 	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
@@ -31,11 +30,11 @@ import (
 )
 
 type App struct {
-	DB           *sqlx.DB
-	AFS          afero.Fs
-	AFSDirectory string
-	FileScanJob  core.Job[dahua.FileScanJob]
-	DahuaStore   *dahua.Store
+	DB                   *sqlx.DB
+	AFS                  afero.Fs
+	AFSDirectory         string
+	DahuaStore           *dahua.Store
+	DahuaFileScanService dahua.FileScanService
 }
 
 func NewConfig() huma.Config {
@@ -742,27 +741,16 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		err = dahua.CreateFileScanJob(ctx, app.DB, app.FileScanJob, dahua.FileScanJob{
+		err = app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
 			DeviceID:  device.ID,
 			StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
 			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
 		})
 		if err != nil {
-			if _, ok := sqlite.AsConstraintError(err, sqlite.CONSTRAINT_UNIQUE); ok {
-				return nil, huma.Error409Conflict("file scan job already queued")
-			}
-			return nil, err
+			return nil, huma.Error409Conflict("file scan already running", err)
 		}
 
 		return &struct{}{}, nil
-	})
-	huma.Register(api, huma.Operation{
-		Summary: "Delete failed device file scan jobs",
-		Method:  http.MethodDelete,
-		Path:    "/api/devices/{uuid}/file-scan",
-	}, func(ctx context.Context, input *struct{},
-	) (*struct{}, error) {
-		return &struct{}{}, dahua.DeleteFailedFileScanJobs(ctx, app.DB)
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Sync device VideoInMode",
@@ -1059,18 +1047,21 @@ func Register(api huma.API, app App) {
 		err := app.DB.SelectContext(ctx, &deviceIDs, `
 			SELECT id FROM dahua_devices
 		`)
+		if err != nil {
+			return nil, err
+		}
 
+		var jobs []dahua.FileScanJob
 		for _, deviceID := range deviceIDs {
-			err = dahua.CreateFileScanJob(ctx, app.DB, app.FileScanJob, dahua.FileScanJob{
+			jobs = append(jobs, dahua.FileScanJob{
 				DeviceID:  deviceID,
 				StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
 				EndTime:   core.Optional(input.Body.EndTime, time.Now()),
 			})
-			if err != nil {
-				if _, ok := sqlite.AsConstraintError(err, sqlite.CONSTRAINT_UNIQUE); !ok {
-					return nil, err
-				}
-			}
+		}
+
+		if err := app.DahuaFileScanService.Queue(ctx, jobs...); err != nil {
+			return nil, huma.Error409Conflict("file scan already running", err)
 		}
 
 		return &struct{}{}, nil
