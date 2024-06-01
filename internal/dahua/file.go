@@ -253,7 +253,7 @@ func NewCondition(ctx context.Context, scanRange *FileScanRange, location *time.
 }
 
 // fileScan assumes that no other goroutines are calling this function with the same deviceID.
-func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, scanRange *FileScanRange) error {
+func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, scanRange *FileScanRange, onProgress func()) error {
 	var data struct {
 		types.Key
 		Location types.Location
@@ -287,6 +287,7 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 			DeviceKey: data.Key,
 			Progress:  progress,
 		})
+		onProgress()
 		condition := NewCondition(ctx, scanRange, data.Location.Location)
 
 		// For picture and video conditions
@@ -450,6 +451,7 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 		DeviceKey: data.Key,
 		Progress:  progress,
 	})
+	onProgress()
 
 	// Delete stale files
 	result, err := db.ExecContext(ctx, `
@@ -480,8 +482,10 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 }
 
 type FileScanJob struct {
-	Command FileScanCommand
-	Data    []FileScanData
+	Command   FileScanCommand
+	StartTime time.Time
+	EndTime   time.Time
+	Data      []FileScanData
 }
 
 // ENUM(quick,full,manual)
@@ -493,18 +497,20 @@ type FileScanData struct {
 	EndTime   time.Time
 }
 
-func NewFileScanService(db *sqlx.DB, store *Store) FileScanService {
+func NewFileScanService(db *sqlx.DB, store *Store, quickScanInterval time.Duration) FileScanService {
 	return FileScanService{
-		db:    db,
-		store: store,
-		jobC:  make(chan FileScanJob),
+		db:                db,
+		store:             store,
+		jobC:              make(chan FileScanJob),
+		quickScanInterval: quickScanInterval,
 	}
 }
 
 type FileScanService struct {
-	db    *sqlx.DB
-	store *Store
-	jobC  chan FileScanJob
+	db                *sqlx.DB
+	store             *Store
+	jobC              chan FileScanJob
+	quickScanInterval time.Duration
 }
 
 func (w FileScanService) String() string {
@@ -515,19 +521,23 @@ func (w FileScanService) Serve(ctx context.Context) error {
 	slog := slog.With("service", w.String())
 	slog.Info("Started service")
 
-	quickScanInterval := 30 * time.Second
-	t := time.NewTicker(quickScanInterval)
+	t := time.NewTicker(w.quickScanInterval)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			w.handle(ctx, slog, FileScanJob{
+			err := w.handle(ctx, slog, FileScanJob{
 				Command: FileScanCommandQuick,
 			})
+			if err != nil {
+				return err
+			}
 		case job := <-w.jobC:
-			w.handle(ctx, slog, job)
+			if err := w.handle(ctx, slog, job); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -545,15 +555,32 @@ func (w FileScanService) handle(ctx context.Context, slog *slog.Logger, job File
 	switch job.Command {
 	case FileScanCommandManual:
 		slog = slog.With("type", "manual")
-		batchJobs = make([]BatchJob, 0, len(job.Data))
 
 		// Add batch jobs from job data
-		for _, data := range job.Data {
-			batchJobs = append(batchJobs, BatchJob{
-				DeviceID:  data.DeviceID,
-				StartTime: data.StartTime,
-				EndTime:   data.EndTime,
-			})
+		if len(job.Data) == 0 {
+			var deviceIDs []int64
+			err := w.db.SelectContext(ctx, &deviceIDs, `
+				SELECT id FROM dahua_devices
+			`)
+			if err != nil {
+				return err
+			}
+
+			for _, deviceID := range deviceIDs {
+				batchJobs = append(batchJobs, BatchJob{
+					DeviceID:  deviceID,
+					StartTime: job.StartTime,
+					EndTime:   job.EndTime,
+				})
+			}
+		} else {
+			for _, data := range job.Data {
+				batchJobs = append(batchJobs, BatchJob{
+					DeviceID:  data.DeviceID,
+					StartTime: data.StartTime,
+					EndTime:   data.EndTime,
+				})
+			}
 		}
 	case FileScanCommandQuick, FileScanCommandFull:
 		// Extract devices ids
@@ -563,18 +590,32 @@ func (w FileScanService) handle(ctx context.Context, slog *slog.Logger, job File
 		}
 
 		// Get cursors by device ids
+		var (
+			query     string
+			queryArgs []any
+			err       error
+		)
+		if len(deviceIDs) == 0 {
+			query = `
+				SELECT * FROM dahua_file_cursors
+			`
+		} else {
+			query, queryArgs, err = sqlx.In(`
+				SELECT * FROM dahua_file_cursors
+				WHERE ? = 0 OR device_id IN (?)
+			`, len(deviceIDs), deviceIDs)
+		}
+		if err != nil {
+			return err
+		}
+
 		var cursors []FileScanCursor
-		query, queryArgs, _ := sqlx.In(`
-			SELECT * FROM dahua_file_cursors
-			WHERE ? = 0 OR device_id IN (?)
-		`, len(deviceIDs), deviceIDs)
-		err := sqlx.SelectContext(ctx, w.db, &cursors, query, queryArgs...)
+		err = sqlx.SelectContext(ctx, w.db, &cursors, query, queryArgs...)
 		if err != nil {
 			return err
 		}
 
 		// Add batch jobs from cursors
-		batchJobs := make([]BatchJob, 0, len(cursors))
 		switch job.Command {
 		case FileScanCommandFull:
 			slog = slog.With("type", "full")
@@ -602,7 +643,7 @@ func (w FileScanService) handle(ctx context.Context, slog *slog.Logger, job File
 		panic("invalid command")
 	}
 
-	slog.Info("Started file scan")
+	slog.Info("Started batch scan")
 	timer := time.Now()
 	wg := sync.WaitGroup{}
 
@@ -625,20 +666,25 @@ func (w FileScanService) handle(ctx context.Context, slog *slog.Logger, job File
 				return
 			}
 			slog := slog.With("device", client.Conn.Name)
+			slog.Info("Starting scan")
 
 			// Scan
 			scanRange := NewFileScanRange(batchJob.StartTime, batchJob.EndTime)
-			if err := fileScan(ctx, w.db, client.RPC, batchJob.DeviceID, scanRange); err != nil {
-				slog.Error("Failed to scan files", "error", err)
-
+			if err := fileScan(ctx, w.db, client.RPC, batchJob.DeviceID, scanRange, func() {
 				// Save file cursor when full scan fails
 				if job.Command == FileScanCommandFull {
 					cursor := types.NewTime(scanRange.Cursor())
 					_, err = w.db.ExecContext(ctx, `
 						UPDATE dahua_file_cursors SET full_cursor = ? WHERE device_id = ?
 					`, cursor, batchJob.DeviceID)
+				} else if job.Command == FileScanCommandQuick {
+					cursor := types.NewTime(scanRange.Cursor())
+					_, err = w.db.ExecContext(ctx, `
+						UPDATE dahua_file_cursors SET quick_cursor = ? WHERE device_id = ?
+					`, cursor, batchJob.DeviceID)
 				}
-
+			}); err != nil {
+				slog.Error("Failed to scan files", "error", err)
 				return
 			}
 
@@ -671,7 +717,7 @@ func (w FileScanService) handle(ctx context.Context, slog *slog.Logger, job File
 	}
 
 	wg.Wait()
-	slog.Info("Finished file scan", "duration", time.Now().Sub(timer).String())
+	slog.Info("Finished batch scan", "duration", time.Now().Sub(timer).String())
 	return nil
 }
 

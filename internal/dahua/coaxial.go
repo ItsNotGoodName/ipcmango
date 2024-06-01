@@ -50,26 +50,31 @@ func (w CoaxialWorker) Serve(ctx context.Context) error {
 	slog.Info("Started service", slog.String("service", w.String()))
 
 	t := time.NewTicker(1 * time.Second)
+	defer t.Stop()
 
-	var lastStatus DeviceCoaxialStatus
+	// Publish initial status
+	lastStatus, err := GetCoaxialStatus(ctx, client.RPC, channel)
+	if err != nil {
+		return err
+	}
+	HandleCoaxialStatus(ctx, w.conn.Key, channel, lastStatus)
 
-	// Get and send coaxial status if it changes on an interval
-	for first := true; ; first = false {
-		status, err := GetCoaxialStatus(ctx, client.RPC, channel)
-		if err != nil {
-			return err
-		}
-		if !first && lastStatus.Speaker == status.Speaker && lastStatus.WhiteLight == status.WhiteLight {
-			continue
-		}
-		lastStatus = status
-
-		HandleCoaxialStatus(ctx, w.conn.Key, channel, status)
-
+	// Get and send status if it changes on an interval
+	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
+			status, err := GetCoaxialStatus(ctx, client.RPC, channel)
+			if err != nil {
+				return err
+			}
+			if lastStatus.Speaker == status.Speaker && lastStatus.WhiteLight == status.WhiteLight {
+				continue
+			}
+			lastStatus = status
+
+			HandleCoaxialStatus(ctx, w.conn.Key, channel, status)
 		}
 	}
 }

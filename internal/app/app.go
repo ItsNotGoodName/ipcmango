@@ -1046,26 +1046,23 @@ func Register(api huma.API, app App) {
 		Body FileScan
 	},
 	) (*struct{}, error) {
-		var deviceIDs []int64
-		err := app.DB.SelectContext(ctx, &deviceIDs, `
-			SELECT id FROM dahua_devices
-		`)
-		if err != nil {
-			return nil, err
-		}
-
-		var data []dahua.FileScanData
-		for _, deviceID := range deviceIDs {
-			data = append(data, dahua.FileScanData{
-				DeviceID:  deviceID,
-				StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
-				EndTime:   core.Optional(input.Body.EndTime, time.Now()),
-			})
-		}
-
 		if err := app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
-			Command: dahua.FileScanCommandManual,
-			Data:    data,
+			Command:   dahua.FileScanCommandManual,
+			StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
+			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
+		}); err != nil {
+			return nil, huma.Error409Conflict("file scan already running", err)
+		}
+
+		return &struct{}{}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Scan all device files full",
+		Method:  http.MethodPost,
+		Path:    "/api/file-scan-full",
+	}, func(ctx context.Context, input *struct{}) (*struct{}, error) {
+		if err := app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
+			Command: dahua.FileScanCommandFull,
 		}); err != nil {
 			return nil, huma.Error409Conflict("file scan already running", err)
 		}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/app"
 	"github.com/ItsNotGoodName/ipcmanview/internal/build"
@@ -96,7 +97,7 @@ func main() {
 			sutureext.Add(root, dahuaStore)
 
 			// Create dahua file scan service
-			dahuaFileScanService := dahua.NewFileScanService(db, dahuaStore)
+			dahuaFileScanService := dahua.NewFileScanService(db, dahuaStore, 5*time.Minute)
 			sutureext.Add(root, dahuaFileScanService)
 
 			// Create dahua event manager
