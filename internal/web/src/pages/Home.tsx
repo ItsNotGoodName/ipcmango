@@ -27,7 +27,7 @@ function StatValue(props: ParentProps) {
   return <p class="text-lg font-bold">{props.children}</p>
 }
 
-export function Home() {
+export default function () {
   const data = createQuery(() => ({
     ...pages.home,
     throwOnError: true
@@ -223,6 +223,3 @@ export function Home() {
     </LayoutNormal >
   )
 }
-
-export default Home
-

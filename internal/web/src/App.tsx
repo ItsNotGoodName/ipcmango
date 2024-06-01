@@ -9,6 +9,8 @@ const Home = lazy(() => import("~/pages/Home"));
 import loadHome from "~/pages/Home.data";
 const Devices = lazy(() => import("~/pages/Devices"));
 import loadDevices from "~/pages/Devices.data";
+const Events = lazy(() => import("~/pages/Events"));
+import loadEvents from "~/pages/Events.data";
 const EventsLive = lazy(() => import("~/pages/EventsLive"));
 import loadEventsLive from "~/pages/EventsLive.data";
 
@@ -25,6 +27,7 @@ function App() {
     <Router root={Root} explicitLinks>
       <Route path="/" component={Home} load={loadHome} />
       <Route path="/devices" component={Devices} load={loadDevices} />
+      <Route path="/events" component={Events} load={loadEvents} />
       <Route path="/events/live" component={EventsLive} load={loadEventsLive} />
       <Route path="*404" component={NotFound} />
     </Router >

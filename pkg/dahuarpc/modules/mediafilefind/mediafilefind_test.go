@@ -1,6 +1,7 @@
 package mediafilefind
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -100,5 +101,65 @@ func TestFindNextFileInfo_UniqueTime(t *testing.T) {
 			assert.NotEqual(t, firstStartTime, secondStartTime)
 			assert.NotEqual(t, firstEndTime, secondEndTime)
 		}
+	}
+}
+
+func TestFindNextFileInfo_CleanEvents(t *testing.T) {
+	type fields struct {
+		Channel     int
+		StartTime   dahuarpc.Timestamp
+		EndTime     dahuarpc.Timestamp
+		Length      int
+		Type        string
+		FilePath    string
+		Duration    int
+		Disk        int
+		VideoStream string
+		Flags       []string
+		Events      []string
+		Cluster     int
+		Partition   int
+		PicIndex    int
+		Repeat      int
+		WorkDir     string
+		WorkDirSN   int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []string
+	}{
+		{
+			fields: fields{
+				Events: []string{"CrossRegionDetection", ""},
+			},
+			want: []string{"CrossRegionDetection"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := FindNextFileInfo{
+				Channel:     tt.fields.Channel,
+				StartTime:   tt.fields.StartTime,
+				EndTime:     tt.fields.EndTime,
+				Length:      tt.fields.Length,
+				Type:        tt.fields.Type,
+				FilePath:    tt.fields.FilePath,
+				Duration:    tt.fields.Duration,
+				Disk:        tt.fields.Disk,
+				VideoStream: tt.fields.VideoStream,
+				Flags:       tt.fields.Flags,
+				Events:      tt.fields.Events,
+				Cluster:     tt.fields.Cluster,
+				Partition:   tt.fields.Partition,
+				PicIndex:    tt.fields.PicIndex,
+				Repeat:      tt.fields.Repeat,
+				WorkDir:     tt.fields.WorkDir,
+				WorkDirSN:   tt.fields.WorkDirSN,
+			}
+			if got := f.CleanEvents(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FindNextFileInfo.CleanEvents() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

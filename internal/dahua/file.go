@@ -217,9 +217,59 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 
 				// For each file
 				for _, v := range files {
+					startTime, endTime, err := v.UniqueTime(int(data.Seed), data.Location.Location)
+					if err != nil {
+						slog.Error("Failed to get unique time for file", "error", err, "device", data.Name)
+						continue
+					}
+					storage := StorageFromFilePath(v.FilePath)
+					events := v.CleanEvents()
+
 					result, err := db.ExecContext(ctx, `
-						UPDATE dahua_files SET updated_at = ? WHERE device_id = ? AND file_path = ?
-					`, updatedAt, deviceID, v.FilePath)
+						UPDATE dahua_files SET 
+							channel = ?,
+							start_time = ?,
+							end_time = ?,
+							length = ?,
+							type = ?,
+							file_path = ?,
+							duration = ?,
+							disk = ?,
+							video_stream = ?,
+							flags = ?,
+							events = ?,
+							cluster = ?,
+							partition = ?,
+							pic_index = ?,
+							repeat = ?,
+							work_dir = ?,
+							work_dir_sn = ?,
+							storage = ?,
+							updated_at = ?
+						WHERE device_id = ? AND file_path = ?
+					`,
+						v.Channel,
+						types.NewTime(startTime),
+						types.NewTime(endTime),
+						v.Length,
+						v.Type,
+						v.FilePath,
+						v.Duration,
+						v.Disk,
+						v.VideoStream,
+						types.NewSlice(v.Flags),
+						types.NewSlice(events),
+						v.Cluster,
+						v.Partition,
+						v.PicIndex,
+						v.Repeat,
+						v.WorkDir,
+						v.WorkDirSN,
+						storage,
+						updatedAt,
+						deviceID,
+						v.FilePath,
+					)
 					if err != nil {
 						return err
 					}
@@ -232,14 +282,7 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 						continue
 					}
 
-					startTime, endTime, err := v.UniqueTime(int(data.Seed), data.Location.Location)
-					if err != nil {
-						slog.Error("Failed to get unique time for file", "error", err, "device", data.Name)
-						continue
-					}
-
 					fileID := ulid.MustNew(ulid.Timestamp(startTime), ulid.DefaultEntropy()).String()
-					storage := StorageFromFilePath(v.FilePath)
 
 					_, err = db.ExecContext(ctx, `
 						INSERT INTO dahua_files (
@@ -280,7 +323,7 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 						v.Disk,
 						v.VideoStream,
 						types.NewSlice(v.Flags),
-						types.NewSlice(v.Events),
+						types.NewSlice(events),
 						v.Cluster,
 						v.Partition,
 						v.PicIndex,
@@ -390,6 +433,17 @@ func CreateFileScanJob(ctx context.Context, db *sqlx.DB, fileScanJob core.Job[Fi
 	}
 
 	return tx.Commit()
+}
+
+const rfc3339Milli = "2006-01-02T15:04:05.000Z07:00"
+
+func DeleteFailedFileScanJobs(ctx context.Context, db *sqlx.DB) error {
+	nowFormatted := time.Now().Format(rfc3339Milli)
+	fmt.Println(nowFormatted)
+	_, err := db.ExecContext(ctx, `
+		DELETE FROM goqite WHERE timeout <= ? AND received >= 3 AND queue = ?
+	`, nowFormatted, "dahua_file_scan_jobs")
+	return err
 }
 
 func OpenFileFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadCloser, int64, error) {

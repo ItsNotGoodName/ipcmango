@@ -3,6 +3,8 @@ import hljs from "~/lib/hljs"
 import { Show, } from "solid-js";
 import { RiDocumentClipboardLine, } from "solid-icons/ri";
 import { Button, } from "~/ui/Button";
+import { useSearchParams } from "@solidjs/router";
+import { LayoutNormal } from "~/ui/Layout";
 
 export function JSONTableRow(props: { colspan?: number, expanded?: boolean, data: string }) {
   return (
@@ -20,5 +22,13 @@ export function JSONTableRow(props: { colspan?: number, expanded?: boolean, data
         </div>
       </td>
     </tr>
+  )
+}
+export default function () {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  return (
+    <LayoutNormal class="max-w-4xl">
+    </LayoutNormal>
   )
 }

@@ -16,7 +16,7 @@ import { api } from "./data";
 import { createQuery } from "@tanstack/solid-query";
 import { DeviceEventsOutput } from "~/client";
 
-export function EventsLive() {
+export default function () {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const data = createQuery(() => api.devices.list)
@@ -116,5 +116,3 @@ export function EventsLive() {
     </LayoutNormal>
   )
 }
-
-export default EventsLive

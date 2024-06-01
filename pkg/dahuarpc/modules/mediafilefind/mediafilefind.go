@@ -2,6 +2,7 @@ package mediafilefind
 
 import (
 	"context"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -146,6 +147,18 @@ func (f FindNextFileInfo) UniqueTime(seed int, deviceLocation *time.Location) (t
 	finalSeed := (time.Duration((prefixSeed % 999)) * time.Millisecond) + (time.Duration((seed % 999)) * time.Microsecond)
 
 	return startTime.Add(finalSeed), endTime.Add(finalSeed), nil
+}
+
+// CleanEvents
+func (f FindNextFileInfo) CleanEvents() []string {
+	clean := make([]string, 0, len(f.Events))
+	for _, event := range f.Events {
+		if event == "" || slices.Contains(clean, event) {
+			continue
+		}
+		clean = append(clean, event)
+	}
+	return clean
 }
 
 // Local checks if the file is stored directly on disk which allows it to be loaded through RPC_Loadfile.

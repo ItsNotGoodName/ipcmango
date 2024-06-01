@@ -51,7 +51,7 @@ function DeviceNameCell(props: { device: { uuid: string, name: string } }) {
   )
 }
 
-export function Devices() {
+export default function () {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const data = createQuery(() => ({
@@ -182,7 +182,10 @@ function StatusTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => api.devices.status(item.uuid))
+            const data = createQuery(() => ({
+              ...api.devices.status(item.uuid),
+              throwOnError: true
+            }))
 
             return (
               <TableRow>
@@ -218,7 +221,10 @@ function UptimeTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => api.devices.uptime(item.uuid))
+            const data = createQuery(() => ({
+              ...api.devices.uptime(item.uuid),
+              throwOnError: true
+            }))
 
             return (
               <TableRow>
@@ -318,7 +324,10 @@ function DetailTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => api.devices.detail(item.uuid))
+            const data = createQuery(() => ({
+              ...api.devices.detail(item.uuid),
+              throwOnError: true
+            }))
 
             return (
               <TableRow>
@@ -371,7 +380,10 @@ function SoftwareVersionTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => api.devices.software(item.uuid))
+            const data = createQuery(() => ({
+              ...api.devices.software(item.uuid),
+              throwOnError: true
+            }))
 
             return (
               <TableRow>
@@ -416,7 +428,10 @@ function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => api.devices.licenses(item.uuid))
+            const data = createQuery(() => ({
+              ...api.devices.licenses(item.uuid),
+              throwOnError: true
+            }))
 
             return (
               <ErrorBoundary fallback={e =>
@@ -495,7 +510,10 @@ function StorageTable(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => api.devices.storage(item.uuid))
+            const data = createQuery(() => ({
+              ...api.devices.storage(item.uuid),
+              throwOnError: true
+            }))
 
             return (
               <ErrorBoundary fallback={e =>
@@ -557,7 +575,10 @@ function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
       <TableBody>
         <For each={props.devices}>
           {item => {
-            const data = createQuery(() => api.devices.video_in_mode(item.uuid))
+            const data = createQuery(() => ({
+              ...api.devices.video_in_mode(item.uuid),
+              throwOnError: true
+            }))
             const sync = createMutation(() => ({
               mutationFn: () => postApiDevicesByUuidVideoInModeSync({ uuid: item.uuid, requestBody: {} }),
               onSuccess: (data) => client.setQueryData(api.devices.video_in_mode(item.uuid).queryKey, data),
@@ -593,4 +614,3 @@ function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
   )
 }
 
-export default Devices

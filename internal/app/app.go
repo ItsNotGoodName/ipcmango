@@ -757,6 +757,14 @@ func Register(api huma.API, app App) {
 		return &struct{}{}, nil
 	})
 	huma.Register(api, huma.Operation{
+		Summary: "Delete failed device file scan jobs",
+		Method:  http.MethodDelete,
+		Path:    "/api/devices/{uuid}/file-scan",
+	}, func(ctx context.Context, input *struct{},
+	) (*struct{}, error) {
+		return &struct{}{}, dahua.DeleteFailedFileScanJobs(ctx, app.DB)
+	})
+	huma.Register(api, huma.Operation{
 		Summary: "Sync device VideoInMode",
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/video-in-mode/sync",
