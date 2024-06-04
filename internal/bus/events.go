@@ -45,10 +45,3 @@ type FileScanProgressed struct {
 	DeviceKey types.Key
 	Progress  float64
 }
-
-type FileScanFinished struct {
-	DeviceKey    types.Key
-	CreatedCount int64
-	UpdatedCount int64
-	DeletedCount int64
-}

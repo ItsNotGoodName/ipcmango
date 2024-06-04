@@ -247,7 +247,7 @@ func (r *FileScanRange) Next() bool {
 func NewCondition(ctx context.Context, scanRange *FileScanRange, location *time.Location) mediafilefind.Condition {
 	start, end := scanRange.Range()
 	startTs, endTs := dahuarpc.NewTimestamp(start, location), dahuarpc.NewTimestamp(end, location)
-	condition := mediafilefind.NewCondtion(startTs, endTs)
+	condition := mediafilefind.NewCondtion(startTs, endTs, mediafilefind.ConditionOrderDescent)
 	condition.Order = mediafilefind.ConditionOrderDescent
 	return condition
 }
@@ -471,12 +471,7 @@ func fileScan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int
 		return err
 	}
 
-	bus.Publish(bus.FileScanFinished{
-		DeviceKey:    data.Key,
-		CreatedCount: createdCount,
-		UpdatedCount: updatedCount,
-		DeletedCount: deletedCount,
-	})
+	fmt.Println(createdCount, updatedCount, deletedCount)
 
 	return err
 }

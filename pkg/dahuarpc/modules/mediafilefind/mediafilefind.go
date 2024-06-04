@@ -49,12 +49,12 @@ const (
 	ConditionOrderDescent ConditionOrder = "Descent"
 )
 
-func NewCondtion(startTime dahuarpc.Timestamp, endTime dahuarpc.Timestamp) Condition {
+func NewCondtion(startTime dahuarpc.Timestamp, endTime dahuarpc.Timestamp, order ConditionOrder) Condition {
 	return Condition{
 		Channel:   0,
 		Dirs:      nil,
 		Types:     []string{"dav", "jpg"},
-		Order:     ConditionOrderAscent,
+		Order:     order,
 		Redundant: "Exclusion",
 		Events:    nil,
 		StartTime: startTime,
