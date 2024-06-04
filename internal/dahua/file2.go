@@ -14,6 +14,49 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// FileScanEpoch is the oldest a file can be.
+var FileScanEpoch time.Time = core.Must2(time.ParseInLocation(time.DateTime, "2009-12-31 00:00:00", time.UTC))
+
+const (
+	// fileScanVolatilePeriod is latest time period that the device could still be writing files to disk.
+	fileScanVolatilePeriod = 8 * time.Hour
+	// fileScanMaxPeriod is the maximum time period a device can handle when scanning files before they give weird results.
+	fileScanMaxPeriod = 30 * 24 * time.Hour
+)
+
+func NewFileCursorQuick(end, now time.Time) time.Time {
+	return core.Oldest(end, now.Add(-fileScanVolatilePeriod))
+}
+
+func NewFileCursorFull(start, epoch time.Time) time.Time {
+	return core.Newest(start, epoch)
+}
+
+func ResetFileScanCursor(ctx context.Context, db sqlx.ExecerContext, deviceID int64) error {
+	now := time.Now()
+	quickCursor := types.NewTime(now.Add(-fileScanVolatilePeriod))
+	fullCursor := types.NewTime(now)
+	fullEpoch := types.NewTime(FileScanEpoch)
+	updatedAt := types.NewTime(now)
+
+	_, err := db.ExecContext(ctx, `
+		INSERT OR REPLACE INTO dahua_file_cursors (
+			device_id,
+			quick_cursor,
+			full_cursor,
+			full_epoch,
+			updated_at
+		) VALUES (?, ?, ?, ?, ?)
+	`,
+		deviceID,
+		quickCursor,
+		fullCursor,
+		fullEpoch,
+		updatedAt,
+	)
+	return err
+}
+
 func NewScanRange(start, end time.Time) (ScanRange, ScanCursor, bool) {
 	scanRange := ScanRange{
 		Start: start,
@@ -29,9 +72,9 @@ type ScanRange struct {
 }
 
 type ScanCursor struct {
-	SubStart time.Time
-	SubEnd   time.Time
-	Cursor   time.Time
+	ScanStart time.Time
+	ScanEnd   time.Time
+	Cursor    time.Time
 }
 
 func (r ScanRange) NextScanCursor(cursor time.Time) (ScanCursor, bool) {
@@ -42,16 +85,16 @@ func (r ScanRange) NextScanCursor(cursor time.Time) (ScanCursor, bool) {
 	if r.Start.Before(r.End) {
 		nextCursor := core.Oldest(cursor.Add(fileScanMaxPeriod), r.End)
 		return ScanCursor{
-			SubStart: cursor,
-			SubEnd:   nextCursor,
-			Cursor:   nextCursor,
+			ScanStart: cursor,
+			ScanEnd:   nextCursor,
+			Cursor:    nextCursor,
 		}, true
 	} else {
 		nextCursor := core.Newest(cursor.Add(-fileScanMaxPeriod), r.End)
 		return ScanCursor{
-			SubStart: cursor,
-			SubEnd:   nextCursor,
-			Cursor:   nextCursor,
+			ScanStart: cursor,
+			ScanEnd:   nextCursor,
+			Cursor:    nextCursor,
 		}, true
 	}
 }
@@ -61,6 +104,17 @@ func (r ScanRange) Percent(cursor time.Time) float64 {
 	bottom := r.End.Sub(r.Start).Abs().Hours()
 	percent := (top / bottom) * 100
 	return percent
+}
+
+func NewCondition(ctx context.Context, scanStart, scanEnd time.Time, location *time.Location) mediafilefind.Condition {
+	start, end, order := scanStart, scanEnd, mediafilefind.ConditionOrderAscent
+	if scanStart.After(end) {
+		start, end, order = scanEnd, scanStart, mediafilefind.ConditionOrderDescent
+	}
+
+	startTs, endTs := dahuarpc.NewTimestamp(start, location), dahuarpc.NewTimestamp(end, location)
+	condition := mediafilefind.NewCondtion(startTs, endTs, order)
+	return condition
 }
 
 type ScanResult struct {
