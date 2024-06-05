@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/app"
 	"github.com/ItsNotGoodName/ipcmanview/internal/build"
@@ -96,10 +95,6 @@ func main() {
 			dahuaStore := dahua.NewStore(db)
 			sutureext.Add(root, dahuaStore)
 
-			// Create dahua file scan service
-			dahuaFileScanService := dahua.NewFileScanService(db, dahuaStore, 5*time.Minute)
-			sutureext.Add(root, dahuaFileScanService)
-
 			// Create dahua event manager
 			sutureext.Add(root, dahua.NewWorkerManager(root, dahua.NewDefaultServiceFactory(db, dahuaStore)).Register())
 
@@ -126,11 +121,10 @@ func main() {
 
 			// Register handlers
 			app.Register(api, app.App{
-				DB:                   db,
-				AFS:                  afs,
-				AFSDirectory:         afsDirectory,
-				DahuaStore:           dahuaStore,
-				DahuaFileScanService: dahuaFileScanService,
+				DB:           db,
+				AFS:          afs,
+				AFSDirectory: afsDirectory,
+				DahuaStore:   dahuaStore,
 			})
 
 			// Create HTTP server

@@ -30,11 +30,10 @@ import (
 )
 
 type App struct {
-	DB                   *sqlx.DB
-	AFS                  afero.Fs
-	AFSDirectory         string
-	DahuaStore           *dahua.Store
-	DahuaFileScanService dahua.FileScanService
+	DB           *sqlx.DB
+	AFS          afero.Fs
+	AFSDirectory string
+	DahuaStore   *dahua.Store
 }
 
 func NewConfig() huma.Config {
@@ -728,32 +727,137 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Scan device files",
-		Method:  http.MethodPost,
-		Path:    "/api/devices/{uuid}/file-scan",
+		Summary: "Reset device file scan cursor",
+		Method:  http.MethodDelete,
+		Path:    "/api/devices/{uuid}/file-scan/cursor",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
-		Body FileScan
 	},
-	) (*struct{}, error) {
+	) (*DeviceFileScanCursorOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
 
-		err = app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
-			Command: dahua.FileScanCommandManual,
-			Data: []dahua.FileScanData{{
-				DeviceID:  device.ID,
-				StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
-				EndTime:   core.Optional(input.Body.EndTime, time.Now()),
-			}},
-		})
-		if err != nil {
-			return nil, huma.Error409Conflict("file scan already running", err)
+		if err := dahua.ResetFileScanCursor(ctx, app.DB, device.ID); err != nil {
+			return nil, err
 		}
 
-		return &struct{}{}, nil
+		body, err := GetFileCursor(ctx, app.DB, device.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &DeviceFileScanCursorOutput{
+			Body: NewFileScanCursor(body),
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Get file scan cursor",
+		Method:  http.MethodGet,
+		Path:    "/api/devices/{uuid}/file-scan/cursor",
+	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
+	},
+	) (*DeviceFileScanCursorOutput, error) {
+		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := GetFileCursor(ctx, app.DB, device.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &DeviceFileScanCursorOutput{
+			Body: NewFileScanCursor(body),
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Manual scan device files",
+		Method:  http.MethodPost,
+		Path:    "/api/devices/{uuid}/file-scan/manual",
+	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
+		Body FileScan
+	},
+	) (*DeviceFileScanOutput, error) {
+		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
+		if err != nil {
+			return nil, err
+		}
+
+		conn, err := useClient(ctx, app.DahuaStore, device)
+		if err != nil {
+			return nil, err
+		}
+
+		start := core.Optional(input.Body.StartTime, dahua.FileScanEpoch)
+		end := core.Optional(input.Body.EndTime, time.Now())
+
+		body, err := dahua.ScanFilesManual(ctx, app.DB, conn.RPC, device.ID, start, end)
+		if err != nil {
+			return nil, err
+		}
+
+		return &DeviceFileScanOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Full scan device files",
+		Method:  http.MethodPost,
+		Path:    "/api/devices/{uuid}/file-scan/full",
+	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
+	},
+	) (*DeviceFileScanOutput, error) {
+		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
+		if err != nil {
+			return nil, err
+		}
+
+		conn, err := useClient(ctx, app.DahuaStore, device)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := dahua.ScanFilesFull(ctx, app.DB, conn.RPC, device.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &DeviceFileScanOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Quick scan device files",
+		Method:  http.MethodPost,
+		Path:    "/api/devices/{uuid}/file-scan/quick",
+	}, func(ctx context.Context, input *struct {
+		UUID string `path:"uuid" format:"uuid"`
+	},
+	) (*DeviceFileScanOutput, error) {
+		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
+		if err != nil {
+			return nil, err
+		}
+
+		conn, err := useClient(ctx, app.DahuaStore, device)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := dahua.ScanFilesQuick(ctx, app.DB, conn.RPC, device.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &DeviceFileScanOutput{
+			Body: body,
+		}, nil
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Sync device VideoInMode",
@@ -1037,37 +1141,6 @@ func Register(api huma.API, app App) {
 		return &ListStorageDestinationOutput{
 			Body: body,
 		}, nil
-	})
-	huma.Register(api, huma.Operation{
-		Summary: "Scan all device files",
-		Method:  http.MethodPost,
-		Path:    "/api/file-scan",
-	}, func(ctx context.Context, input *struct {
-		Body FileScan
-	},
-	) (*struct{}, error) {
-		if err := app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
-			Command:   dahua.FileScanCommandManual,
-			StartTime: core.Optional(input.Body.StartTime, dahua.FileScanEpoch),
-			EndTime:   core.Optional(input.Body.EndTime, time.Now()),
-		}); err != nil {
-			return nil, huma.Error409Conflict("file scan already running", err)
-		}
-
-		return &struct{}{}, nil
-	})
-	huma.Register(api, huma.Operation{
-		Summary: "Scan all device files full",
-		Method:  http.MethodPost,
-		Path:    "/api/file-scan-full",
-	}, func(ctx context.Context, input *struct{}) (*struct{}, error) {
-		if err := app.DahuaFileScanService.Queue(ctx, dahua.FileScanJob{
-			Command: dahua.FileScanCommandFull,
-		}); err != nil {
-			return nil, huma.Error409Conflict("file scan already running", err)
-		}
-
-		return &struct{}{}, nil
 	})
 }
 
@@ -1633,4 +1706,38 @@ func ListStorageDestinations(ctx context.Context, db *sqlx.DB) ([]StorageDestina
 
 type ListStorageDestinationOutput struct {
 	Body []StorageDestination
+}
+
+type DeviceFileScanOutput struct {
+	Body dahua.ScanFilesResult
+}
+
+type DeviceFileScanCursorOutput struct {
+	Body FileScanCursor
+}
+
+func NewFileScanCursor(v dahua.FileScanCursor) FileScanCursor {
+	return FileScanCursor{
+		QuickCursor:  v.Quick_Cursor.Time,
+		FullCursor:   v.Full_Cursor.Time,
+		FullEpoch:    v.Full_Epoch.Time,
+		FullComplete: v.Full_Complete,
+		UpdatedAt:    v.Updated_At.Time,
+	}
+}
+
+type FileScanCursor struct {
+	QuickCursor  time.Time `json:"quick_cursor"`
+	FullCursor   time.Time `json:"full_cursor"`
+	FullEpoch    time.Time `json:"full_epoch"`
+	FullComplete bool      `json:"full_complete"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+func GetFileCursor(ctx context.Context, db *sqlx.DB, deviceID int64) (dahua.FileScanCursor, error) {
+	var v dahua.FileScanCursor
+	err := db.GetContext(ctx, &v, `
+			SELECT * FROM dahua_file_cursors WHERE device_id = ?
+		`, deviceID)
+	return v, err
 }
