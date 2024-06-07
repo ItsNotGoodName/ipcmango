@@ -43,10 +43,12 @@ CREATE UNIQUE INDEX `dahua_files_start_time` ON `dahua_files` (`start_time`);
 CREATE UNIQUE INDEX `dahua_files_device_id_file_path` ON `dahua_files` (`device_id`, `file_path`);
 -- create index "dahua_files_device_id_start_time_idx" to table: "dahua_files"
 CREATE INDEX `dahua_files_device_id_start_time_idx` ON `dahua_files` (`device_id`, `start_time`);
--- create "dahua_file_cursors" table
-CREATE TABLE `dahua_file_cursors` (`device_id` integer NOT NULL, `quick_cursor` datetime NOT NULL, `full_cursor` datetime NOT NULL, `full_epoch` datetime NOT NULL, `full_complete` boolean NOT NULL AS (full_cursor <= full_epoch) STORED, `updated_at` datetime NOT NULL, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
--- create index "dahua_file_cursors_device_id" to table: "dahua_file_cursors"
-CREATE UNIQUE INDEX `dahua_file_cursors_device_id` ON `dahua_file_cursors` (`device_id`);
+-- create "dahua_scan_cursors" table
+CREATE TABLE `dahua_scan_cursors` (`device_id` integer NOT NULL, `quick_cursor` datetime NOT NULL, `full_cursor` datetime NOT NULL, `full_epoch` datetime NOT NULL, `full_complete` boolean NOT NULL AS (full_cursor <= full_epoch) STORED, `updated_at` datetime NOT NULL, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+-- create index "dahua_scan_cursors_device_id" to table: "dahua_scan_cursors"
+CREATE UNIQUE INDEX `dahua_scan_cursors_device_id` ON `dahua_scan_cursors` (`device_id`);
+-- create "dahua_scan_jobs" table
+CREATE TABLE `dahua_scan_jobs` (`action` text NOT NULL, `data` blob NOT NULL, `created_at` datetime NOT NULL);
 -- create "dahua_storage_destinations" table
 CREATE TABLE `dahua_storage_destinations` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `name` text NOT NULL, `storage` text NOT NULL, `server_address` text NOT NULL, `port` integer NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `remote_directory` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL);
 -- create index "dahua_storage_destinations_uuid" to table: "dahua_storage_destinations"
@@ -85,10 +87,12 @@ DROP INDEX `dahua_storage_destinations_name`;
 DROP INDEX `dahua_storage_destinations_uuid`;
 -- reverse: create "dahua_storage_destinations" table
 DROP TABLE `dahua_storage_destinations`;
--- reverse: create index "dahua_file_cursors_device_id" to table: "dahua_file_cursors"
-DROP INDEX `dahua_file_cursors_device_id`;
--- reverse: create "dahua_file_cursors" table
-DROP TABLE `dahua_file_cursors`;
+-- reverse: create "dahua_scan_jobs" table
+DROP TABLE `dahua_scan_jobs`;
+-- reverse: create index "dahua_scan_cursors_device_id" to table: "dahua_scan_cursors"
+DROP INDEX `dahua_scan_cursors_device_id`;
+-- reverse: create "dahua_scan_cursors" table
+DROP TABLE `dahua_scan_cursors`;
 -- reverse: create index "dahua_files_device_id_start_time_idx" to table: "dahua_files"
 DROP INDEX `dahua_files_device_id_start_time_idx`;
 -- reverse: create index "dahua_files_device_id_file_path" to table: "dahua_files"

@@ -729,17 +729,17 @@ func Register(api huma.API, app App) {
 	huma.Register(api, huma.Operation{
 		Summary: "Reset device file scan cursor",
 		Method:  http.MethodDelete,
-		Path:    "/api/devices/{uuid}/file-scan/cursor",
+		Path:    "/api/devices/{uuid}/scan/cursor",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	},
-	) (*DeviceFileScanCursorOutput, error) {
+	) (*DeviceScanCursorOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
 		}
 
-		if err := dahua.ResetFileScanCursor(ctx, app.DB, device.ID); err != nil {
+		if err := dahua.ResetScanCursor(ctx, app.DB, device.ID); err != nil {
 			return nil, err
 		}
 
@@ -748,18 +748,18 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		return &DeviceFileScanCursorOutput{
+		return &DeviceScanCursorOutput{
 			Body: NewFileScanCursor(body),
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Get file scan cursor",
 		Method:  http.MethodGet,
-		Path:    "/api/devices/{uuid}/file-scan/cursor",
+		Path:    "/api/devices/{uuid}/scan/cursor",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	},
-	) (*DeviceFileScanCursorOutput, error) {
+	) (*DeviceScanCursorOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
@@ -770,19 +770,19 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		return &DeviceFileScanCursorOutput{
+		return &DeviceScanCursorOutput{
 			Body: NewFileScanCursor(body),
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Manual scan device files",
 		Method:  http.MethodPost,
-		Path:    "/api/devices/{uuid}/file-scan/manual",
+		Path:    "/api/devices/{uuid}/scan/manual",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 		Body FileScan
 	},
-	) (*DeviceFileScanOutput, error) {
+	) (*DeviceScanOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
@@ -793,26 +793,26 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		start := core.Optional(input.Body.StartTime, dahua.FileScanEpoch)
+		start := core.Optional(input.Body.StartTime, dahua.ScanEpoch)
 		end := core.Optional(input.Body.EndTime, time.Now())
 
-		body, err := dahua.ScanFilesManual(ctx, app.DB, conn.RPC, device.ID, start, end)
+		body, err := dahua.ScanManual(ctx, app.DB, conn.RPC, device.ID, start, end)
 		if err != nil {
 			return nil, err
 		}
 
-		return &DeviceFileScanOutput{
+		return &DeviceScanOutput{
 			Body: body,
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Full scan device files",
 		Method:  http.MethodPost,
-		Path:    "/api/devices/{uuid}/file-scan/full",
+		Path:    "/api/devices/{uuid}/scan/full",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	},
-	) (*DeviceFileScanOutput, error) {
+	) (*DeviceScanOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
@@ -823,23 +823,23 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		body, err := dahua.ScanFilesFull(ctx, app.DB, conn.RPC, device.ID)
+		body, err := dahua.ScanFull(ctx, app.DB, conn.RPC, device.ID)
 		if err != nil {
 			return nil, err
 		}
 
-		return &DeviceFileScanOutput{
+		return &DeviceScanOutput{
 			Body: body,
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Quick scan device files",
 		Method:  http.MethodPost,
-		Path:    "/api/devices/{uuid}/file-scan/quick",
+		Path:    "/api/devices/{uuid}/scan/quick",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
 	},
-	) (*DeviceFileScanOutput, error) {
+	) (*DeviceScanOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
 		if err != nil {
 			return nil, err
@@ -850,12 +850,12 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		body, err := dahua.ScanFilesQuick(ctx, app.DB, conn.RPC, device.ID)
+		body, err := dahua.ScanQuick(ctx, app.DB, conn.RPC, device.ID)
 		if err != nil {
 			return nil, err
 		}
 
-		return &DeviceFileScanOutput{
+		return &DeviceScanOutput{
 			Body: body,
 		}, nil
 	})
@@ -1708,15 +1708,15 @@ type ListStorageDestinationOutput struct {
 	Body []StorageDestination
 }
 
-type DeviceFileScanOutput struct {
-	Body dahua.ScanFilesResult
+type DeviceScanOutput struct {
+	Body dahua.ScanResult
 }
 
-type DeviceFileScanCursorOutput struct {
+type DeviceScanCursorOutput struct {
 	Body FileScanCursor
 }
 
-func NewFileScanCursor(v dahua.FileScanCursor) FileScanCursor {
+func NewFileScanCursor(v dahua.ScanCursor) FileScanCursor {
 	return FileScanCursor{
 		QuickCursor:  v.Quick_Cursor.Time,
 		FullCursor:   v.Full_Cursor.Time,
@@ -1734,10 +1734,10 @@ type FileScanCursor struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-func GetFileCursor(ctx context.Context, db *sqlx.DB, deviceID int64) (dahua.FileScanCursor, error) {
-	var v dahua.FileScanCursor
+func GetFileCursor(ctx context.Context, db *sqlx.DB, deviceID int64) (dahua.ScanCursor, error) {
+	var v dahua.ScanCursor
 	err := db.GetContext(ctx, &v, `
-			SELECT * FROM dahua_file_cursors WHERE device_id = ?
+			SELECT * FROM dahua_scan_cursors WHERE device_id = ?
 		`, deviceID)
 	return v, err
 }

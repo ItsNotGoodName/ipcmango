@@ -153,7 +153,7 @@ func createDevice(ctx context.Context, db sqlx.ExtContext, args CreateDeviceArgs
 		return types.Key{}, err
 	}
 
-	if err := ResetFileScanCursor(ctx, db, key.ID); err != nil {
+	if err := ResetScanCursor(ctx, db, key.ID); err != nil {
 		return types.Key{}, err
 	}
 

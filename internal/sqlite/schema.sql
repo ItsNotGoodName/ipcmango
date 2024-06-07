@@ -139,7 +139,7 @@ CREATE TABLE dahua_files (
 
 CREATE INDEX dahua_files_device_id_start_time_idx ON dahua_files (device_id, start_time);
 
-CREATE TABLE dahua_file_cursors (
+CREATE TABLE dahua_scan_cursors (
   device_id INTEGER NOT NULL UNIQUE,
   quick_cursor DATETIME NOT NULL, -- (scanned) <- quick_cursor -> (not scanned / volatile)
   full_cursor DATETIME NOT NULL, -- (not scanned) <- full_cursor -> (scanned)
@@ -147,6 +147,12 @@ CREATE TABLE dahua_file_cursors (
   full_complete BOOLEAN NOT NULL GENERATED ALWAYS AS (full_cursor <= full_epoch) STORED,
   updated_at DATETIME NOT NULL,
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE dahua_scan_jobs (
+  action TEXT NOT NULL,
+  data BLOB NOT NULL,
+  created_at DATETIME NOT NULL
 );
 
 CREATE TABLE dahua_storage_destinations (
