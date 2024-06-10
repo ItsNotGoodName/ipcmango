@@ -145,7 +145,7 @@ export function Root(props: RouteSectionProps) {
           onMenuClick={menu.toggleOpen}
           onMobileMenuClick={menu.toggleMobileOpen}
         />
-        <div class="flex">
+        <div class="flex min-h-[calc(100vh-3rem)]">
           <div data-open={menu.open()} class="border-border w-0 shrink-0 border-r-0 transition-all duration-300 md:data-[open=true]:w-48 md:data-[open=true]:border-r">
             <div class="overflow-y-auto sticky top-0 max-h-screen overflow-x-clip">
               <div class="p-2">
@@ -153,7 +153,7 @@ export function Root(props: RouteSectionProps) {
               </div>
             </div>
           </div>
-          <div class="min-h-[calc(100vh-3rem)] w-full overflow-x-clip">
+          <div class="w-full overflow-x-clip">
             {props.children}
           </div>
         </div>
