@@ -3,13 +3,13 @@ module github.com/ItsNotGoodName/ipcmanview
 go 1.22.3
 
 require (
-	github.com/danielgtaylor/huma/v2 v2.17.0
+	github.com/danielgtaylor/huma/v2 v2.18.0
 	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43
 	github.com/emersion/go-smtp v0.21.2
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/google/uuid v1.6.0
-	github.com/icholy/digest v0.1.22
+	github.com/icholy/digest v0.1.23
 	github.com/jhillyerd/enmime v1.2.0
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/jmoiron/sqlx v1.4.0
