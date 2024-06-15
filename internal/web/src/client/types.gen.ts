@@ -299,14 +299,16 @@ export type ErrorModel = {
     type?: string;
 };
 
-export type FileScan = {
+export type FileScanCursor = {
     /**
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    device_uuid: string;
-    end_time?: string;
-    start_time: string;
+    full_complete: boolean;
+    full_cursor: string;
+    full_epoch: string;
+    quick_cursor: string;
+    updated_at: string;
 };
 
 export type GetHomePage = {
@@ -321,6 +323,25 @@ export type GetHomePage = {
     event_count: number;
     file_count: number;
     file_usage: number;
+};
+
+export type ManualFileScan = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    end_time?: string;
+    start_time?: string;
+};
+
+export type ScanResult = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    created_count: number;
+    deleted_count: number;
+    updated_count: number;
 };
 
 export type Settings = {
@@ -498,6 +519,37 @@ export type PostApiDevicesByUuidRebootData = {
 
 export type PostApiDevicesByUuidRebootResponse = void;
 
+export type DeleteApiDevicesByUuidScanCursorData = {
+    uuid: string;
+};
+
+export type DeleteApiDevicesByUuidScanCursorResponse = FileScanCursor;
+
+export type GetApiDevicesByUuidScanCursorData = {
+    uuid: string;
+};
+
+export type GetApiDevicesByUuidScanCursorResponse = FileScanCursor;
+
+export type PostApiDevicesByUuidScanFullData = {
+    uuid: string;
+};
+
+export type PostApiDevicesByUuidScanFullResponse = ScanResult;
+
+export type PostApiDevicesByUuidScanManualData = {
+    requestBody: ManualFileScan;
+    uuid: string;
+};
+
+export type PostApiDevicesByUuidScanManualResponse = ScanResult;
+
+export type PostApiDevicesByUuidScanQuickData = {
+    uuid: string;
+};
+
+export type PostApiDevicesByUuidScanQuickResponse = ScanResult;
+
 export type GetApiDevicesByUuidSnapshotData = {
     channel?: number;
     type?: number;
@@ -608,12 +660,6 @@ export type GetApiEventsResponse = Array<({
      */
     retry?: number;
 })>;
-
-export type PostApiFilesScanData = {
-    requestBody: FileScan;
-};
-
-export type PostApiFilesScanResponse = void;
 
 export type GetApiPagesHomeResponse = GetHomePage;
 
@@ -869,6 +915,79 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/devices/{uuid}/scan/cursor': {
+        delete: {
+            req: DeleteApiDevicesByUuidScanCursorData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: FileScanCursor;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+        get: {
+            req: GetApiDevicesByUuidScanCursorData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: FileScanCursor;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/devices/{uuid}/scan/full': {
+        post: {
+            req: PostApiDevicesByUuidScanFullData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: ScanResult;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/devices/{uuid}/scan/manual': {
+        post: {
+            req: PostApiDevicesByUuidScanManualData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: ScanResult;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/devices/{uuid}/scan/quick': {
+        post: {
+            req: PostApiDevicesByUuidScanQuickData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: ScanResult;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
     '/api/devices/{uuid}/snapshot': {
         get: {
             req: GetApiDevicesByUuidSnapshotData;
@@ -1109,21 +1228,6 @@ export type $OpenApiTs = {
      */
     retry?: number;
 })>;
-                /**
-                 * Error
-                 */
-                default: ErrorModel;
-            };
-        };
-    };
-    '/api/files/scan': {
-        post: {
-            req: PostApiFilesScanData;
-            res: {
-                /**
-                 * No Content
-                 */
-                204: void;
                 /**
                  * Error
                  */

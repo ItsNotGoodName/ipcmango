@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GetApiDevicesResponse, PutApiDevicesData, PutApiDevicesResponse, PostApiDevicesCreateData, PostApiDevicesCreateResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, PostApiDevicesByUuidRebootData, PostApiDevicesByUuidRebootResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEmailEndpointsResponse, PutApiEmailEndpointsData, PutApiEmailEndpointsResponse, PostApiEmailEndpointsCreateData, PostApiEmailEndpointsCreateResponse, DeleteApiEndpointsByUuidData, DeleteApiEndpointsByUuidResponse, GetApiEndpointsByUuidData, GetApiEndpointsByUuidResponse, PostApiEndpointsByUuidData, PostApiEndpointsByUuidResponse, GetApiEventsData, GetApiEventsResponse, PostApiFilesScanData, PostApiFilesScanResponse, GetApiPagesHomeResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse, GetApiStorageDestinationsResponse, PutApiStorageDestinationsData, PutApiStorageDestinationsResponse } from './types.gen';
+import type { GetApiDevicesResponse, PutApiDevicesData, PutApiDevicesResponse, PostApiDevicesCreateData, PostApiDevicesCreateResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, PostApiDevicesByUuidRebootData, PostApiDevicesByUuidRebootResponse, DeleteApiDevicesByUuidScanCursorData, DeleteApiDevicesByUuidScanCursorResponse, GetApiDevicesByUuidScanCursorData, GetApiDevicesByUuidScanCursorResponse, PostApiDevicesByUuidScanFullData, PostApiDevicesByUuidScanFullResponse, PostApiDevicesByUuidScanManualData, PostApiDevicesByUuidScanManualResponse, PostApiDevicesByUuidScanQuickData, PostApiDevicesByUuidScanQuickResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEmailEndpointsResponse, PutApiEmailEndpointsData, PutApiEmailEndpointsResponse, PostApiEmailEndpointsCreateData, PostApiEmailEndpointsCreateResponse, DeleteApiEndpointsByUuidData, DeleteApiEndpointsByUuidResponse, GetApiEndpointsByUuidData, GetApiEndpointsByUuidResponse, PostApiEndpointsByUuidData, PostApiEndpointsByUuidResponse, GetApiEventsData, GetApiEventsResponse, GetApiPagesHomeResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse, GetApiStorageDestinationsResponse, PutApiStorageDestinationsData, PutApiStorageDestinationsResponse } from './types.gen';
 
 /**
  * List devices
@@ -318,6 +318,99 @@ export const postApiDevicesByUuidReboot = (data: PostApiDevicesByUuidRebootData)
 }); };
 
 /**
+ * Reset device file scan cursor
+ * @param data The data for the request.
+ * @param data.uuid
+ * @returns FileScanCursor OK
+ * @throws ApiError
+ */
+export const deleteApiDevicesByUuidScanCursor = (data: DeleteApiDevicesByUuidScanCursorData): CancelablePromise<DeleteApiDevicesByUuidScanCursorResponse> => { return __request(OpenAPI, {
+    method: 'DELETE',
+    url: '/api/devices/{uuid}/scan/cursor',
+    path: {
+        uuid: data.uuid
+    },
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
+ * Get file scan cursor
+ * @param data The data for the request.
+ * @param data.uuid
+ * @returns FileScanCursor OK
+ * @throws ApiError
+ */
+export const getApiDevicesByUuidScanCursor = (data: GetApiDevicesByUuidScanCursorData): CancelablePromise<GetApiDevicesByUuidScanCursorResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/devices/{uuid}/scan/cursor',
+    path: {
+        uuid: data.uuid
+    },
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
+ * Full scan device files
+ * @param data The data for the request.
+ * @param data.uuid
+ * @returns ScanResult OK
+ * @throws ApiError
+ */
+export const postApiDevicesByUuidScanFull = (data: PostApiDevicesByUuidScanFullData): CancelablePromise<PostApiDevicesByUuidScanFullResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/devices/{uuid}/scan/full',
+    path: {
+        uuid: data.uuid
+    },
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
+ * Manual scan device files
+ * @param data The data for the request.
+ * @param data.uuid
+ * @param data.requestBody
+ * @returns ScanResult OK
+ * @throws ApiError
+ */
+export const postApiDevicesByUuidScanManual = (data: PostApiDevicesByUuidScanManualData): CancelablePromise<PostApiDevicesByUuidScanManualResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/devices/{uuid}/scan/manual',
+    path: {
+        uuid: data.uuid
+    },
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
+ * Quick scan device files
+ * @param data The data for the request.
+ * @param data.uuid
+ * @returns ScanResult OK
+ * @throws ApiError
+ */
+export const postApiDevicesByUuidScanQuick = (data: PostApiDevicesByUuidScanQuickData): CancelablePromise<PostApiDevicesByUuidScanQuickResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/devices/{uuid}/scan/quick',
+    path: {
+        uuid: data.uuid
+    },
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
  * Get device snapshot
  * @param data The data for the request.
  * @param data.uuid
@@ -613,23 +706,6 @@ export const getApiEvents = (data: GetApiEventsData = {}): CancelablePromise<Get
 }); };
 
 /**
- * Scan files
- * @param data The data for the request.
- * @param data.requestBody
- * @returns void No Content
- * @throws ApiError
- */
-export const postApiFilesScan = (data: PostApiFilesScanData): CancelablePromise<PostApiFilesScanResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/api/files/scan',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        default: 'Error'
-    }
-}); };
-
-/**
  * Get home page
  * @returns GetHomePage OK
  * @throws ApiError
@@ -699,7 +775,7 @@ export const getApiStorageDestinations = (): CancelablePromise<GetApiStorageDest
 }); };
 
 /**
- * Put devices
+ * Put storage destinations
  * @param data The data for the request.
  * @param data.requestBody
  * @returns StorageDestination OK

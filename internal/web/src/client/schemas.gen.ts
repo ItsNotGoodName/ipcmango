@@ -807,30 +807,37 @@ export const $ErrorModel = {
     type: 'object'
 } as const;
 
-export const $FileScan = {
+export const $FileScanCursor = {
     additionalProperties: false,
     properties: {
         '$schema': {
             description: 'A URL to the JSON Schema for this object.',
-            examples: ['https://example.com/schemas/FileScan.json'],
+            examples: ['https://example.com/schemas/FileScanCursor.json'],
             format: 'uri',
             readOnly: true,
             type: 'string'
         },
-        device_uuid: {
-            format: 'uuid',
-            type: 'string'
+        full_complete: {
+            type: 'boolean'
         },
-        end_time: {
+        full_cursor: {
             format: 'date-time',
             type: 'string'
         },
-        start_time: {
+        full_epoch: {
+            format: 'date-time',
+            type: 'string'
+        },
+        quick_cursor: {
+            format: 'date-time',
+            type: 'string'
+        },
+        updated_at: {
             format: 'date-time',
             type: 'string'
         }
     },
-    required: ['device_uuid', 'start_time'],
+    required: ['quick_cursor', 'full_cursor', 'full_epoch', 'full_complete', 'updated_at'],
     type: 'object'
 } as const;
 
@@ -873,6 +880,55 @@ export const $GetHomePage = {
         }
     },
     required: ['device_count', 'event_count', 'email_count', 'file_count', 'db_usage', 'file_usage', 'build'],
+    type: 'object'
+} as const;
+
+export const $ManualFileScan = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/ManualFileScan.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        end_time: {
+            format: 'date-time',
+            type: 'string'
+        },
+        start_time: {
+            format: 'date-time',
+            type: 'string'
+        }
+    },
+    type: 'object'
+} as const;
+
+export const $ScanResult = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/ScanResult.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        created_count: {
+            format: 'int64',
+            type: 'integer'
+        },
+        deleted_count: {
+            format: 'int64',
+            type: 'integer'
+        },
+        updated_count: {
+            format: 'int64',
+            type: 'integer'
+        }
+    },
+    required: ['created_count', 'updated_count', 'deleted_count'],
     type: 'object'
 } as const;
 

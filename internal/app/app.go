@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -780,7 +779,7 @@ func Register(api huma.API, app App) {
 		Path:    "/api/devices/{uuid}/scan/manual",
 	}, func(ctx context.Context, input *struct {
 		UUID string `path:"uuid" format:"uuid"`
-		Body FileScan
+		Body ManualFileScan
 	},
 	) (*DeviceScanOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -1160,20 +1159,6 @@ func NewEmailEndpoint(v dahua.EmailEndpoint, deviceUUIDs []string) EmailEndpoint
 	}
 }
 
-type EmailEndpoint struct {
-	UUID          string    `json:"uuid"`
-	Global        bool      `json:"global"`
-	DeviceUUIDs   []string  `json:"device_uuids"`
-	Expression    string    `json:"expression"`
-	URLs          []string  `json:"urls"`
-	TitleTemplate string    `json:"title_template"`
-	BodyTemplate  string    `json:"body_template"`
-	Attachments   bool      `json:"attachments"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	Disabled      bool      `json:"disabled"`
-}
-
 func NewSettings(v system.Settings) Settings {
 	return Settings{
 		Location:        v.Location,
@@ -1186,38 +1171,8 @@ func NewSettings(v system.Settings) Settings {
 	}
 }
 
-type Settings struct {
-	Location        types.Location `json:"location"`
-	Latitude        float64        `json:"latitude"`
-	Longitude       float64        `json:"longitude"`
-	SunriseOffset   types.Duration `json:"sunrise_offset"`
-	SunsetOffset    types.Duration `json:"sunset_offset"`
-	UpdatedAt       time.Time      `json:"updated_at"`
-	SyncVideoInMode bool           `json:"sync_video_in_mode"`
-}
-
-type UpdateSettings struct {
-	Location        types.Location `json:"location"`
-	Latitude        float64        `json:"latitude"`
-	Longitude       float64        `json:"longitude"`
-	SunriseOffset   types.Duration `json:"sunrise_offset"`
-	SunsetOffset    types.Duration `json:"sunset_offset"`
-	SyncVideoInMode bool           `json:"sync_video_in_mode"`
-}
-
 type SettingOutput struct {
 	Body Settings
-}
-
-type DeviceCoaxialControlInput struct {
-	Channel  int                           `json:"int"`
-	Controls []DeviceCoaxialControlRequest `json:"controls"`
-}
-
-type DeviceCoaxialControlRequest struct {
-	Type        coaxialcontrolio.Type        `json:"type"`
-	IO          coaxialcontrolio.IO          `json:"io"`
-	TriggerMode coaxialcontrolio.TriggerMode `json:"trigger_mode"`
 }
 
 type DeviceVideoInModeOutput struct {
@@ -1226,31 +1181,6 @@ type DeviceVideoInModeOutput struct {
 
 type ListDevicesOutput struct {
 	Body []Device
-}
-
-type DeviceVideoInModeSync struct {
-	Location      *types.Location `json:"location,omitempty"`
-	Latitude      *float64        `json:"latitude,omitempty"`
-	Longitude     *float64        `json:"longitude,omitempty"`
-	SunriseOffset *types.Duration `json:"sunrise_offset,omitempty"`
-	SunsetOffset  *types.Duration `json:"sunset_offset,omitempty"`
-}
-
-type Device struct {
-	UUID            string          `json:"uuid"`
-	Name            string          `json:"name"`
-	IP              net.IP          `json:"ip"`
-	Username        string          `json:"username"`
-	Location        *types.Location `json:"location"`
-	Features        []dahua.Feature `json:"features"`
-	Email           string          `json:"email"`
-	CreatedAt       time.Time       `json:"created_at"`
-	UpdatedAt       time.Time       `json:"updated_at"`
-	Latitude        *float64        `json:"latitude"`
-	Longitude       *float64        `json:"longitude"`
-	SunriseOffset   *types.Duration `json:"sunrise_offset"`
-	SunsetOffset    *types.Duration `json:"sunset_offset"`
-	SyncVideoInMode *bool           `json:"sync_video_in_mode"`
 }
 
 func NewDevice(v dahua.Device) Device {
@@ -1271,37 +1201,6 @@ func NewDevice(v dahua.Device) Device {
 		SunsetOffset:    core.SQLNullToNull(v.Sunset_Offset),
 		SyncVideoInMode: core.SQLNullToNull(v.Sync_Video_In_Mode),
 	}
-}
-
-type CreateDevice struct {
-	UUID            *string         `json:"uuid,omitempty" format:"uuid"`
-	Name            string          `json:"name,omitempty"`
-	IP              string          `json:"ip,omitempty" format:"ipv4"`
-	Username        string          `json:"username,omitempty"`
-	Password        string          `json:"password,omitempty"`
-	Location        *types.Location `json:"location,omitempty"`
-	Features        []dahua.Feature `json:"features,omitempty" enum:"camera"`
-	Email           *string         `json:"email,omitempty"`
-	Latitude        *float64        `json:"latitude,omitempty"`
-	Longitude       *float64        `json:"longitude,omitempty"`
-	SunriseOffset   *types.Duration `json:"sunrise_offset,omitempty"`
-	SunsetOffset    *types.Duration `json:"sunset_offset,omitempty"`
-	SyncVideoInMode *bool           `json:"sync_video_in_mode,omitempty"`
-}
-
-type UpdateDevice struct {
-	Name            string          `json:"name"`
-	IP              string          `json:"ip" format:"ipv4"`
-	Username        string          `json:"username"`
-	Password        *string         `json:"password,omitempty"`
-	Location        *types.Location `json:"location,omitempty"`
-	Features        []dahua.Feature `json:"features,omitempty" enum:"camera"`
-	Email           *string         `json:"email,omitempty"`
-	Latitude        *float64        `json:"latitude"`
-	Longitude       *float64        `json:"longitude"`
-	SunriseOffset   *types.Duration `json:"sunrise_offset,omitempty"`
-	SunsetOffset    *types.Duration `json:"sunset_offset,omitempty"`
-	SyncVideoInMode *bool           `json:"sync_video_in_mode,omitempty"`
 }
 
 func (i *CreateDevice) Resolve(ctx huma.Context) []error {
@@ -1357,10 +1256,6 @@ type PatchDevicesOutput struct {
 	Body Device
 }
 
-type DeleteDeviceOutput struct {
-	UUID string `format:"uuid"`
-}
-
 type GetDeviceCoaxialCapsOutput struct {
 	Body dahua.DeviceCoaxialCaps
 }
@@ -1413,39 +1308,6 @@ type GetDeviceSnapshotOutput struct {
 	Body []byte
 }
 
-type DeviceEventsOutput struct {
-	ID         string          `json:"id"`
-	DeviceUUID string          `json:"device_uuid"`
-	Code       string          `json:"code"`
-	Action     string          `json:"action"`
-	Index      int64           `json:"index"`
-	Data       json.RawMessage `json:"data"`
-	CreatedAt  time.Time       `json:"created_at"`
-}
-
-type CreateEmailEndpoint struct {
-	UUID          *string  `json:"uuid,omitempty" format:"uuid"`
-	URLs          []string `json:"urls"`
-	Expression    string   `json:"expression,omitempty"`
-	TitleTemplate *string  `json:"title_template,omitempty"`
-	BodyTemplate  *string  `json:"body_template,omitempty"`
-	Attachments   bool     `json:"attachments,omitempty"`
-	DeviceUUIDs   []string `json:"device_uuids,omitempty"`
-	Global        bool     `json:"global,omitempty"`
-	Disabled      bool     `json:"disabled,omitempty" default:"false"`
-}
-
-type UpdateEmailEndpoint struct {
-	URLs          []string `json:"urls"`
-	Expression    string   `json:"expression,omitempty"`
-	TitleTemplate string   `json:"title_template,omitempty"`
-	BodyTemplate  string   `json:"body_template,omitempty"`
-	Attachments   bool     `json:"attachments,omitempty"`
-	DeviceUUIDs   []string `json:"device_uuids,omitempty"`
-	Global        bool     `json:"global,omitempty"`
-	Disabled      bool     `json:"disabled,omitempty" default:"false"`
-}
-
 func (i CreateEmailEndpoint) Convert() dahua.CreateEmailEndpointArgs {
 	return dahua.CreateEmailEndpointArgs{
 		UUID:          core.Optional(i.UUID, uuid.NewString()),
@@ -1474,16 +1336,6 @@ type CreateEmailEndpointOutput struct {
 
 type GetHomePageOutput struct {
 	Body GetHomePage
-}
-
-type GetHomePage struct {
-	Device_Count int         `json:"device_count"`
-	Event_Count  int         `json:"event_count"`
-	Email_Count  int         `json:"email_count"`
-	File_Count   int         `json:"file_count"`
-	DB_Usage     int         `json:"db_usage"`
-	FileUsage    int64       `json:"file_usage"`
-	Build        build.Build `json:"build"`
 }
 
 func ListEmailEndpoints(ctx context.Context, db *sqlx.DB) ([]EmailEndpoint, error) {
@@ -1590,15 +1442,10 @@ func SetDeviceCoaxialState(ctx context.Context, dahuaStore *dahua.Store, db *sql
 	return coaxialcontrolio.Control(ctx, client.RPC, channel, control)
 }
 
-type FileScan struct {
-	StartTime *time.Time `json:"start_time,omitempty"`
-	EndTime   *time.Time `json:"end_time,omitempty"`
-}
-
 func useDevice(ctx context.Context, db *sqlx.DB, key types.Key) (dahua.Device, error) {
 	var device dahua.Device
 	err := db.GetContext(ctx, &device, `
-		SELECT * FROM dahua_devices WHERE id = ? OR uuid = ?
+		SELECT * FROM dahua_devices WHERE id = ? OR uuid = ? LIMIT 1
 	`, key.ID, key.UUID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -1632,30 +1479,6 @@ func NewStorageDestination(v dahua.StorageDestination) StorageDestination {
 	}
 }
 
-type StorageDestination struct {
-	UUID            string    `json:"uuid"`
-	Name            string    `json:"name"`
-	Storage         string    `json:"storage"`
-	ServerAddress   string    `json:"server_address"`
-	Port            int       `json:"port"`
-	Username        string    `json:"username"`
-	Password        string    `json:"password"`
-	RemoteDirectory string    `json:"remote_directory"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-}
-
-type CreateStorageDestination struct {
-	UUID            *string `json:"uuid,omitempty" format:"uuid"`
-	Name            string  `json:"name"`
-	Storage         string  `json:"storage" enum:"sftp,ftp"`
-	ServerAddress   string  `json:"server_address"`
-	Port            int     `json:"port"`
-	Username        string  `json:"username"`
-	Password        string  `json:"password"`
-	RemoteDirectory string  `json:"remote_directory"`
-}
-
 func (i *CreateStorageDestination) Convert() dahua.CreateStorageDestinationArgs {
 	return dahua.CreateStorageDestinationArgs{
 		UUID:            core.Optional(i.UUID, uuid.NewString()),
@@ -1667,16 +1490,6 @@ func (i *CreateStorageDestination) Convert() dahua.CreateStorageDestinationArgs 
 		Password:        i.Password,
 		RemoteDirectory: i.RemoteDirectory,
 	}
-}
-
-type UpdateStorageDestination struct {
-	Name            string `json:"name"`
-	Storage         string `json:"storage" enum:"sftp,ftp"`
-	ServerAddress   string `json:"server_address"`
-	Port            int    `json:"port"`
-	Username        string `json:"username"`
-	Password        string `json:"password"`
-	RemoteDirectory string `json:"remote_directory"`
 }
 
 type PutCreateStorageDestinationInput struct {
@@ -1726,18 +1539,10 @@ func NewFileScanCursor(v dahua.ScanCursor) FileScanCursor {
 	}
 }
 
-type FileScanCursor struct {
-	QuickCursor  time.Time `json:"quick_cursor"`
-	FullCursor   time.Time `json:"full_cursor"`
-	FullEpoch    time.Time `json:"full_epoch"`
-	FullComplete bool      `json:"full_complete"`
-	UpdatedAt    time.Time `json:"updated_at"`
-}
-
 func GetFileCursor(ctx context.Context, db *sqlx.DB, deviceID int64) (dahua.ScanCursor, error) {
 	var v dahua.ScanCursor
 	err := db.GetContext(ctx, &v, `
-			SELECT * FROM dahua_scan_cursors WHERE device_id = ?
-		`, deviceID)
+		SELECT * FROM dahua_scan_cursors WHERE device_id = ?
+	`, deviceID)
 	return v, err
 }
