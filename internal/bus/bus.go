@@ -73,10 +73,9 @@ func Subscribe[T any](name string, fn func(ctx context.Context, event T) error) 
 	}
 }
 
-func SubscribeChannel[T any]() (<-chan T, func()) {
+func SubscribeChannel[T any](name string) (<-chan T, func()) {
 	c := make(chan T)
-	subMu.Lock()
-	topic, id := subscribe("bus.SubscribeChannel", func(ctx context.Context, event T) error {
+	return c, Subscribe(name, func(ctx context.Context, event T) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -84,13 +83,6 @@ func SubscribeChannel[T any]() (<-chan T, func()) {
 			return nil
 		}
 	})
-	subMu.Unlock()
-
-	return c, func() {
-		subMu.Lock()
-		unsubscribe(topic, id)
-		subMu.Unlock()
-	}
 }
 
 func Publish[T any](event T) {

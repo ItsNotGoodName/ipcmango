@@ -582,7 +582,7 @@ func Register(api huma.API, app App) {
 		Codes       []string `query:"codes"`
 	}, send sse.Sender,
 	) {
-		eventC, unsub := bus.SubscribeChannel[bus.EventCreated]()
+		eventC, unsub := bus.SubscribeChannel[bus.EventCreated]("app(/api/events)")
 		defer unsub()
 
 		for event := range eventC {
@@ -592,7 +592,7 @@ func Register(api huma.API, app App) {
 			if len(input.Codes) != 0 && !slices.Contains(input.Codes, event.Event.Code) {
 				continue
 			}
-			send.Data(DeviceEventsOutput{
+			err := send.Data(DeviceEventsOutput{
 				ID:         event.EventID,
 				DeviceUUID: event.DeviceKey.UUID,
 				Code:       event.Event.Code,
@@ -601,6 +601,9 @@ func Register(api huma.API, app App) {
 				Data:       event.Event.Data,
 				CreatedAt:  event.CreatedAt,
 			})
+			if err != nil {
+				return
+			}
 		}
 	})
 	huma.Register(api, huma.Operation{
