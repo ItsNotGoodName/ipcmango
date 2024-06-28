@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
 )
 
@@ -13,66 +14,90 @@ func SetContext(ctx context.Context) {
 	_ctx = ctx
 }
 
-var subs = make(map[string][]func(ctx context.Context, T any))
+var (
+	subMu       = sync.RWMutex{}
+	subNextID   = 0
+	subHandlers = make(map[string][]handler)
+)
 
-func Subscribe[T any](name string, fn func(ctx context.Context, event T) error) {
+type handler struct {
+	ID int
+	FN func(ctx context.Context, T any)
+}
+
+func subscribe[T any](name string, fn func(ctx context.Context, event T) error) (string, int) {
+	// Get topic and handler ID
 	topic := fmt.Sprintf("%T", *new(T))
-	subs[topic] = append(subs[topic], func(ctx context.Context, event any) {
-		if err := fn(ctx, event.(T)); err != nil {
-			slog.Error("Failed to handle event", "package", "bus", "name", name, "error", err)
+	id := subNextID
+
+	subNextID++
+
+	// Add handler to topic
+	subHandlers[topic] = append(subHandlers[topic], handler{
+		ID: id,
+		FN: func(ctx context.Context, event any) {
+			if err := fn(ctx, event.(T)); err != nil {
+				slog.Error("Failed to handle event", "package", "bus", "name", name, "error", err)
+			}
+		},
+	})
+
+	return topic, id
+}
+
+func unsubscribe(topic string, id int) {
+	// Get handlers for topic
+	handlers := subHandlers[topic]
+	handlersLength := len(handlers)
+
+	if handlersLength < 2 {
+		// Remove all handlers
+		subHandlers[topic] = []handler{}
+	} else {
+		// Replace handler with last handler and shrink slice by 1
+		idx := slices.IndexFunc(handlers, func(s handler) bool { return s.ID == id })
+		handlers[idx] = handlers[handlersLength-1]
+		subHandlers[topic] = handlers[:handlersLength-1]
+	}
+}
+
+func Subscribe[T any](name string, fn func(ctx context.Context, event T) error) func() {
+	subMu.Lock()
+	topic, id := subscribe(name, fn)
+	subMu.Unlock()
+
+	return func() {
+		subMu.Lock()
+		unsubscribe(topic, id)
+		subMu.Unlock()
+	}
+}
+
+func SubscribeChannel[T any]() (<-chan T, func()) {
+	c := make(chan T)
+	subMu.Lock()
+	topic, id := subscribe("bus.SubscribeChannel", func(ctx context.Context, event T) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case c <- event:
+			return nil
 		}
 	})
+	subMu.Unlock()
+
+	return c, func() {
+		subMu.Lock()
+		unsubscribe(topic, id)
+		subMu.Unlock()
+	}
 }
 
 func Publish[T any](event T) {
+	subMu.RLock()
 	topic := fmt.Sprintf("%T", event)
-	for _, fn := range subs[topic] {
-		fn(_ctx, event)
+	for _, sub := range subHandlers[topic] {
+		sub.FN(_ctx, event)
 	}
-}
-
-func NewHub[T any]() *Hub[T] {
-	return &Hub[T]{
-		mu:   sync.Mutex{},
-		subs: make(map[*chan T]struct{}),
-	}
-}
-
-type Hub[T any] struct {
-	mu   sync.Mutex
-	subs map[*chan T]struct{}
-}
-
-func (h *Hub[T]) Broadcast(ctx context.Context, event T) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	for sub := range h.subs {
-		select {
-		case <-ctx.Done():
-		case *sub <- event:
-		}
-	}
-
-	return nil
-}
-
-func (h *Hub[T]) Register() *Hub[T] {
-	Subscribe("bus.Hub", h.Broadcast)
-	return h
-}
-
-func (h *Hub[T]) Subscribe(ctx context.Context) (<-chan T, func()) {
-	h.mu.Lock()
-	c := make(chan T)
-
-	key := &c
-	h.subs[key] = struct{}{}
-	h.mu.Unlock()
-
-	return c, func() {
-		h.mu.Lock()
-		delete(h.subs, key)
-		h.mu.Unlock()
-	}
+	subMu.RUnlock()
 }

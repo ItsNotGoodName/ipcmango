@@ -40,8 +40,6 @@ func NewConfig() huma.Config {
 }
 
 func Register(api huma.API, app App) {
-	eventCreatedHub := bus.NewHub[bus.EventCreated]().Register()
-
 	// Devices
 	huma.Register(api, huma.Operation{
 		Summary: "List devices",
@@ -584,8 +582,8 @@ func Register(api huma.API, app App) {
 		Codes       []string `query:"codes"`
 	}, send sse.Sender,
 	) {
-		eventC, unsubscribeEventC := eventCreatedHub.Subscribe(ctx)
-		defer unsubscribeEventC()
+		eventC, unsub := bus.SubscribeChannel[bus.EventCreated]()
+		defer unsub()
 
 		for event := range eventC {
 			if len(input.DeviceUUIDs) != 0 && !slices.Contains(input.DeviceUUIDs, event.DeviceKey.UUID) {
