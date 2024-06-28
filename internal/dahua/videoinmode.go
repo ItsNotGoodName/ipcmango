@@ -89,7 +89,7 @@ type SyncVideoInModeJob struct {
 }
 
 func (w SyncVideoInModeJob) Description() string {
-	return "dahua.VideoInModeJob"
+	return "dahua.SyncVideoInModeJob"
 }
 
 func (w SyncVideoInModeJob) Execute(ctx context.Context) error {

@@ -14,7 +14,6 @@ require (
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
-	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/k0kubun/pp/v3 v3.2.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/nathan-osman/go-sunrise v1.1.0
@@ -43,7 +42,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20230321000545-74c2419ad056 // indirect
-	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

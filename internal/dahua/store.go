@@ -41,10 +41,7 @@ func NewStoreClient(conn Conn) StoreClient {
 	clientCGI := dahuacgi.NewClient(httpClient, urL, conn.Username, conn.Password)
 	clientFile := dahuarpc.NewFileClient(&httpClient, 10)
 
-	var ref int32 = 1
-
 	return StoreClient{
-		ref:  &ref,
 		Conn: conn,
 		URL:  urL,
 		RPC:  clientRPC,
@@ -55,7 +52,6 @@ func NewStoreClient(conn Conn) StoreClient {
 }
 
 type StoreClient struct {
-	ref  *int32
 	Conn Conn
 	URL  *url.URL
 	RPC  dahuarpc.Client
