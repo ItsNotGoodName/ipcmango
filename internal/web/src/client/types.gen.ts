@@ -355,7 +355,6 @@ export type Settings = {
     sunrise_offset: string;
     sunset_offset: string;
     sync_video_in_mode: boolean;
-    updated_at: string;
 };
 
 export type StorageDestination = {

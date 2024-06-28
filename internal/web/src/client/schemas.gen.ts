@@ -964,13 +964,9 @@ export const $Settings = {
         },
         sync_video_in_mode: {
             type: 'boolean'
-        },
-        updated_at: {
-            format: 'date-time',
-            type: 'string'
         }
     },
-    required: ['location', 'latitude', 'longitude', 'sunrise_offset', 'sunset_offset', 'updated_at', 'sync_video_in_mode'],
+    required: ['location', 'latitude', 'longitude', 'sunrise_offset', 'sunset_offset', 'sync_video_in_mode'],
     type: 'object'
 } as const;
 
