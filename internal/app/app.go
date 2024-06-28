@@ -927,10 +927,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/settings",
 	}, func(ctx context.Context, i *struct{}) (*SettingOutput, error) {
-		var settings system.Settings
-		err := app.DB.GetContext(ctx, &settings, `
-			SELECT * FROM settings
-		`)
+		settings, err := system.GetSettings(ctx, app.DB)
 		if err != nil {
 			return nil, err
 		}
@@ -947,7 +944,7 @@ func Register(api huma.API, app App) {
 		Body UpdateSettings
 	},
 	) (*SettingOutput, error) {
-		settings, err := system.UpdateSettings(ctx, app.DB, system.UpdateSettingsArgs{
+		err := system.UpdateSettings(ctx, app.DB, system.UpdateSettingsArgs{
 			Location:        input.Body.Location,
 			Latitude:        input.Body.Latitude,
 			Longitude:       input.Body.Longitude,
@@ -955,6 +952,11 @@ func Register(api huma.API, app App) {
 			SunsetOffset:    input.Body.SunsetOffset,
 			SyncVideoInMode: input.Body.SyncVideoInMode,
 		})
+		if err != nil {
+			return nil, err
+		}
+
+		settings, err := system.GetSettings(ctx, app.DB)
 		if err != nil {
 			return nil, err
 		}
@@ -968,7 +970,12 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodDelete,
 		Path:    "/api/settings",
 	}, func(ctx context.Context, i *struct{}) (*SettingOutput, error) {
-		settings, err := system.DefaultSettings(ctx, app.DB)
+		err := system.DefaultSettings(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		settings, err := system.GetSettings(ctx, app.DB)
 		if err != nil {
 			return nil, err
 		}
@@ -1167,7 +1174,6 @@ func NewSettings(v system.Settings) Settings {
 		Longitude:       v.Longitude,
 		SunriseOffset:   v.Sunrise_Offset,
 		SunsetOffset:    v.Sunset_Offset,
-		UpdatedAt:       v.Updated_At.Time,
 		SyncVideoInMode: v.Sync_Video_In_Mode,
 	}
 }

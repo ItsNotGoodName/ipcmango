@@ -1,8 +1,8 @@
 -- +goose Up
 -- create "settings" table
-CREATE TABLE `settings` (`id` integer NULL DEFAULT 0, `location` text NOT NULL, `latitude` real NOT NULL, `longitude` real NOT NULL, `sunrise_offset` text NOT NULL, `sunset_offset` text NOT NULL, `sync_video_in_mode` bool NOT NULL, `updated_at` datetime NOT NULL);
--- create index "settings_id" to table: "settings"
-CREATE UNIQUE INDEX `settings_id` ON `settings` (`id`);
+CREATE TABLE `settings` (`key` text NOT NULL, `value` blob NOT NULL, `updated_at` datetime NOT NULL);
+-- create index "settings_key" to table: "settings"
+CREATE UNIQUE INDEX `settings_key` ON `settings` (`key`);
 -- create "users" table
 CREATE TABLE `users` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `email` text NOT NULL, `username` text NOT NULL, `password` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `disabled_at` datetime NULL);
 -- create index "users_email" to table: "users"
@@ -133,7 +133,7 @@ DROP INDEX `users_username`;
 DROP INDEX `users_email`;
 -- reverse: create "users" table
 DROP TABLE `users`;
--- reverse: create index "settings_id" to table: "settings"
-DROP INDEX `settings_id`;
+-- reverse: create index "settings_key" to table: "settings"
+DROP INDEX `settings_key`;
 -- reverse: create "settings" table
 DROP TABLE `settings`;

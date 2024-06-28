@@ -180,7 +180,6 @@ type Settings struct {
 	Longitude       float64        `json:"longitude"`
 	SunriseOffset   types.Duration `json:"sunrise_offset"`
 	SunsetOffset    types.Duration `json:"sunset_offset"`
-	UpdatedAt       time.Time      `json:"updated_at"`
 	SyncVideoInMode bool           `json:"sync_video_in_mode"`
 }
 

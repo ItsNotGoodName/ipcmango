@@ -1,11 +1,12 @@
 CREATE TABLE settings (
-  id INTEGER UNIQUE DEFAULT 0,
-  location TEXT NOT NULL,
-  latitude REAL NOT NULL,
-  longitude REAL NOT NULL,
-  sunrise_offset TEXT NOT NULL,
-  sunset_offset TEXT NOT NULL,
-  sync_video_in_mode BOOL NOT NULL,
+  `key` TEXT NOT NULL UNIQUE,
+  `value` BLOB NOT NULL,
+  -- location TEXT NOT NULL,
+  -- latitude REAL NOT NULL,
+  -- longitude REAL NOT NULL,
+  -- sunrise_offset TEXT NOT NULL,
+  -- sunset_offset TEXT NOT NULL,
+  -- sync_video_in_mode BOOL NOT NULL,
   updated_at DATETIME NOT NULL
 );
 
