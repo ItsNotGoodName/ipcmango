@@ -87,7 +87,7 @@ export default function () {
                     variant="ghost"
                     class="[&[data-expanded=true]>svg]:rotate-180"
                   >
-                    <RiArrowsArrowDownSLine class="w-5 h-5 transition-transform duration-200 shrink-0" />
+                    <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
                   </Button>
                 </TableHead>
               </TableRow>
@@ -138,7 +138,7 @@ export default function () {
                             variant="ghost"
                             class="[&[data-expanded=true]>svg]:rotate-180"
                           >
-                            <RiArrowsArrowDownSLine class="w-5 h-5 transition-transform duration-200 shrink-0" />
+                            <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
                           </Button>
                         </TableCell>
                       </TableRow>

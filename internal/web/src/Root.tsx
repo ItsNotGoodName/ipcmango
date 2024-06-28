@@ -9,6 +9,7 @@ import {
   RiWeatherFlashlightLine,
   RiBusinessMailLine,
   RiDocumentBookLine,
+  RiSystemSettings2Line,
 } from "solid-icons/ri";
 import { Portal } from "solid-js/web";
 import { makePersisted } from "@solid-primitives/storage";
@@ -27,7 +28,7 @@ import {
 } from "./ui/Sheet";
 
 const menuLinkVariants = cva(
-  "ui-disabled:pointer-events-none ui-disabled:opacity-50 relative flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+  "relative flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors ui-disabled:pointer-events-none ui-disabled:opacity-50",
   {
     variants: {
       size: {
@@ -129,8 +130,8 @@ type HeaderProps = {
 
 function Header(props: HeaderProps) {
   return (
-    <div class="overflow-x-hidden z-10 w-full h-12 border-b bg-background text-foreground border-b-border">
-      <div class="flex gap-1 items-center px-1 h-full">
+    <div class="z-10 h-12 w-full overflow-x-hidden border-b border-b-border bg-background text-foreground">
+      <div class="flex h-full items-center px-1">
         <div
           onClick={props.onMobileMenuClick}
           title="Menu"
@@ -145,12 +146,12 @@ function Header(props: HeaderProps) {
         >
           <RiSystemMenuLine class="size-6" />
         </button>
-        <div class="flex flex-1 gap-2 items-baseline truncate">
+        <div class="flex flex-1 items-baseline gap-2 truncate">
           <A href="/" class="flex items-center text-xl">
             IPCManView
           </A>
         </div>
-        <div class="flex gap-1">
+        <div class="flex">
           <button
             class={menuLinkVariants({ size: "icon" })}
             onClick={toggleTheme}
@@ -158,6 +159,14 @@ function Header(props: HeaderProps) {
           >
             <ThemeIcon class="size-6" />
           </button>
+          <A
+            href="/settings"
+            class={menuLinkVariants({ size: "icon" })}
+            activeClass={menuLinkVariants({ size: "icon", variant: "active" })}
+            inactiveClass={menuLinkVariants({ size: "icon" })}
+          >
+            <RiSystemSettings2Line class="size-6" />
+          </A>
         </div>
       </div>
     </div>
@@ -229,9 +238,9 @@ export function Root(props: RouteSectionProps) {
         <div class="flex min-h-[calc(100vh-3rem)]">
           <div
             data-open={menu.open()}
-            class="border-border w-0 shrink-0 border-r-0 transition-all duration-300 md:data-[open=true]:w-48 md:data-[open=true]:border-r"
+            class="w-0 shrink-0 border-r-0 border-border transition-all duration-300 md:data-[open=true]:w-48 md:data-[open=true]:border-r"
           >
-            <div class="overflow-y-auto sticky top-0 max-h-screen overflow-x-clip">
+            <div class="sticky top-0 max-h-screen overflow-y-auto overflow-x-clip">
               <div class="p-2">
                 <MenuLinks />
               </div>

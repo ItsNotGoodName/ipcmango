@@ -7,6 +7,8 @@ import { Root } from "./Root";
 
 const Home = lazy(() => import("~/pages/Home"));
 import loadHome from "~/pages/Home.data";
+const Settings = lazy(() => import("~/pages/Settings"));
+import loadSettings from "~/pages/Settings.data";
 const Devices = lazy(() => import("~/pages/Devices"));
 import loadDevices from "~/pages/Devices.data";
 const Events = lazy(() => import("~/pages/Events"));
@@ -28,6 +30,7 @@ function App() {
   return (
     <Router root={Root} explicitLinks>
       <Route path="/" component={Home} load={loadHome} />
+      <Route path="/settings" component={Settings} load={loadSettings} />
       <Route path="/devices" component={Devices} load={loadDevices} />
       <Route path="/events" component={Events} load={loadEvents} />
       <Route path="/events/live" component={EventsLive} load={loadEventsLive} />

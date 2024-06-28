@@ -32,9 +32,9 @@ export default function () {
   return (
     <div class="flex h-full flex-col">
       <div class="flex-1">{formatDate(cursor())}</div>
-      <div class="h-20 flex flex-col border-t">
+      <div class="flex h-20 flex-col border-t">
         <div
-          class="h-14 relative"
+          class="relative h-14"
           ref={ref!}
           style={{
             width: `${virtualizer.getTotalSize()}px`,
@@ -46,7 +46,7 @@ export default function () {
             style={{ translate: offset() + "px" }}
           ></div>
         </div>
-        <div class="flex justify-center gap-2 p-2 h-10">
+        <div class="flex h-10 justify-center gap-2 p-2">
           <Button size="xs" onClick={() => setOffset((prev) => prev - 1)}>
             Back
           </Button>

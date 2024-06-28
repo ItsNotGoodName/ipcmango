@@ -47,7 +47,7 @@ export default function () {
             <StatParent>
               <StatRoot>
                 <A href="/devices" class="flex items-center">
-                  <BiRegularCctv class="w-8 h-8" />
+                  <BiRegularCctv class="h-8 w-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Devices</StatTitle>
@@ -58,7 +58,7 @@ export default function () {
             <StatParent>
               <StatRoot>
                 <A href="/emails" class="flex items-center">
-                  <RiBusinessMailLine class="w-8 h-8" />
+                  <RiBusinessMailLine class="h-8 w-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Emails</StatTitle>
@@ -69,7 +69,7 @@ export default function () {
             <StatParent>
               <StatRoot>
                 <A href="/events" class="flex items-center">
-                  <RiWeatherFlashlightLine class="w-8 h-8" />
+                  <RiWeatherFlashlightLine class="h-8 w-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Events</StatTitle>
@@ -80,7 +80,7 @@ export default function () {
             <StatParent>
               <StatRoot>
                 <A href="/files" class="flex items-center">
-                  <RiDocumentFile2Line class="w-8 h-8" />
+                  <RiDocumentFile2Line class="h-8 w-8" />
                 </A>
                 <div class="flex-1">
                   <StatTitle>Files</StatTitle>
@@ -91,7 +91,7 @@ export default function () {
             <StatParent>
               <StatRoot>
                 <div class="flex items-center">
-                  <RiDeviceHardDrive2Line class="w-8 h-8" />
+                  <RiDeviceHardDrive2Line class="h-8 w-8" />
                 </div>
                 <div class="flex-1">
                   <StatTitle>File usage</StatTitle>
@@ -104,7 +104,7 @@ export default function () {
             <StatParent>
               <StatRoot>
                 <div class="flex items-center">
-                  <RiDeviceDatabase2Line class="w-8 h-8" />
+                  <RiDeviceDatabase2Line class="h-8 w-8" />
                 </div>
                 <div class="flex-1">
                   <StatTitle>DB usage</StatTitle>
@@ -208,7 +208,7 @@ export default function () {
           <div class="flex flex-col sm:flex-row">
             <CardRoot class="p-4">
               <h1>Build</h1>
-              <div class="overflow-x-auto relative">
+              <div class="relative overflow-x-auto">
                 <table class="w-full">
                   <tbody>
                     <tr class="border-b">
