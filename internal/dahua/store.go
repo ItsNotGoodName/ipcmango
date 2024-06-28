@@ -3,14 +3,77 @@ package dahua
 import (
 	"context"
 	"log/slog"
+	"net"
+	"net/http"
+	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/ptz"
 	"github.com/jmoiron/sqlx"
 	"github.com/k0kubun/pp/v3"
 )
+
+func NewStoreClient(conn Conn) StoreClient {
+	urL, _ := url.Parse("http://" + conn.IP)
+
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			Dial: func(network, addr string) (net.Conn, error) {
+				return net.DialTimeout(network, addr, 5*time.Second)
+			},
+		},
+	}
+
+	clientRPC := dahuarpc.NewClient(&httpClient, urL, conn.Username, conn.Password)
+	clientPTZ := ptz.NewClient(clientRPC)
+	clientCGI := dahuacgi.NewClient(httpClient, urL, conn.Username, conn.Password)
+	clientFile := dahuarpc.NewFileClient(&httpClient, 10)
+
+	var ref int32 = 1
+
+	return StoreClient{
+		ref:  &ref,
+		Conn: conn,
+		URL:  urL,
+		RPC:  clientRPC,
+		PTZ:  clientPTZ,
+		CGI:  clientCGI,
+		File: clientFile,
+	}
+}
+
+type StoreClient struct {
+	ref  *int32
+	Conn Conn
+	URL  *url.URL
+	RPC  dahuarpc.Client
+	PTZ  ptz.Client
+	CGI  dahuacgi.Client
+	File dahuarpc.FileClient
+}
+
+func (c StoreClient) close(ctx context.Context) error {
+	c.File.Close()
+	return c.RPC.Close(ctx)
+}
+
+func (c StoreClient) Release() error {
+	return c.ReleaseContext(context.Background())
+}
+
+func (c StoreClient) ReleaseContext(ctx context.Context) error {
+	counter := atomic.AddInt32(c.ref, -1)
+	if counter == 0 {
+		return c.close(ctx)
+	}
+	return nil
+}
 
 func NewStore(db *sqlx.DB) *Store {
 	return &Store{
@@ -84,10 +147,12 @@ func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, err
 	} else if !client.Conn.EQ(conn) {
 		// Found but not equal
 
-		err := client.CloseNoWait(ctx)
-		if err != nil {
-			slog.Error("Failed to close Client connection", slog.String("name", client.Conn.Name))
-		}
+		go func(client Client) {
+			err := client.Close(context.Background())
+			if err != nil {
+				slog.Error("Failed to close Client connection", slog.String("name", client.Conn.Name))
+			}
+		}(client)
 
 		client = NewClient(conn)
 		s.clients[conn.Key.ID] = client

@@ -30,7 +30,6 @@ import (
 	"github.com/reugn/go-quartz/quartz"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/thejerf/suture/v4"
 
 	_ "github.com/k0kubun/pp/v3"
 )
@@ -71,9 +70,7 @@ func main() {
 			bus.SetContext(ctx)
 
 			// Create suture root
-			root := suture.New("root", suture.Spec{
-				EventHook: sutureext.EventHook(),
-			})
+			root := sutureext.NewSimple("root")
 
 			// Create data directory
 			dir := core.Must2(filepath.Abs(options.Dir))

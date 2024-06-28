@@ -322,7 +322,7 @@ func (c Client) Do(ctx context.Context, rb RequestBuilder) (io.ReadCloser, error
 	}
 }
 
-func (c Client) close(ctx context.Context, wait bool) error {
+func (c Client) Close(ctx context.Context) error {
 	errC := make(chan error, 1)
 	select {
 	case <-ctx.Done():
@@ -332,27 +332,14 @@ func (c Client) close(ctx context.Context, wait bool) error {
 	case c.closeCC <- errC:
 	}
 
-	if wait {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-c.doneC:
-			return nil
-		case err := <-errC:
-			return err
-		}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-c.doneC:
+		return nil
+	case err := <-errC:
+		return err
 	}
-	return nil
-}
-
-// CloseNoWait closes the connection without waiting for it to finish closing.
-func (c Client) CloseNoWait(ctx context.Context) error {
-	return c.close(ctx, false)
-}
-
-// Close closes the connection.
-func (c Client) Close(ctx context.Context) error {
-	return c.close(ctx, true)
 }
 
 func (c Client) State(ctx context.Context) ClientState {

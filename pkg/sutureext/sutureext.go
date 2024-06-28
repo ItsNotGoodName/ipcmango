@@ -9,6 +9,12 @@ import (
 	"github.com/thejerf/suture/v4"
 )
 
+func NewSimple(name string) *suture.Supervisor {
+	return suture.New("root", suture.Spec{
+		EventHook: EventHook(),
+	})
+}
+
 func EventHook() suture.EventHook {
 	return func(ei suture.Event) {
 		switch e := ei.(type) {

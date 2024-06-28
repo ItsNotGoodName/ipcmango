@@ -102,11 +102,6 @@ func (c Client) Close(ctx context.Context) error {
 	return c.RPC.Close(ctx)
 }
 
-func (c Client) CloseNoWait(ctx context.Context) error {
-	c.File.Close()
-	return c.RPC.CloseNoWait(ctx)
-}
-
 func isFatalError(err error) bool {
 	res := &dahuarpc.Error{}
 	if errors.As(err, &res) && slices.Contains([]dahuarpc.ErrorType{
