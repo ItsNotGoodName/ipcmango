@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/core"
+	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/mediafilefind"
@@ -226,9 +227,9 @@ func scan(ctx context.Context, db *sqlx.DB, conn dahuarpc.Conn, deviceID int64, 
 	}
 	err := db.GetContext(ctx, &data, `
 		SELECT d.uuid, d.id, coalesce(d.location, s.location) AS location, d.seed, d.name
-		FROM dahua_devices AS d, settings as s
+		FROM dahua_devices AS d, (SELECT value as location FROM settings WHERE key = ?) AS s
 		WHERE d.id = ?
-	`, deviceID)
+	`, system.KeyLocation, deviceID)
 	if err != nil {
 		return ScanResult{}, err
 	}

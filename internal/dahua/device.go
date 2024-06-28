@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
+	"github.com/ItsNotGoodName/ipcmanview/internal/system"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/jmoiron/sqlx"
 )
@@ -253,13 +254,19 @@ func GetDevicePosition(ctx context.Context, db *sqlx.DB, id int64) (DevicePositi
 	var position DevicePosition
 	err := db.GetContext(ctx, &position, `
 		SELECT 
-			coalesce(d.location, s.location) AS location,
-			coalesce(d.latitude, s.latitude) AS latitude,
-			coalesce(d.longitude, s.longitude) AS longitude,
-			coalesce(d.sunrise_offset, s.sunrise_offset) AS sunrise_offset,
-			coalesce(d.sunset_offset, s.sunset_offset) AS sunset_offset
-		FROM dahua_devices AS d, settings as s
+			coalesce(d.location, (SELECT value FROM settings WHERE key = ?)) AS location,
+			coalesce(d.latitude, (SELECT value FROM settings WHERE key = ?)) AS latitude,
+			coalesce(d.longitude, (SELECT value FROM settings WHERE key = ?)) AS longitude,
+			coalesce(d.sunrise_offset, (SELECT value FROM settings WHERE key = ?)) AS sunrise_offset,
+			coalesce(d.sunset_offset, (SELECT value FROM settings WHERE key = ?)) AS sunset_offset
+		FROM dahua_devices AS d
 		WHERE d.id = ?
-	`, id)
+	`,
+		system.KeyLocation,
+		system.KeyLatitude,
+		system.KeyLongitude,
+		system.KeySunriseOffset,
+		system.KeySunsetOffset,
+		id)
 	return position, err
 }

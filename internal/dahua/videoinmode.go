@@ -97,8 +97,7 @@ func (w SyncVideoInModeJob) Execute(ctx context.Context) error {
 	var devices []Device
 	err := w.db.Select(&devices, `
 		SELECT d.* 
-		FROM dahua_devices AS d
-		LEFT JOIN (SELECT value AS sync_video_in_mode FROM settings WHERE key = ?) AS s
+		FROM dahua_devices AS d, (SELECT value AS sync_video_in_mode FROM settings WHERE key = ?) AS s
 		WHERE coalesce(d.sync_video_in_mode, s.sync_video_in_mode) IS TRUE
 	`, system.KeySyncVideoInMode)
 	if err != nil {
