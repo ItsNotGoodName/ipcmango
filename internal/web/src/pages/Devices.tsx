@@ -1,28 +1,51 @@
-import { A, useSearchParams } from "@solidjs/router"
-import { ErrorBoundary, For, Show, Suspense, createSignal, } from "solid-js"
-import { PageError } from "~/ui/Page"
-import { LayoutNormal } from "~/ui/Layout"
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "~/ui/Tabs"
-import { TableBody, TableCell, TableHead, TableHeader, TableRoot, TableRow } from "~/ui/Table"
-import { Skeleton } from "~/ui/Skeleton"
-import { createUptime, formatDate, parseDate, useQueryFilter, } from "~/lib/utils"
-import { linkVariants } from "~/ui/Link"
-import { createMutation, createQuery, useQueryClient } from "@tanstack/solid-query"
-import { GetApiDevicesResponse, postApiDevicesByUuidVideoInModeSync } from "~/client"
-import { Button } from "~/ui/Button"
-import { RiMediaImageLine, RiSystemRefreshLine } from "solid-icons/ri"
-import { Image } from "@kobalte/core/image"
-import { ToggleButton } from "@kobalte/core/toggle-button"
-import Humanize from "humanize-plus"
-import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger } from "~/ui/Tooltip"
-import { createDate, createTimeAgo } from "@solid-primitives/date"
-import { api } from "./data"
-import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox"
-import { toast } from "~/ui/Toast"
-
+import { A, useSearchParams } from "@solidjs/router";
+import { ErrorBoundary, For, Show, Suspense, createSignal } from "solid-js";
+import { PageError } from "~/ui/Page";
+import { LayoutNormal } from "~/ui/Layout";
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "~/ui/Tabs";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRoot,
+  TableRow,
+} from "~/ui/Table";
+import { Skeleton } from "~/ui/Skeleton";
+import {
+  createUptime,
+  formatDate,
+  parseDate,
+  useQueryFilter,
+} from "~/lib/utils";
+import { linkVariants } from "~/ui/Link";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/solid-query";
+import {
+  GetApiDevicesResponse,
+  postApiDevicesByUuidVideoInModeSync,
+} from "~/client";
+import { Button } from "~/ui/Button";
+import { RiMediaImageLine, RiSystemRefreshLine } from "solid-icons/ri";
+import { Image } from "@kobalte/core/image";
+import { ToggleButton } from "@kobalte/core/toggle-button";
+import Humanize from "humanize-plus";
+import {
+  TooltipArrow,
+  TooltipContent,
+  TooltipRoot,
+  TooltipTrigger,
+} from "~/ui/Tooltip";
+import { createDate, createTimeAgo } from "@solid-primitives/date";
+import { api } from "./data";
+import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
+import { toast } from "~/ui/Toast";
 
 function EmptyTableCell(props: { colspan: number }) {
-  return <TableCell colspan={props.colspan}>N/A</TableCell>
+  return <TableCell colspan={props.colspan}>N/A</TableCell>;
 }
 
 function LoadingTableCell(props: { colspan: number }) {
@@ -30,37 +53,42 @@ function LoadingTableCell(props: { colspan: number }) {
     <TableCell colspan={props.colspan} class="py-0">
       <Skeleton class="h-8" />
     </TableCell>
-  )
+  );
 }
 
-function ErrorTableCell(props: { colspan: number, error: Error }) {
+function ErrorTableCell(props: { colspan: number; error: Error }) {
   return (
     <TableCell colspan={props.colspan} class="py-0">
       <div class="p-2 rounded bg-destructive text-destructive-foreground">
         {props.error.message}
       </div>
     </TableCell>
-  )
+  );
 }
 
-function DeviceNameCell(props: { device: { uuid: string, name: string } }) {
+function DeviceNameCell(props: { device: { uuid: string; name: string } }) {
   return (
     <TableCell>
-      <A class={linkVariants()} href={`./${props.device.uuid}`}>{props.device.name}</A>
+      <A class={linkVariants()} href={`./${props.device.uuid}`}>
+        {props.device.name}
+      </A>
     </TableCell>
-  )
+  );
 }
 
 export default function () {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const data = createQuery(() => ({
     ...api.devices.list,
-    throwOnError: true
-  }))
+    throwOnError: true,
+  }));
 
-  const queryFilter = useQueryFilter("device")
-  const devices = () => queryFilter.values().length == 0 ? data.data : data.data?.filter(v => queryFilter.values().includes(v.uuid))
+  const queryFilter = useQueryFilter("device");
+  const devices = () =>
+    queryFilter.values().length == 0
+      ? data.data
+      : data.data?.filter((v) => queryFilter.values().includes(v.uuid));
 
   return (
     <LayoutNormal>
@@ -72,7 +100,10 @@ export default function () {
             setDeviceIDs={queryFilter.setValues}
           />
         </div>
-        <TabsRoot value={searchParams.tab || "device"} onChange={(value) => setSearchParams({ tab: value })}>
+        <TabsRoot
+          value={searchParams.tab || "device"}
+          onChange={(value) => setSearchParams({ tab: value })}
+        >
           <div class="flex flex-col gap-2">
             <div class="overflow-x-auto">
               <TabsList>
@@ -81,7 +112,9 @@ export default function () {
                 <TabsTrigger value="uptime">Uptime</TabsTrigger>
                 <TabsTrigger value="snapshot">Snapshot</TabsTrigger>
                 <TabsTrigger value="detail">Detail</TabsTrigger>
-                <TabsTrigger value="software-version">Software Version</TabsTrigger>
+                <TabsTrigger value="software-version">
+                  Software Version
+                </TabsTrigger>
                 <TabsTrigger value="license">License</TabsTrigger>
                 <TabsTrigger value="storage">Storage</TabsTrigger>
                 <TabsTrigger value="videoinmode">VideoInMode</TabsTrigger>
@@ -136,7 +169,7 @@ export default function () {
         </TabsRoot>
       </ErrorBoundary>
     </LayoutNormal>
-  )
+  );
 }
 
 function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
@@ -152,10 +185,18 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => (
+          {(item) => (
             <TableRow>
               <DeviceNameCell device={item} />
-              <TableCell><a class={linkVariants()} href={'http://' + item.ip} target="_blank">{item.ip}</a></TableCell>
+              <TableCell>
+                <a
+                  class={linkVariants()}
+                  href={"http://" + item.ip}
+                  target="_blank"
+                >
+                  {item.ip}
+                </a>
+              </TableCell>
               <TableCell>{item.username}</TableCell>
               <TableCell>{formatDate(parseDate(item.created_at))}</TableCell>
             </TableRow>
@@ -163,11 +204,11 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
         </For>
       </TableBody>
     </TableRoot>
-  )
+  );
 }
 
 function StatusTable(props: { devices?: GetApiDevicesResponse }) {
-  const colspan = 8
+  const colspan = 8;
 
   return (
     <TableRoot>
@@ -181,33 +222,39 @@ function StatusTable(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => {
+          {(item) => {
             const data = createQuery(() => ({
               ...api.devices.status(item.uuid),
-              throwOnError: true
-            }))
+              throwOnError: true,
+            }));
 
             return (
               <TableRow>
                 <DeviceNameCell device={item} />
-                <ErrorBoundary fallback={e => <ErrorTableCell colspan={colspan} error={e} />}>
+                <ErrorBoundary
+                  fallback={(e) => (
+                    <ErrorTableCell colspan={colspan} error={e} />
+                  )}
+                >
                   <Suspense fallback={<LoadingTableCell colspan={colspan} />}>
                     <TableCell>{data.data?.state}</TableCell>
-                    <TableCell>{formatDate(parseDate(data?.data?.last_login))}</TableCell>
+                    <TableCell>
+                      {formatDate(parseDate(data?.data?.last_login))}
+                    </TableCell>
                     <TableCell>{data.data?.error}</TableCell>
                   </Suspense>
                 </ErrorBoundary>
               </TableRow>
-            )
+            );
           }}
         </For>
       </TableBody>
     </TableRoot>
-  )
+  );
 }
 
 function UptimeTable(props: { devices?: GetApiDevicesResponse }) {
-  const colspan = 2
+  const colspan = 2;
 
   return (
     <TableRoot>
@@ -220,61 +267,60 @@ function UptimeTable(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => {
+          {(item) => {
             const data = createQuery(() => ({
               ...api.devices.uptime(item.uuid),
-              throwOnError: true
-            }))
+              throwOnError: true,
+            }));
 
             return (
               <TableRow>
                 <DeviceNameCell device={item} />
-                <ErrorBoundary fallback={e => <ErrorTableCell colspan={colspan} error={e} />}>
+                <ErrorBoundary
+                  fallback={(e) => (
+                    <ErrorTableCell colspan={colspan} error={e} />
+                  )}
+                >
                   <Suspense fallback={<LoadingTableCell colspan={colspan} />}>
-                    <Show when={data.data?.supported} fallback={
-                      <EmptyTableCell colspan={colspan} />
-                    }>
+                    <Show
+                      when={data.data?.supported}
+                      fallback={<EmptyTableCell colspan={colspan} />}
+                    >
                       <UptimeTableCell date={parseDate(data.data?.last)} />
                       <UptimeTableCell date={parseDate(data.data?.total)} />
                     </Show>
                   </Suspense>
                 </ErrorBoundary>
               </TableRow>
-            )
+            );
           }}
         </For>
       </TableBody>
     </TableRoot>
-  )
+  );
 }
 
 function UptimeTableCell(props: { date: Date }) {
-  const uptime = createUptime(() => props.date)
+  const uptime = createUptime(() => props.date);
 
   return (
     <TableCell>
-      <Show when={uptime().hasDays}>
-        {uptime().days} days &nbsp
-      </Show>
-      <Show when={uptime().hasHours}>
-        {uptime().hours} hours &nbsp
-      </Show>
-      <Show when={uptime().hasMinutes}>
-        {uptime().minutes} minutes &nbsp
-      </Show>
+      <Show when={uptime().hasDays}>{uptime().days} days &nbsp</Show>
+      <Show when={uptime().hasHours}>{uptime().hours} hours &nbsp</Show>
+      <Show when={uptime().hasMinutes}>{uptime().minutes} minutes &nbsp</Show>
       {uptime().seconds} seconds
     </TableCell>
-  )
+  );
 }
 
 function SnapshotGrid(props: { devices?: GetApiDevicesResponse }) {
   return (
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
       <For each={props.devices}>
-        {item => {
-          const [t, setT] = createSignal(new Date().getTime())
-          const refresh = () => setT(new Date().getTime())
-          const src = () => `/api/devices/${item.uuid}/snapshot?t=${t()}`
+        {(item) => {
+          const [t, setT] = createSignal(new Date().getTime());
+          const refresh = () => setT(new Date().getTime());
+          const src = () => `/api/devices/${item.uuid}/snapshot?t=${t()}`;
 
           return (
             <div>
@@ -295,15 +341,15 @@ function SnapshotGrid(props: { devices?: GetApiDevicesResponse }) {
                 </Image>
               </div>
             </div>
-          )
+          );
         }}
       </For>
     </div>
-  )
+  );
 }
 
 function DetailTable(props: { devices?: GetApiDevicesResponse }) {
-  const colspan = 9
+  const colspan = 9;
 
   return (
     <TableRoot>
@@ -323,21 +369,28 @@ function DetailTable(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => {
+          {(item) => {
             const data = createQuery(() => ({
               ...api.devices.detail(item.uuid),
-              throwOnError: true
-            }))
+              throwOnError: true,
+            }));
 
             return (
               <TableRow>
                 <DeviceNameCell device={item} />
-                <ErrorBoundary fallback={e => <ErrorTableCell colspan={colspan} error={e} />}>
+                <ErrorBoundary
+                  fallback={(e) => (
+                    <ErrorTableCell colspan={colspan} error={e} />
+                  )}
+                >
                   <Suspense fallback={<LoadingTableCell colspan={colspan} />}>
                     <TableCell>
                       <ToggleButton>
-                        {state => (
-                          <Show when={state.pressed()} fallback={<>***************</>}>
+                        {(state) => (
+                          <Show
+                            when={state.pressed()}
+                            fallback={<>***************</>}
+                          >
                             {data.data?.sn}
                           </Show>
                         )}
@@ -354,16 +407,16 @@ function DetailTable(props: { devices?: GetApiDevicesResponse }) {
                   </Suspense>
                 </ErrorBoundary>
               </TableRow>
-            )
+            );
           }}
         </For>
       </TableBody>
     </TableRoot>
-  )
+  );
 }
 
 function SoftwareVersionTable(props: { devices?: GetApiDevicesResponse }) {
-  const colspan = 9
+  const colspan = 9;
 
   return (
     <TableRoot>
@@ -379,35 +432,41 @@ function SoftwareVersionTable(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => {
+          {(item) => {
             const data = createQuery(() => ({
               ...api.devices.software(item.uuid),
-              throwOnError: true
-            }))
+              throwOnError: true,
+            }));
 
             return (
               <TableRow>
                 <DeviceNameCell device={item} />
-                <ErrorBoundary fallback={e => <ErrorTableCell colspan={colspan} error={e} />}>
+                <ErrorBoundary
+                  fallback={(e) => (
+                    <ErrorTableCell colspan={colspan} error={e} />
+                  )}
+                >
                   <Suspense fallback={<LoadingTableCell colspan={colspan} />}>
                     <TableCell>{data.data?.build}</TableCell>
                     <TableCell>{data.data?.build_date}</TableCell>
-                    <TableCell>{data.data?.security_base_line_version}</TableCell>
+                    <TableCell>
+                      {data.data?.security_base_line_version}
+                    </TableCell>
                     <TableCell>{data.data?.version}</TableCell>
                     <TableCell>{data.data?.web_version}</TableCell>
                   </Suspense>
                 </ErrorBoundary>
               </TableRow>
-            )
+            );
           }}
         </For>
       </TableBody>
     </TableRoot>
-  )
+  );
 }
 
 function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
-  const colspan = 9
+  const colspan = 9;
 
   return (
     <TableRoot>
@@ -427,34 +486,45 @@ function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => {
+          {(item) => {
             const data = createQuery(() => ({
               ...api.devices.licenses(item.uuid),
-              throwOnError: true
-            }))
+              throwOnError: true,
+            }));
 
             return (
-              <ErrorBoundary fallback={e =>
-                <TableRow>
-                  <DeviceNameCell device={item} />
-                  <ErrorTableCell colspan={colspan} error={e} />
-                </TableRow>
-              }>
-                <Suspense fallback={
+              <ErrorBoundary
+                fallback={(e) => (
                   <TableRow>
                     <DeviceNameCell device={item} />
-                    <LoadingTableCell colspan={colspan} />
+                    <ErrorTableCell colspan={colspan} error={e} />
                   </TableRow>
-                }>
-                  <For each={data.data} fallback={
+                )}
+              >
+                <Suspense
+                  fallback={
                     <TableRow>
                       <DeviceNameCell device={item} />
-                      <EmptyTableCell colspan={colspan} />
+                      <LoadingTableCell colspan={colspan} />
                     </TableRow>
-                  }>
-                    {v => {
-                      const [effectiveTime] = createDate(() => parseDate(v.effective_time));
-                      const [effectiveTimeAgo] = createTimeAgo(effectiveTime, { interval: 0 });
+                  }
+                >
+                  <For
+                    each={data.data}
+                    fallback={
+                      <TableRow>
+                        <DeviceNameCell device={item} />
+                        <EmptyTableCell colspan={colspan} />
+                      </TableRow>
+                    }
+                  >
+                    {(v) => {
+                      const [effectiveTime] = createDate(() =>
+                        parseDate(v.effective_time),
+                      );
+                      const [effectiveTimeAgo] = createTimeAgo(effectiveTime, {
+                        interval: 0,
+                      });
 
                       return (
                         <TableRow>
@@ -465,7 +535,9 @@ function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
                           <TableCell>{v.effective_days}</TableCell>
                           <TableCell>
                             <TooltipRoot>
-                              <TooltipTrigger>{formatDate(effectiveTime())}</TooltipTrigger>
+                              <TooltipTrigger>
+                                {formatDate(effectiveTime())}
+                              </TooltipTrigger>
                               <TooltipContent>
                                 <TooltipArrow />
                                 {effectiveTimeAgo()}
@@ -477,18 +549,17 @@ function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
                           <TableCell>{v.status}</TableCell>
                           <TableCell>{v.username}</TableCell>
                         </TableRow>
-                      )
-                    }
-                    }
+                      );
+                    }}
                   </For>
                 </Suspense>
               </ErrorBoundary>
-            )
+            );
           }}
         </For>
       </TableBody>
     </TableRoot>
-  )
+  );
 }
 
 function StorageTable(props: { devices?: GetApiDevicesResponse }) {
@@ -509,58 +580,68 @@ function StorageTable(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => {
+          {(item) => {
             const data = createQuery(() => ({
               ...api.devices.storage(item.uuid),
-              throwOnError: true
-            }))
+              throwOnError: true,
+            }));
 
             return (
-              <ErrorBoundary fallback={e =>
-                <TableRow>
-                  <DeviceNameCell device={item} />
-                  <ErrorTableCell colspan={colspan} error={e} />
-                </TableRow>
-              }>
-                <Suspense fallback={
+              <ErrorBoundary
+                fallback={(e) => (
                   <TableRow>
                     <DeviceNameCell device={item} />
-                    <LoadingTableCell colspan={colspan} />
+                    <ErrorTableCell colspan={colspan} error={e} />
                   </TableRow>
-                }>
-                  <For each={data.data} fallback={
+                )}
+              >
+                <Suspense
+                  fallback={
                     <TableRow>
                       <DeviceNameCell device={item} />
-                      <EmptyTableCell colspan={colspan} />
+                      <LoadingTableCell colspan={colspan} />
                     </TableRow>
-                  }>
-                    {v => (
+                  }
+                >
+                  <For
+                    each={data.data}
+                    fallback={
+                      <TableRow>
+                        <DeviceNameCell device={item} />
+                        <EmptyTableCell colspan={colspan} />
+                      </TableRow>
+                    }
+                  >
+                    {(v) => (
                       <TableRow>
                         <DeviceNameCell device={item} />
                         <TableCell>{v.name}</TableCell>
                         <TableCell>{v.state}</TableCell>
                         <TableCell>{v.type}</TableCell>
-                        <TableCell>{Humanize.fileSize(Number(v.used_bytes))}</TableCell>
-                        <TableCell>{Humanize.fileSize(Number(v.total_bytes))}</TableCell>
+                        <TableCell>
+                          {Humanize.fileSize(Number(v.used_bytes))}
+                        </TableCell>
+                        <TableCell>
+                          {Humanize.fileSize(Number(v.total_bytes))}
+                        </TableCell>
                         <TableCell>{v.is_error}</TableCell>
                       </TableRow>
-                    )
-                    }
+                    )}
                   </For>
                 </Suspense>
               </ErrorBoundary>
-            )
+            );
           }}
         </For>
       </TableBody>
     </TableRoot>
-  )
+  );
 }
 
 function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
   const colspan = 4;
 
-  const client = useQueryClient()
+  const client = useQueryClient();
 
   return (
     <TableRoot>
@@ -574,43 +655,62 @@ function VideoInMode(props: { devices?: GetApiDevicesResponse }) {
       </TableHeader>
       <TableBody>
         <For each={props.devices}>
-          {item => {
+          {(item) => {
             const data = createQuery(() => ({
               ...api.devices.video_in_mode(item.uuid),
-              throwOnError: true
-            }))
+              throwOnError: true,
+            }));
             const sync = createMutation(() => ({
-              mutationFn: () => postApiDevicesByUuidVideoInModeSync({ uuid: item.uuid, requestBody: {} }),
-              onSuccess: (data) => client.setQueryData(api.devices.video_in_mode(item.uuid).queryKey, data),
-              onError: (error) => toast.error(error.name, error.message)
-            }))
+              mutationFn: () =>
+                postApiDevicesByUuidVideoInModeSync({
+                  uuid: item.uuid,
+                  requestBody: {},
+                }),
+              onSuccess: (data) =>
+                client.setQueryData(
+                  api.devices.video_in_mode(item.uuid).queryKey,
+                  data,
+                ),
+              onError: (error) => toast.error(error.name, error.message),
+            }));
 
             return (
-              <ErrorBoundary fallback={e =>
-                <TableRow>
-                  <DeviceNameCell device={item} />
-                  <ErrorTableCell colspan={colspan} error={e} />
-                </TableRow>
-              }>
-                <Suspense fallback={
+              <ErrorBoundary
+                fallback={(e) => (
                   <TableRow>
                     <DeviceNameCell device={item} />
-                    <LoadingTableCell colspan={colspan} />
+                    <ErrorTableCell colspan={colspan} error={e} />
                   </TableRow>
-                }>
+                )}
+              >
+                <Suspense
+                  fallback={
+                    <TableRow>
+                      <DeviceNameCell device={item} />
+                      <LoadingTableCell colspan={colspan} />
+                    </TableRow>
+                  }
+                >
                   <TableRow>
                     <DeviceNameCell device={item} />
                     <TableCell>{data.data?.switch_mode}</TableCell>
                     <TableCell>{data.data?.time_section}</TableCell>
-                    <TableCell><Button size="xs" disabled={sync.isPending} onClick={() => sync.mutate()}>Sync</Button></TableCell>
+                    <TableCell>
+                      <Button
+                        size="xs"
+                        disabled={sync.isPending}
+                        onClick={() => sync.mutate()}
+                      >
+                        Sync
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 </Suspense>
               </ErrorBoundary>
-            )
+            );
           }}
         </For>
       </TableBody>
-    </TableRoot >
-  )
+    </TableRoot>
+  );
 }
-

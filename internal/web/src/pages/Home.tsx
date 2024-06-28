@@ -1,37 +1,43 @@
-import Humanize from "humanize-plus"
-import { A, } from "@solidjs/router"
-import { CardRoot, } from "~/ui/Card"
-import { ErrorBoundary, ParentProps, Suspense } from "solid-js"
-import { BiRegularCctv } from "solid-icons/bi"
-import { PageError, PageLoading } from "~/ui/Page"
-import { LayoutNormal } from "~/ui/Layout"
-import { RiBusinessMailLine, RiDeviceDatabase2Line, RiDeviceHardDrive2Line, RiDocumentFile2Line, RiWeatherFlashlightLine } from "solid-icons/ri"
-import { formatDate, parseDate } from "~/lib/utils"
-import { linkVariants } from "~/ui/Link"
-import { createQuery } from "@tanstack/solid-query"
-import { pages } from "./data"
+import Humanize from "humanize-plus";
+import { A } from "@solidjs/router";
+import { CardRoot } from "~/ui/Card";
+import { ErrorBoundary, ParentProps, Suspense } from "solid-js";
+import { BiRegularCctv } from "solid-icons/bi";
+import { PageError, PageLoading } from "~/ui/Page";
+import { LayoutNormal } from "~/ui/Layout";
+import {
+  RiBusinessMailLine,
+  RiDeviceDatabase2Line,
+  RiDeviceHardDrive2Line,
+  RiDocumentFile2Line,
+  RiWeatherFlashlightLine,
+} from "solid-icons/ri";
+import { formatDate, parseDate } from "~/lib/utils";
+import { linkVariants } from "~/ui/Link";
+import { createQuery } from "@tanstack/solid-query";
+import { pages } from "./data";
 
 function StatParent(props: ParentProps) {
-  return <div class="flex-1 sm:max-w-48">{props.children}</div>
+  return <div class="flex-1 sm:max-w-48">{props.children}</div>;
 }
 
 function StatRoot(props: ParentProps) {
-  return <CardRoot class="flex gap-2 p-4">{props.children}</CardRoot>
+  return <CardRoot class="flex gap-2 p-4">{props.children}</CardRoot>;
 }
 
 function StatTitle(props: ParentProps) {
-  return <h2>{props.children}</h2>
+  return <h2>{props.children}</h2>;
 }
 
 function StatValue(props: ParentProps) {
-  return <p class="text-lg font-bold">{props.children}</p>
+  return <p class="text-lg font-bold">{props.children}</p>;
 }
 
 export default function () {
   const data = createQuery(() => ({
     ...pages.home,
-    throwOnError: true
-  }))
+    throwOnError: true,
+  }));
 
   return (
     <LayoutNormal>
@@ -89,7 +95,9 @@ export default function () {
                 </div>
                 <div class="flex-1">
                   <StatTitle>File usage</StatTitle>
-                  <StatValue>{Humanize.fileSize(data.data?.file_usage || 0)}</StatValue>
+                  <StatValue>
+                    {Humanize.fileSize(data.data?.file_usage || 0)}
+                  </StatValue>
                 </div>
               </StatRoot>
             </StatParent>
@@ -100,7 +108,9 @@ export default function () {
                 </div>
                 <div class="flex-1">
                   <StatTitle>DB usage</StatTitle>
-                  <StatValue>{Humanize.fileSize(data.data?.db_usage || 0)}</StatValue>
+                  <StatValue>
+                    {Humanize.fileSize(data.data?.db_usage || 0)}
+                  </StatValue>
                 </div>
               </StatRoot>
             </StatParent>
@@ -203,15 +213,31 @@ export default function () {
                   <tbody>
                     <tr class="border-b">
                       <td class="p-2">Commit</td>
-                      <td class="p-2"><a class={linkVariants()} href={data.data?.build.commit_url}>{data.data?.build?.commit}</a></td>
+                      <td class="p-2">
+                        <a
+                          class={linkVariants()}
+                          href={data.data?.build.commit_url}
+                        >
+                          {data.data?.build?.commit}
+                        </a>
+                      </td>
                     </tr>
                     <tr class="border-b">
                       <td class="p-2">Date</td>
-                      <td class="p-2">{formatDate(parseDate(data.data?.build.date))}</td>
+                      <td class="p-2">
+                        {formatDate(parseDate(data.data?.build.date))}
+                      </td>
                     </tr>
                     <tr class="border-b">
                       <td class="p-2">Version</td>
-                      <td class="p-2"><a class={linkVariants()} href={data.data?.build.release_url}>{data.data?.build?.version}</a></td>
+                      <td class="p-2">
+                        <a
+                          class={linkVariants()}
+                          href={data.data?.build.release_url}
+                        >
+                          {data.data?.build?.version}
+                        </a>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -220,6 +246,6 @@ export default function () {
           </div>
         </Suspense>
       </ErrorBoundary>
-    </LayoutNormal >
-  )
+    </LayoutNormal>
+  );
 }

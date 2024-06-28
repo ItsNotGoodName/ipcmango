@@ -3,34 +3,40 @@
 //
 // # URLs
 // https://ui.shadcn.com/docs/components/badge
-import { cva, type VariantProps } from "class-variance-authority"
-import { JSX, splitProps } from "solid-js"
+import { cva, type VariantProps } from "class-variance-authority";
+import { JSX, splitProps } from "solid-js";
 
-import { cn } from "~/lib/utils"
+import { cn } from "~/lib/utils";
 
 const badgeVariants = cva(
-  "focus:ring-ring inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/80 border-transparent",
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-transparent",
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/80 border-transparent",
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
-)
+  },
+);
 
-export type BadgeProps = JSX.HTMLAttributes<HTMLDivElement> & VariantProps<typeof badgeVariants>
+export type BadgeProps = JSX.HTMLAttributes<HTMLDivElement> &
+  VariantProps<typeof badgeVariants>;
 
 export function Badge(props: BadgeProps) {
-  const [_, rest] = splitProps(props, ["class", "variant"])
-  return <div class={cn(badgeVariants({ variant: props.variant }), props.class)} {...rest} />
+  const [_, rest] = splitProps(props, ["class", "variant"]);
+  return (
+    <div
+      class={cn(badgeVariants({ variant: props.variant }), props.class)}
+      {...rest}
+    />
+  );
 }

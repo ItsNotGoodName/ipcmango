@@ -1,6 +1,6 @@
-import { provideTheme } from "./ui/theme"
+import { provideTheme } from "./ui/theme";
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
-import { lazy } from "solid-js"
+import { lazy } from "solid-js";
 import { Route, Router } from "@solidjs/router";
 import { NotFound } from "./pages/404";
 import { Root } from "./Root";
@@ -18,12 +18,12 @@ import loadFiles from "~/pages/Files.data";
 
 export const queries = createQueryKeyStore({
   github: {
-    tanstack: null
-  }
+    tanstack: null,
+  },
 });
 
 function App() {
-  provideTheme()
+  provideTheme();
 
   return (
     <Router root={Root} explicitLinks>
@@ -33,8 +33,8 @@ function App() {
       <Route path="/events/live" component={EventsLive} load={loadEventsLive} />
       <Route path="/files" component={Files} load={loadFiles} />
       <Route path="*404" component={NotFound} />
-    </Router >
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;

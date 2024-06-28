@@ -1,34 +1,58 @@
 import { A, useSearchParams } from "@solidjs/router";
-import { ErrorBoundary, For, Suspense, createEffect, createSignal, } from "solid-js";
-import { formatDate, } from "~/lib/utils";
+import {
+  ErrorBoundary,
+  For,
+  Suspense,
+  createEffect,
+  createSignal,
+} from "solid-js";
+import { formatDate } from "~/lib/utils";
 import { LayoutNormal } from "~/ui/Layout";
-import { TableBody, TableCell, TableHead, TableHeader, TableRoot, TableRow } from "~/ui/Table";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRoot,
+  TableRow,
+} from "~/ui/Table";
 import { linkVariants } from "~/ui/Link";
 import { PageError } from "~/ui/Page";
 import { Skeleton } from "~/ui/Skeleton";
 import { RiArrowsArrowDownSLine } from "solid-icons/ri";
 import { Button } from "~/ui/Button";
-import { BreadcrumbsItem, BreadcrumbsLink, BreadcrumbsRoot, BreadcrumbsSeparator } from "~/ui/Breadcrumbs";
+import {
+  BreadcrumbsItem,
+  BreadcrumbsLink,
+  BreadcrumbsRoot,
+  BreadcrumbsSeparator,
+} from "~/ui/Breadcrumbs";
 import { createDate, createTimeAgo } from "@solid-primitives/date";
-import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger } from "~/ui/Tooltip";
+import {
+  TooltipArrow,
+  TooltipContent,
+  TooltipRoot,
+  TooltipTrigger,
+} from "~/ui/Tooltip";
 import { JSONTableRow } from "./Events";
 import { api } from "./data";
 import { createQuery } from "@tanstack/solid-query";
 import { DeviceEventsOutput } from "~/client";
 
 export default function () {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const data = createQuery(() => api.devices.list)
+  const data = createQuery(() => api.devices.list);
 
-  const dataOpen = () => Boolean(searchParams.data)
-  const setDataOpen = (value: boolean) => setSearchParams({ data: value ? String(value) : "" })
+  const dataOpen = () => Boolean(searchParams.data);
+  const setDataOpen = (value: boolean) =>
+    setSearchParams({ data: value ? String(value) : "" });
 
-  const [events, setEvents] = createSignal<DeviceEventsOutput[]>([])
+  const [events, setEvents] = createSignal<DeviceEventsOutput[]>([]);
 
-  const sse = new EventSource('/api/events');
+  const sse = new EventSource("/api/events");
   sse.onmessage = (ev: MessageEvent<string>) => {
-    setEvents((prev) => [JSON.parse(ev.data) as DeviceEventsOutput, ...prev])
+    setEvents((prev) => [JSON.parse(ev.data) as DeviceEventsOutput, ...prev]);
   };
 
   return (
@@ -41,9 +65,7 @@ export default function () {
             </BreadcrumbsLink>
             <BreadcrumbsSeparator />
           </BreadcrumbsItem>
-          <BreadcrumbsItem>
-            Live
-          </BreadcrumbsItem>
+          <BreadcrumbsItem>Live</BreadcrumbsItem>
         </BreadcrumbsRoot>
       </h1>
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
@@ -57,7 +79,14 @@ export default function () {
                 <TableHead>Action</TableHead>
                 <TableHead>Index</TableHead>
                 <TableHead>
-                  <Button data-expanded={dataOpen()} onClick={() => setDataOpen(!dataOpen())} title="Data" size="icon" variant="ghost" class="[&[data-expanded=true]>svg]:rotate-180">
+                  <Button
+                    data-expanded={dataOpen()}
+                    onClick={() => setDataOpen(!dataOpen())}
+                    title="Data"
+                    size="icon"
+                    variant="ghost"
+                    class="[&[data-expanded=true]>svg]:rotate-180"
+                  >
                     <RiArrowsArrowDownSLine class="w-5 h-5 transition-transform duration-200 shrink-0" />
                   </Button>
                 </TableHead>
@@ -65,9 +94,10 @@ export default function () {
             </TableHeader>
             <TableBody>
               <For each={events()}>
-                {v => {
-                  const [rowDataOpen, setRowDataOpen] = createSignal(dataOpen())
-                  createEffect(() => setRowDataOpen(dataOpen()))
+                {(v) => {
+                  const [rowDataOpen, setRowDataOpen] =
+                    createSignal(dataOpen());
+                  createEffect(() => setRowDataOpen(dataOpen()));
 
                   const [createdAt] = createDate(() => v.created_at);
                   const [createdAtAgo] = createTimeAgo(createdAt);
@@ -85,28 +115,40 @@ export default function () {
                           </TooltipRoot>
                         </TableCell>
                         <TableCell>
-                          <A href={`/devices/${v.device_uuid}`} class={linkVariants()}>
-                            {data.data?.find((d) => d.uuid == String(v.device_uuid))?.name}
+                          <A
+                            href={`/devices/${v.device_uuid}`}
+                            class={linkVariants()}
+                          >
+                            {
+                              data.data?.find(
+                                (d) => d.uuid == String(v.device_uuid),
+                              )?.name
+                            }
                           </A>
                         </TableCell>
+                        <TableCell>{v.code}</TableCell>
+                        <TableCell>{v.action}</TableCell>
+                        <TableCell>{v.index.toString()}</TableCell>
                         <TableCell>
-                          {v.code}
-                        </TableCell>
-                        <TableCell>
-                          {v.action}
-                        </TableCell>
-                        <TableCell>
-                          {v.index.toString()}
-                        </TableCell>
-                        <TableCell>
-                          <Button data-expanded={rowDataOpen()} onClick={() => setRowDataOpen(!rowDataOpen())} title="Data" size="icon" variant="ghost" class="[&[data-expanded=true]>svg]:rotate-180">
+                          <Button
+                            data-expanded={rowDataOpen()}
+                            onClick={() => setRowDataOpen(!rowDataOpen())}
+                            title="Data"
+                            size="icon"
+                            variant="ghost"
+                            class="[&[data-expanded=true]>svg]:rotate-180"
+                          >
                             <RiArrowsArrowDownSLine class="w-5 h-5 transition-transform duration-200 shrink-0" />
                           </Button>
                         </TableCell>
                       </TableRow>
-                      <JSONTableRow colspan={6} expanded={rowDataOpen()} data={JSON.stringify(v.data, null, 2)} />
+                      <JSONTableRow
+                        colspan={6}
+                        expanded={rowDataOpen()}
+                        data={JSON.stringify(v.data, null, 2)}
+                      />
                     </>
-                  )
+                  );
                 }}
               </For>
             </TableBody>
@@ -114,5 +156,5 @@ export default function () {
         </Suspense>
       </ErrorBoundary>
     </LayoutNormal>
-  )
+  );
 }

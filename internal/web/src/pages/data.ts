@@ -1,5 +1,18 @@
-import { getApiDevices, getApiDevicesByUuidDetail, getApiDevicesByUuidLicenses, getApiDevicesByUuidSoftware, getApiDevicesByUuidStatus, getApiDevicesByUuidStorage, getApiDevicesByUuidUptime, getApiDevicesByUuidVideoInMode, getApiPagesHome } from '~/client/services.gen';
-import { createQueryKeyStore, createQueryKeys } from "@lukemorales/query-key-factory";
+import {
+  getApiDevices,
+  getApiDevicesByUuidDetail,
+  getApiDevicesByUuidLicenses,
+  getApiDevicesByUuidSoftware,
+  getApiDevicesByUuidStatus,
+  getApiDevicesByUuidStorage,
+  getApiDevicesByUuidUptime,
+  getApiDevicesByUuidVideoInMode,
+  getApiPagesHome,
+} from "~/client/services.gen";
+import {
+  createQueryKeyStore,
+  createQueryKeys,
+} from "@lukemorales/query-key-factory";
 
 export const api = createQueryKeyStore({
   devices: {
@@ -36,12 +49,12 @@ export const api = createQueryKeyStore({
       queryKey: [uuid],
       queryFn: () => getApiDevicesByUuidVideoInMode({ uuid }),
     }),
-  }
-})
+  },
+});
 
 export const pages = createQueryKeys("pages", {
   home: {
     queryKey: null,
     queryFn: getApiPagesHome,
-  }
-})
+  },
+});

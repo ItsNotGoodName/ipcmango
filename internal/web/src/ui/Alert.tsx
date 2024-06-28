@@ -4,11 +4,11 @@
 // # URLs
 // https://kobalte.dev/docs/core/components/alert
 // https://ui.shadcn.com/docs/components/alert
-import { cva, type VariantProps } from "class-variance-authority"
-import { Alert } from "@kobalte/core/alert"
-import { ComponentProps, JSX, splitProps } from "solid-js"
+import { cva, type VariantProps } from "class-variance-authority";
+import { Alert } from "@kobalte/core/alert";
+import { ComponentProps, JSX, splitProps } from "solid-js";
 
-import { cn } from "~/lib/utils"
+import { cn } from "~/lib/utils";
 
 const alertVariants = cva(
   "relative w-full rounded-lg border p-4 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg~*]:pl-7",
@@ -23,30 +23,36 @@ const alertVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
-)
+  },
+);
 
-export function AlertRoot(props: ComponentProps<typeof Alert> & VariantProps<typeof alertVariants>) {
-  const [_, rest] = splitProps(props, ["class", "variant"])
-  return <Alert
-    class={cn(alertVariants({ variant: props.variant }), props.class)}
-    {...rest}
-  />
+export function AlertRoot(
+  props: ComponentProps<typeof Alert> & VariantProps<typeof alertVariants>,
+) {
+  const [_, rest] = splitProps(props, ["class", "variant"]);
+  return (
+    <Alert
+      class={cn(alertVariants({ variant: props.variant }), props.class)}
+      {...rest}
+    />
+  );
 }
 
 export function AlertTitle(props: JSX.HTMLAttributes<HTMLHeadingElement>) {
-  const [_, rest] = splitProps(props, ["class"])
-  return <h5
-    class={cn("mb-1 font-medium leading-none tracking-tight", props.class)}
-    {...rest}
-  />
+  const [_, rest] = splitProps(props, ["class"]);
+  return (
+    <h5
+      class={cn("mb-1 font-medium leading-none tracking-tight", props.class)}
+      {...rest}
+    />
+  );
 }
 
-export function AlertDescription(props: JSX.HTMLAttributes<HTMLParagraphElement>) {
-  const [_, rest] = splitProps(props, ["class"])
-  return <div
-    class={cn("text-sm [&_p]:leading-relaxed", props.class)}
-    {...rest}
-  />
+export function AlertDescription(
+  props: JSX.HTMLAttributes<HTMLParagraphElement>,
+) {
+  const [_, rest] = splitProps(props, ["class"]);
+  return (
+    <div class={cn("text-sm [&_p]:leading-relaxed", props.class)} {...rest} />
+  );
 }
-

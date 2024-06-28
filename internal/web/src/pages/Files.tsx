@@ -4,22 +4,22 @@ import { formatDate } from "~/lib/utils";
 import { Button } from "~/ui/Button";
 
 type Item = {
-  color: string
-  start_time: Date
-  duration: number
-}
+  color: string;
+  start_time: Date;
+  duration: number;
+};
 
 export default function () {
   // seconds, must be even
-  const [range, setRange] = createSignal(60 * 60)
+  const [range, setRange] = createSignal(60 * 60);
   // current cursor position
-  const [cursor, setCursor] = createSignal(new Date(Date.now()))
+  const [cursor, setCursor] = createSignal(new Date(Date.now()));
   // items to render
-  const [items, setItems] = createSignal<Array<Item>>()
-  const [offset, setOffset] = createSignal(0)
+  const [items, setItems] = createSignal<Array<Item>>();
+  const [offset, setOffset] = createSignal(0);
 
-  let down = false
-  let startX = 0
+  let down = false;
+  let startX = 0;
 
   let ref: HTMLDivElement | null;
   const virtualizer = createVirtualizer({
@@ -31,24 +31,30 @@ export default function () {
 
   return (
     <div class="flex h-full flex-col">
-      <div class="flex-1">
-        {formatDate(cursor())}
-      </div>
+      <div class="flex-1">{formatDate(cursor())}</div>
       <div class="h-20 flex flex-col border-t">
-        <div class="h-14 relative"
+        <div
+          class="h-14 relative"
           ref={ref!}
           style={{
             width: `${virtualizer.getTotalSize()}px`,
           }}
         >
           <div class="flex-1"></div>
-          <div class="h-2 bg-red-500" style={{ "translate": offset() + "px" }}></div>
+          <div
+            class="h-2 bg-red-500"
+            style={{ translate: offset() + "px" }}
+          ></div>
         </div>
         <div class="flex justify-center gap-2 p-2 h-10">
-          <Button size="xs" onClick={() => setOffset((prev) => prev - 1)}>Back</Button>
-          <Button size="xs" onClick={() => setOffset((prev) => prev + 1)}>Forward</Button>
+          <Button size="xs" onClick={() => setOffset((prev) => prev - 1)}>
+            Back
+          </Button>
+          <Button size="xs" onClick={() => setOffset((prev) => prev + 1)}>
+            Forward
+          </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

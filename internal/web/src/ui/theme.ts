@@ -1,28 +1,30 @@
 import { createEffect, createSignal } from "solid-js";
 
 const THEME_KEY = "theme";
-const DARK_THEME_CLASS = "dark"
-const LIGHT_THEME_CLASS = "light"
+const DARK_THEME_CLASS = "dark";
+const LIGHT_THEME_CLASS = "light";
 
 export enum Theme {
   System = "system",
   Light = "light",
-  Dark = "dark"
+  Dark = "dark",
 }
 
 const query = window.matchMedia("(prefers-color-scheme: dark)");
 
 const [currentSystemTheme, setCurrentSystemTheme] = createSignal(
-  query.matches ? Theme.Dark : Theme.Light
+  query.matches ? Theme.Dark : Theme.Light,
 );
 
 query.addEventListener("change", (e: MediaQueryListEvent) => {
   setCurrentSystemTheme(e.matches ? Theme.Dark : Theme.Light);
 });
 
-const currentThemeSignal = createSignal(localStorage.getItem(THEME_KEY) ?? Theme.System);
-export const useCurrentTheme = currentThemeSignal[0]
-const setCurrentTheme = currentThemeSignal[1]
+const currentThemeSignal = createSignal(
+  localStorage.getItem(THEME_KEY) ?? Theme.System,
+);
+export const useCurrentTheme = currentThemeSignal[0];
+const setCurrentTheme = currentThemeSignal[1];
 
 export function setTheme(theme: Theme) {
   setCurrentTheme(theme);
@@ -35,10 +37,10 @@ export const toggleTheme = () => {
   switch (useCurrentTheme()) {
     case Theme.Light:
       setTheme(Theme.Dark);
-      break
+      break;
     case Theme.System:
       setTheme(Theme.Light);
-      break
+      break;
     default:
       setTheme(Theme.System);
   }
@@ -46,24 +48,26 @@ export const toggleTheme = () => {
 
 const themeClass = () => {
   if (useCurrentTheme() == Theme.System) {
-    return currentSystemTheme() == Theme.Dark ? DARK_THEME_CLASS : LIGHT_THEME_CLASS;
+    return currentSystemTheme() == Theme.Dark
+      ? DARK_THEME_CLASS
+      : LIGHT_THEME_CLASS;
   }
   return useCurrentTheme() == Theme.Dark ? DARK_THEME_CLASS : LIGHT_THEME_CLASS;
 };
 
 export const provideTheme = () => {
   createEffect(() => {
-    document.getElementsByTagName("body")![0].className = themeClass()
-  })
-}
+    document.getElementsByTagName("body")![0].className = themeClass();
+  });
+};
 
 export const useThemeTitle = () => {
   switch (useCurrentTheme()) {
     case Theme.System:
-      return "System theme"
+      return "System theme";
     case Theme.Light:
-      return "Light theme"
+      return "Light theme";
     case Theme.Dark:
-      return "Dark theme"
+      return "Dark theme";
   }
-}
+};
