@@ -246,7 +246,12 @@ export function Root(props: RouteSectionProps) {
               </div>
             </div>
           </div>
-          <div class="w-full overflow-x-clip">{props.children}</div>
+          <div
+            data-open={menu.open()}
+            class="w-full overflow-x-clip md:data-[open=true]:w-[calc(100vw-12rem)]"
+          >
+            {props.children}
+          </div>
         </div>
       </Suspense>
     </ErrorBoundary>
