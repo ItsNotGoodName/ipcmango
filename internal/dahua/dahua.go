@@ -6,9 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"net"
-	"net/http"
-	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -60,46 +57,6 @@ func (lhs Conn) EQ(rhs Conn) bool {
 		lhs.IP == rhs.IP &&
 		lhs.Username == rhs.Username &&
 		lhs.Password == rhs.Password
-}
-
-func NewClient(conn Conn) Client {
-	urL, _ := url.Parse("http://" + conn.IP)
-
-	httpClient := http.Client{
-		Transport: &http.Transport{
-			Dial: func(network, addr string) (net.Conn, error) {
-				return net.DialTimeout(network, addr, 5*time.Second)
-			},
-		},
-	}
-
-	clientRPC := dahuarpc.NewClient(&httpClient, urL, conn.Username, conn.Password)
-	clientPTZ := ptz.NewClient(clientRPC)
-	clientCGI := dahuacgi.NewClient(httpClient, urL, conn.Username, conn.Password)
-	clientFile := dahuarpc.NewFileClient(&httpClient, 10)
-
-	return Client{
-		Conn: conn,
-		URL:  urL,
-		RPC:  clientRPC,
-		PTZ:  clientPTZ,
-		CGI:  clientCGI,
-		File: clientFile,
-	}
-}
-
-type Client struct {
-	Conn Conn
-	URL  *url.URL
-	RPC  dahuarpc.Client
-	PTZ  ptz.Client
-	CGI  dahuacgi.Client
-	File dahuarpc.FileClient
-}
-
-func (c Client) Close(ctx context.Context) error {
-	c.File.Close()
-	return c.RPC.Close(ctx)
 }
 
 func isFatalError(err error) bool {

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
@@ -16,8 +15,15 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/ptz"
 	"github.com/jmoiron/sqlx"
-	"github.com/k0kubun/pp/v3"
 )
+
+const StoreClientCloseTimeout = 3 * time.Second
+
+func checkStoreClientCloseError(conn Conn, err error) {
+	if err != nil {
+		slog.Error("Failed to close Client connection", slog.String("name", conn.Name))
+	}
+}
 
 func NewStoreClient(conn Conn) StoreClient {
 	urL, _ := url.Parse("http://" + conn.IP)
@@ -58,28 +64,20 @@ type StoreClient struct {
 	File dahuarpc.FileClient
 }
 
-func (c StoreClient) close(ctx context.Context) error {
+func (c StoreClient) Close() error {
+	return c.CloseContext(context.Background())
+}
+
+func (c StoreClient) CloseContext(ctx context.Context) error {
 	c.File.Close()
 	return c.RPC.Close(ctx)
-}
-
-func (c StoreClient) Release() error {
-	return c.ReleaseContext(context.Background())
-}
-
-func (c StoreClient) ReleaseContext(ctx context.Context) error {
-	counter := atomic.AddInt32(c.ref, -1)
-	if counter == 0 {
-		return c.close(ctx)
-	}
-	return nil
 }
 
 func NewStore(db *sqlx.DB) *Store {
 	return &Store{
 		db:        db,
 		clientsMu: sync.Mutex{},
-		clients:   make(map[int64]Client),
+		clients:   make(map[int64]StoreClient),
 	}
 }
 
@@ -88,7 +86,7 @@ type Store struct {
 	db *sqlx.DB
 
 	clientsMu sync.Mutex
-	clients   map[int64]Client
+	clients   map[int64]StoreClient
 }
 
 func (*Store) String() string {
@@ -100,22 +98,17 @@ func (s *Store) Close() {
 	s.clientsMu.Lock()
 	defer s.clientsMu.Unlock()
 
-	wg := sync.WaitGroup{}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), StoreClientCloseTimeout)
 	defer cancel()
 
+	wg := sync.WaitGroup{}
 	for _, client := range s.clients {
 		wg.Add(1)
-		go func(client Client) {
-			defer wg.Done()
-			err := client.Close(ctx)
-			if err != nil {
-				slog.Error("Failed to close Client connection", slog.String("uuid", client.Conn.Key.UUID))
-			}
+		go func(client StoreClient) {
+			checkStoreClientCloseError(client.Conn, client.CloseContext(ctx))
+			wg.Done()
 		}(client)
 	}
-
 	wg.Wait()
 }
 
@@ -125,7 +118,7 @@ func (s *Store) Serve(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, error) {
+func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (StoreClient, error) {
 	s.clientsMu.Lock()
 	var conn Conn
 	err := s.db.GetContext(ctx, &conn, `
@@ -133,28 +126,22 @@ func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, err
 		FROM dahua_devices WHERE id = ? OR uuid = ?
 	`, deviceKey.ID, deviceKey.UUID)
 	if err != nil {
-		pp.Println(err, deviceKey)
 		s.clientsMu.Unlock()
-		return Client{}, err
+		return StoreClient{}, err
 	}
 
 	client, ok := s.clients[conn.Key.ID]
 	if !ok {
 		// Not found
 
-		client = NewClient(conn)
+		client = NewStoreClient(conn)
 		s.clients[conn.Key.ID] = client
 	} else if !client.Conn.EQ(conn) {
 		// Found but not equal
 
-		go func(client Client) {
-			err := client.Close(context.Background())
-			if err != nil {
-				slog.Error("Failed to close Client connection", slog.String("name", client.Conn.Name))
-			}
-		}(client)
+		go func(client StoreClient) { checkStoreClientCloseError(client.Conn, client.Close()) }(client)
 
-		client = NewClient(conn)
+		client = NewStoreClient(conn)
 		s.clients[conn.Key.ID] = client
 	}
 	s.clientsMu.Unlock()
@@ -162,24 +149,33 @@ func (s *Store) GetClient(ctx context.Context, deviceKey types.Key) (Client, err
 	return client, nil
 }
 
-func (s *Store) DeleteClient(ctx context.Context, deviceID int64) error {
-	s.clientsMu.Lock()
-	client, found := s.clients[deviceID]
-	if found {
-		delete(s.clients, deviceID)
-	}
-	s.clientsMu.Unlock()
-
-	if !found {
-		return nil
-	}
-
-	return client.Close(ctx)
-}
-
 func (s *Store) Register() *Store {
 	bus.Subscribe(s.String(), func(ctx context.Context, event bus.DeviceDeleted) error {
-		return s.DeleteClient(ctx, event.DeviceKey.ID)
+		ctx, cancel := context.WithTimeout(ctx, StoreClientCloseTimeout)
+		defer cancel()
+
+		s.clientsMu.Lock()
+		defer s.clientsMu.Unlock()
+
+		wg := sync.WaitGroup{}
+		for _, key := range event.DeviceKeys {
+			wg.Add(1)
+
+			client, found := s.clients[key.ID]
+			if !found {
+				continue
+			}
+
+			delete(s.clients, key.ID)
+
+			go func(client StoreClient) {
+				checkStoreClientCloseError(client.Conn, client.CloseContext(ctx))
+				wg.Done()
+			}(client)
+		}
+		wg.Wait()
+
+		return nil
 	})
 	return s
 }

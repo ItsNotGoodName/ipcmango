@@ -16,7 +16,7 @@ type DeviceUpdated struct {
 }
 
 type DeviceDeleted struct {
-	DeviceKey types.Key
+	DeviceKeys []types.Key
 }
 
 type EventCreated struct {

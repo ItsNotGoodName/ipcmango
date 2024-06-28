@@ -86,15 +86,13 @@ func PutDevices(ctx context.Context, db *sqlx.DB, args []CreateDeviceArgs) ([]ty
 		return nil, err
 	}
 
-	for _, deletedKey := range deletedKeys {
-		bus.Publish(bus.DeviceDeleted{
-			DeviceKey: deletedKey,
-		})
-	}
+	bus.Publish(bus.DeviceDeleted{
+		DeviceKeys: deletedKeys,
+	})
 
-	for _, key := range keys {
+	for _, createdKeys := range keys {
 		bus.Publish(bus.DeviceCreated{
-			DeviceKey: key,
+			DeviceKey: createdKeys,
 		})
 	}
 
@@ -237,7 +235,7 @@ func DeleteDevice(ctx context.Context, db *sqlx.DB, uuid string) error {
 	}
 
 	bus.Publish(bus.DeviceDeleted{
-		DeviceKey: key,
+		DeviceKeys: []types.Key{key},
 	})
 
 	return nil

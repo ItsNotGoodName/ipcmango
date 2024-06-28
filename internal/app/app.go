@@ -787,7 +787,7 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		conn, err := useClient(ctx, app.DahuaStore, device)
+		client, err := useClient(ctx, app.DahuaStore, device)
 		if err != nil {
 			return nil, err
 		}
@@ -795,7 +795,7 @@ func Register(api huma.API, app App) {
 		start := core.Optional(input.Body.StartTime, dahua.ScanEpoch)
 		end := core.Optional(input.Body.EndTime, time.Now())
 
-		body, err := dahua.ScanManual(ctx, app.DB, conn.RPC, device.ID, start, end)
+		body, err := dahua.ScanManual(ctx, app.DB, client.RPC, device.ID, start, end)
 		if err != nil {
 			return nil, err
 		}
@@ -817,12 +817,12 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		conn, err := useClient(ctx, app.DahuaStore, device)
+		client, err := useClient(ctx, app.DahuaStore, device)
 		if err != nil {
 			return nil, err
 		}
 
-		body, err := dahua.ScanFull(ctx, app.DB, conn.RPC, device.ID)
+		body, err := dahua.ScanFull(ctx, app.DB, client.RPC, device.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -844,12 +844,12 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		conn, err := useClient(ctx, app.DahuaStore, device)
+		client, err := useClient(ctx, app.DahuaStore, device)
 		if err != nil {
 			return nil, err
 		}
 
-		body, err := dahua.ScanQuick(ctx, app.DB, conn.RPC, device.ID)
+		body, err := dahua.ScanQuick(ctx, app.DB, client.RPC, device.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -1456,10 +1456,10 @@ func useDevice(ctx context.Context, db *sqlx.DB, key types.Key) (dahua.Device, e
 	return device, nil
 }
 
-func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.Device) (dahua.Client, error) {
+func useClient(ctx context.Context, dahuaStore *dahua.Store, device dahua.Device) (dahua.StoreClient, error) {
 	client, err := dahuaStore.GetClient(ctx, device.Key)
 	if err != nil {
-		return dahua.Client{}, huma.Error404NotFound("device not found")
+		return dahua.StoreClient{}, huma.Error404NotFound("device not found")
 	}
 	return client, nil
 }

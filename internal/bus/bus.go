@@ -25,7 +25,8 @@ func Subscribe[T any](name string, fn func(ctx context.Context, event T) error) 
 }
 
 func Publish[T any](event T) {
-	for _, fn := range subs[fmt.Sprintf("%T", event)] {
+	topic := fmt.Sprintf("%T", event)
+	for _, fn := range subs[topic] {
 		fn(_ctx, event)
 	}
 }

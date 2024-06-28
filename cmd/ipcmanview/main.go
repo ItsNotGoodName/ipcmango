@@ -89,7 +89,7 @@ func main() {
 			sutureext.Add(root, scheduler)
 
 			// Create dahua store
-			dahuaStore := dahua.NewStore(db)
+			dahuaStore := dahua.NewStore(db).Register()
 			sutureext.Add(root, dahuaStore)
 
 			// Create dahua event manager

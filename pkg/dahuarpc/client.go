@@ -36,7 +36,7 @@ func WithOnError(fn func(err error)) ConfigFunc {
 
 func clientLogError(address string) func(err error) {
 	return func(err error) {
-		slog.Error("", slog.String("address", address), slog.String("package", "dahuarpc"), slog.String("error", err.Error()))
+		slog.Error("Client Error", slog.String("address", address), slog.String("package", "dahuarpc"), slog.String("error", err.Error()))
 	}
 }
 

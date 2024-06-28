@@ -114,7 +114,7 @@ func OpenFileSFTP(ctx context.Context, db *sqlx.DB, filePath string) (io.ReadClo
 	}, contentLength, nil
 }
 
-func OpenFileLocal(ctx context.Context, client Client, filePath string) (io.ReadCloser, int64, error) {
+func OpenFileLocal(ctx context.Context, client StoreClient, filePath string) (io.ReadCloser, int64, error) {
 	v, err := client.File.Do(ctx, dahuarpc.LoadFileURL(client.URL, filePath), dahuarpc.Cookie(client.RPC.Session(ctx)))
 	if err != nil {
 		return nil, 0, err

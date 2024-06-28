@@ -2,6 +2,7 @@ package dahua
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
 
@@ -180,7 +181,11 @@ func (m *WorkerManager) Register() *WorkerManager {
 		return m.Refresh(ctx, event.DeviceKey)
 	})
 	bus.Subscribe(m.String(), func(ctx context.Context, event bus.DeviceDeleted) error {
-		return m.Refresh(ctx, event.DeviceKey)
+		var errs error
+		for _, deviceKeys := range event.DeviceKeys {
+			errs = errors.Join(errs, m.Refresh(ctx, deviceKeys))
+		}
+		return errs
 	})
 	return m
 }
