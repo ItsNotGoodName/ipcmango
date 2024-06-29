@@ -162,3 +162,35 @@ export function useQueryFilter(key: string) {
     setValues,
   };
 }
+
+export function useQueryBoolean(key: string, defaultValue?: boolean) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const value = () =>
+    searchParams[key] == undefined ? defaultValue : searchParams[key] == "true";
+  const setValue = (value: boolean) =>
+    setSearchParams({
+      [key]: value != undefined ? String(value) : defaultValue,
+    });
+
+  return {
+    value,
+    setValue,
+  };
+}
+
+export function useQueryNumber(key: string, defaultValue?: number) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const value = () => Number(searchParams[key] ?? defaultValue);
+  const setValue = (value: number) => {
+    setSearchParams({
+      [key]: value != undefined ? String(value) : defaultValue,
+    });
+  };
+
+  return {
+    value,
+    setValue,
+  };
+}

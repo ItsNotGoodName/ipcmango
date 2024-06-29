@@ -9,6 +9,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/dahua"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/coaxialcontrolio"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/pagination"
 )
 
 type ManualFileScan struct {
@@ -16,7 +17,7 @@ type ManualFileScan struct {
 	EndTime   *time.Time `json:"end_time,omitempty"`
 }
 
-type DeviceEventsOutput struct {
+type DeviceEvent struct {
 	ID         string          `json:"id"`
 	DeviceUUID string          `json:"device_uuid"`
 	Code       string          `json:"code"`
@@ -54,6 +55,28 @@ type FileScanCursor struct {
 }
 
 //---------- CRUD
+
+func NewPagePagination(result pagination.PageResult) PagePagination {
+	return PagePagination{
+		Page:         result.Page,
+		PerPage:      result.PerPage,
+		TotalPages:   result.TotalPages,
+		TotalItems:   result.TotalItems,
+		SeenItems:    result.Seen(),
+		PreviousPage: result.Previous(),
+		NextPage:     result.Next(),
+	}
+}
+
+type PagePagination struct {
+	Page         int `json:"page"`
+	PerPage      int `json:"per_page"`
+	TotalPages   int `json:"total_pages"`
+	TotalItems   int `json:"total_items"`
+	SeenItems    int `json:"seen_items"`
+	PreviousPage int `json:"previous_page"`
+	NextPage     int `json:"next_page"`
+}
 
 type CreateDevice struct {
 	UUID            *string         `json:"uuid,omitempty" format:"uuid"`

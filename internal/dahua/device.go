@@ -270,3 +270,23 @@ func GetDevicePosition(ctx context.Context, db *sqlx.DB, id int64) (DevicePositi
 		id)
 	return position, err
 }
+
+func GetDeviceIDs(ctx context.Context, db *sqlx.DB, uuids []string) ([]int64, error) {
+	if len(uuids) == 0 {
+		return []int64{}, nil
+	}
+
+	var res []int64
+	q, a, err := sqlx.In(`
+		SELECT id FROM dahua_devices WHERE uuid IN (?)
+		`, uuids)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Select(&res, q, a...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

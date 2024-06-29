@@ -21,6 +21,7 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/coaxialcontrolio"
+	"github.com/ItsNotGoodName/ipcmanview/pkg/pagination"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/sse"
 	"github.com/google/uuid"
@@ -40,7 +41,6 @@ func NewConfig() huma.Config {
 }
 
 func Register(api huma.API, app App) {
-	// Devices
 	huma.Register(api, huma.Operation{
 		Summary: "List devices",
 		Method:  http.MethodGet,
@@ -601,12 +601,66 @@ func Register(api huma.API, app App) {
 			Body: body,
 		}, nil
 	})
+	huma.Register(api, huma.Operation{
+		Summary: "List events",
+		Method:  http.MethodGet,
+		Path:    "/api/events",
+	}, func(ctx context.Context, input *struct {
+		Ascending bool     `query:"ascending"`
+		Devices   []string `query:"device"`
+		Codes     []string `query:"codes"`
+		Actions   []string `query:"actions"`
+		Page      int      `query:"page"`
+		PerPage   int      `query:"per_page"`
+	},
+	) (*ListEventsOutput, error) {
+		deviceIDs, err := dahua.GetDeviceIDs(ctx, app.DB, input.Devices)
+		if err != nil {
+			return nil, err
+		}
+
+		res, err := dahua.ListEvents(ctx, app.DB, dahua.ListEventsParams{
+			Page: pagination.Page{
+				Page:    input.Page,
+				PerPage: input.PerPage,
+			},
+			Ascending: input.Ascending,
+			Filter: dahua.EventFilter{
+				DeviceIDs: deviceIDs,
+				Codes:     input.Codes,
+				Actions:   input.Actions,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		data := []DeviceEvent{}
+		for _, v := range res.Items {
+			data = append(data, DeviceEvent{
+				ID:         v.ID,
+				DeviceUUID: v.Device_UUID,
+				Code:       v.Code,
+				Action:     v.Action,
+				Index:      v.Index,
+				Data:       v.Data.RawMessage,
+				CreatedAt:  v.Created_At.Time,
+			})
+		}
+
+		return &ListEventsOutput{
+			Body: ListEvents{
+				Pagination: NewPagePagination(res.PageResult),
+				Data:       data,
+			},
+		}, nil
+	})
 	sse.Register(api, huma.Operation{
 		Summary: "Listen for events",
 		Method:  http.MethodGet,
-		Path:    "/api/events",
+		Path:    "/api/events/sse",
 	}, map[string]any{
-		"message": DeviceEventsOutput{},
+		"message": DeviceEvent{},
 	}, func(ctx context.Context, input *struct {
 		Devices []string `query:"device"`
 		Codes   []string `query:"codes"`
@@ -626,7 +680,7 @@ func Register(api huma.API, app App) {
 			if len(input.Actions) != 0 && !slices.Contains(input.Actions, event.Event.Action) {
 				continue
 			}
-			err := send.Data(DeviceEventsOutput{
+			err := send.Data(DeviceEvent{
 				ID:         event.EventID,
 				DeviceUUID: event.DeviceKey.UUID,
 				Code:       event.Event.Code,
@@ -1640,4 +1694,13 @@ type EventActionsOutput struct {
 
 type LocationsOutput struct {
 	Body []string
+}
+
+type ListEventsOutput struct {
+	Body ListEvents
+}
+
+type ListEvents struct {
+	Pagination PagePagination `json:"pagination"`
+	Data       []DeviceEvent  `json:"data"`
 }

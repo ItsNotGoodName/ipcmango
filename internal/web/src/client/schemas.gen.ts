@@ -361,7 +361,7 @@ export const $DeviceDetail = {
     type: 'object'
 } as const;
 
-export const $DeviceEventsOutput = {
+export const $DeviceEvent = {
     additionalProperties: false,
     properties: {
         action: {
@@ -883,6 +883,30 @@ export const $GetHomePage = {
     type: 'object'
 } as const;
 
+export const $ListEvents = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/ListEvents.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        data: {
+            items: {
+                '$ref': '#/components/schemas/DeviceEvent'
+            },
+            type: 'array'
+        },
+        pagination: {
+            '$ref': '#/components/schemas/PagePagination'
+        }
+    },
+    required: ['pagination', 'data'],
+    type: 'object'
+} as const;
+
 export const $ManualFileScan = {
     additionalProperties: false,
     properties: {
@@ -902,6 +926,42 @@ export const $ManualFileScan = {
             type: 'string'
         }
     },
+    type: 'object'
+} as const;
+
+export const $PagePagination = {
+    additionalProperties: false,
+    properties: {
+        next_page: {
+            format: 'int64',
+            type: 'integer'
+        },
+        page: {
+            format: 'int64',
+            type: 'integer'
+        },
+        per_page: {
+            format: 'int64',
+            type: 'integer'
+        },
+        previous_page: {
+            format: 'int64',
+            type: 'integer'
+        },
+        seen_items: {
+            format: 'int64',
+            type: 'integer'
+        },
+        total_items: {
+            format: 'int64',
+            type: 'integer'
+        },
+        total_pages: {
+            format: 'int64',
+            type: 'integer'
+        }
+    },
+    required: ['page', 'per_page', 'total_pages', 'total_items', 'seen_items', 'previous_page', 'next_page'],
     type: 'object'
 } as const;
 

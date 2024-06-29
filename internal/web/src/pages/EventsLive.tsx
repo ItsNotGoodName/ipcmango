@@ -1,4 +1,4 @@
-import { A, useSearchParams } from "@solidjs/router";
+import { A } from "@solidjs/router";
 import {
   ErrorBoundary,
   For,
@@ -8,7 +8,12 @@ import {
   onCleanup,
   untrack,
 } from "solid-js";
-import { formatDate, useQueryFilter } from "~/lib/utils";
+import {
+  formatDate,
+  useQueryBoolean,
+  useQueryFilter,
+  useQueryNumber,
+} from "~/lib/utils";
 import { LayoutNormal } from "~/ui/Layout";
 import {
   TableBody,
@@ -21,7 +26,7 @@ import {
 import { linkVariants } from "~/ui/Link";
 import { PageError, PageTitle } from "~/ui/Page";
 import { Skeleton } from "~/ui/Skeleton";
-import { RiArrowsArrowDownSLine, RiSystemDeleteBinLine } from "solid-icons/ri";
+import { RiSystemDeleteBinLine } from "solid-icons/ri";
 import { Button } from "~/ui/Button";
 import {
   BreadcrumbsItem,
@@ -39,11 +44,12 @@ import {
 import {
   EventActionFilterCombobox,
   EventCodeFilterCombobox,
+  ExpandButton,
   JSONTableRow,
 } from "./Events";
 import { api } from "./data";
 import { createQuery } from "@tanstack/solid-query";
-import { DeviceEventsOutput } from "~/client";
+import { DeviceEvent } from "~/client";
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
 import { getQueryString } from "~/client/core/request";
 import {
@@ -55,40 +61,36 @@ import {
   SelectContent,
   SelectListbox,
 } from "~/ui/Select";
+import { PositionEnd } from "~/components/Utils";
 
 export default function () {
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const data = createQuery(() => ({
     ...api.devices.list,
     throwOnError: true,
   }));
 
-  const dataOpen = () => Boolean(searchParams.data);
-  const setDataOpen = (value: boolean) =>
-    setSearchParams({ data: value ? String(value) : "" });
+  const dataQuery = useQueryBoolean("data");
 
-  const deviceFilter = useQueryFilter("devices");
-  const codeFilter = useQueryFilter("codes");
-  const actionFilter = useQueryFilter("actions");
-  const limit = () =>
-    searchParams.limit == undefined ? 100 : Number(searchParams.limit);
+  const deviceQuery = useQueryFilter("devices");
+  const codeQuery = useQueryFilter("codes");
+  const actionQuery = useQueryFilter("actions");
+  const limitQuery = useQueryNumber("limit", 100);
 
-  const [events, setEvents] = createSignal<DeviceEventsOutput[]>([]);
+  const [events, setEvents] = createSignal<DeviceEvent[]>([]);
 
   createEffect(() => {
     const sse = new EventSource(
-      "/api/events" +
+      "/api/events/sse" +
         getQueryString({
-          devices: deviceFilter.values(),
-          codes: codeFilter.values(),
-          actions: actionFilter.values(),
+          devices: deviceQuery.values(),
+          codes: codeQuery.values(),
+          actions: actionQuery.values(),
         }),
     );
 
     sse.onmessage = (ev: MessageEvent<string>) => {
-      const newEvent = JSON.parse(ev.data) as DeviceEventsOutput;
-      const end = untrack(limit);
+      const newEvent = JSON.parse(ev.data) as DeviceEvent;
+      const end = untrack(limitQuery.value);
       setEvents((prev) =>
         end == 0 ? [newEvent, ...prev] : [newEvent, ...prev.slice(0, end - 1)],
       );
@@ -115,16 +117,16 @@ export default function () {
           <div class="flex justify-between gap-2">
             <div class="flex flex-wrap gap-2">
               <DeviceFilterCombobox
-                deviceIDs={deviceFilter.values()}
-                setDeviceIDs={deviceFilter.setValues}
+                deviceIDs={deviceQuery.values()}
+                setDeviceIDs={deviceQuery.setValues}
               />
               <EventCodeFilterCombobox
-                codes={codeFilter.values()}
-                setCodes={codeFilter.setValues}
+                codes={codeQuery.values()}
+                setCodes={codeQuery.setValues}
               />
               <EventActionFilterCombobox
-                actions={actionFilter.values()}
-                setActions={actionFilter.setValues}
+                actions={actionQuery.values()}
+                setActions={actionQuery.setValues}
               />
               <SelectRoot
                 options={[
@@ -135,8 +137,8 @@ export default function () {
                 ]}
                 optionTextValue="name"
                 optionValue="value"
-                onChange={(value) => setSearchParams({ limit: value.value })}
-                value={{ value: limit(), name: "" }}
+                onChange={(value) => limitQuery.setValue(value.value)}
+                value={{ value: limitQuery.value(), name: "" }}
                 itemComponent={(props) => (
                   <SelectItem item={props.item}>
                     {props.item.rawValue.name}
@@ -146,7 +148,9 @@ export default function () {
               >
                 <SelectTrigger>
                   <SelectValue<{ name: string }>>
-                    {(state) => state.selectedOption()?.name ?? limit()}
+                    {(state) =>
+                      state.selectedOption()?.name ?? limitQuery.value()
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectPortal>
@@ -171,27 +175,22 @@ export default function () {
                 <TableHead>Action</TableHead>
                 <TableHead>Index</TableHead>
                 <TableHead>
-                  <div class="flex items-center justify-end">
-                    <Button
-                      data-expanded={dataOpen()}
-                      onClick={() => setDataOpen(!dataOpen())}
-                      title="Data"
-                      size="icon"
-                      variant="ghost"
-                      class="[&[data-expanded=true]>svg]:rotate-180"
-                    >
-                      <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
-                    </Button>
-                  </div>
+                  <PositionEnd>
+                    <ExpandButton
+                      expanded={dataQuery.value()}
+                      onClick={() => dataQuery.setValue(!dataQuery.value())}
+                    />
+                  </PositionEnd>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <For each={events()}>
                 {(v) => {
-                  const [rowDataOpen, setRowDataOpen] =
-                    createSignal(dataOpen());
-                  createEffect(() => setRowDataOpen(dataOpen()));
+                  const [rowDataOpen, setRowDataOpen] = createSignal(
+                    dataQuery.value(),
+                  );
+                  createEffect(() => setRowDataOpen(dataQuery.value()));
 
                   const [createdAt] = createDate(() => v.created_at);
                   const [createdAtAgo] = createTimeAgo(createdAt);
@@ -223,19 +222,13 @@ export default function () {
                         <TableCell>{v.code}</TableCell>
                         <TableCell>{v.action}</TableCell>
                         <TableCell>{v.index.toString()}</TableCell>
-                        <TableCell>
-                          <div class="flex items-center justify-end">
-                            <Button
-                              data-expanded={rowDataOpen()}
+                        <TableCell class="py-0">
+                          <PositionEnd>
+                            <ExpandButton
+                              expanded={rowDataOpen()}
                               onClick={() => setRowDataOpen(!rowDataOpen())}
-                              title="Data"
-                              size="icon"
-                              variant="ghost"
-                              class="[&[data-expanded=true]>svg]:rotate-180"
-                            >
-                              <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
-                            </Button>
-                          </div>
+                            />
+                          </PositionEnd>
                         </TableCell>
                       </TableRow>
                       <JSONTableRow

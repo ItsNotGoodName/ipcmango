@@ -124,7 +124,7 @@ export type DeviceDetail = {
     vendor: string;
 };
 
-export type DeviceEventsOutput = {
+export type DeviceEvent = {
     action: string;
     code: string;
     created_at: string;
@@ -325,6 +325,15 @@ export type GetHomePage = {
     file_usage: number;
 };
 
+export type ListEvents = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    data: Array<DeviceEvent>;
+    pagination: PagePagination;
+};
+
 export type ManualFileScan = {
     /**
      * A URL to the JSON Schema for this object.
@@ -332,6 +341,16 @@ export type ManualFileScan = {
     readonly $schema?: string;
     end_time?: string;
     start_time?: string;
+};
+
+export type PagePagination = {
+    next_page: number;
+    page: number;
+    per_page: number;
+    previous_page: number;
+    seen_items: number;
+    total_items: number;
+    total_pages: number;
 };
 
 export type PatchSettings = {
@@ -658,12 +677,23 @@ export type GetApiEventCodesResponse = Array<(string)>;
 
 export type GetApiEventsData = {
     actions?: Array<(string)>;
+    ascending?: boolean;
+    codes?: Array<(string)>;
+    device?: Array<(string)>;
+    page?: number;
+    perPage?: number;
+};
+
+export type GetApiEventsResponse = ListEvents;
+
+export type GetApiEventsSseData = {
+    actions?: Array<(string)>;
     codes?: Array<(string)>;
     device?: Array<(string)>;
 };
 
-export type GetApiEventsResponse = Array<({
-    data: DeviceEventsOutput;
+export type GetApiEventsSseResponse = Array<({
+    data: DeviceEvent;
     /**
      * The event name.
      */
@@ -1266,8 +1296,23 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
+                200: ListEvents;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/events/sse': {
+        get: {
+            req: GetApiEventsSseData;
+            res: {
+                /**
+                 * OK
+                 */
                 200: Array<({
-    data: DeviceEventsOutput;
+    data: DeviceEvent;
     /**
      * The event name.
      */

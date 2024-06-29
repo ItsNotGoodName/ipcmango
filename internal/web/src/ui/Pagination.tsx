@@ -1,10 +1,16 @@
 // # Changes
-// - Pagination is hidden when less then sm
+// N/A
 //
 // # URLs
 // https://kobalte.dev/docs/core/components/pagination
 // https://ui.shadcn.com/docs/components/pagination
-import { ComponentProps, JSX, mergeProps, splitProps } from "solid-js";
+import {
+  ComponentProps,
+  JSX,
+  ParentProps,
+  mergeProps,
+  splitProps,
+} from "solid-js";
 import { Pagination } from "@kobalte/core/pagination";
 import {
   RiArrowsArrowLeftSLine,
@@ -24,7 +30,7 @@ export function PaginationRoot(props: ComponentProps<typeof Pagination>) {
   return (
     <Pagination
       class={cn(
-        "hidden flex-row gap-1 sm:flex [&>ul]:flex [&>ul]:w-full [&>ul]:items-center [&>ul]:gap-1",
+        "[&>ul]:flex [&>ul]:flex-col [&>ul]:items-center [&>ul]:gap-1 [&>ul]:sm:flex-row",
         props.class,
       )}
       count={count()}
@@ -33,18 +39,24 @@ export function PaginationRoot(props: ComponentProps<typeof Pagination>) {
   );
 }
 
-export const PaginationItem = Pagination.Item;
-export const PaginationItems = Pagination.Items;
-
-export function PaginationEnd(props: JSX.HTMLAttributes<HTMLDivElement>) {
-  const [_, rest] = splitProps(props, ["class"]);
+export function PaginationStart(props: ParentProps) {
   return (
-    <div
-      class={cn("flex flex-1 items-center justify-end gap-1", props.class)}
-      {...rest}
-    />
+    <li class="flex-1">
+      <ul class="flex items-center gap-1" {...props} />
+    </li>
   );
 }
+
+export function PaginationEnd(props: ParentProps) {
+  return (
+    <li class="flex-1">
+      <ul class="flex items-center justify-end gap-1" {...props} />
+    </li>
+  );
+}
+
+export const PaginationItem = Pagination.Item;
+export const PaginationItems = Pagination.Items;
 
 type PaginationLinkProps = {
   isActive?: boolean;
