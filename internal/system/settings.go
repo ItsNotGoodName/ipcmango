@@ -122,6 +122,56 @@ func UpdateSettings(ctx context.Context, db *sqlx.DB, settings UpdateSettingsArg
 	return err
 }
 
+type PatchSettingsArgs struct {
+	Location        *types.Location
+	Latitude        *float64
+	Longitude       *float64
+	SunriseOffset   *types.Duration
+	SunsetOffset    *types.Duration
+	SyncVideoInMode *bool
+}
+
+func PatchSettings(ctx context.Context, db *sqlx.DB, settings PatchSettingsArgs) error {
+	if settings.Location != nil {
+		if err := patchSettings(ctx, db, KeyLocation, settings.Location); err != nil {
+			return err
+		}
+	}
+	if settings.Latitude != nil {
+		if err := patchSettings(ctx, db, KeyLatitude, settings.Latitude); err != nil {
+			return err
+		}
+	}
+	if settings.Longitude != nil {
+		if err := patchSettings(ctx, db, KeyLongitude, settings.Longitude); err != nil {
+			return err
+		}
+	}
+	if settings.SunriseOffset != nil {
+		if err := patchSettings(ctx, db, KeySunriseOffset, settings.SunriseOffset); err != nil {
+			return err
+		}
+	}
+	if settings.SunsetOffset != nil {
+		if err := patchSettings(ctx, db, KeySunsetOffset, settings.SunsetOffset); err != nil {
+			return err
+		}
+	}
+	if settings.SyncVideoInMode != nil {
+		if err := patchSettings(ctx, db, KeySyncVideoInMode, settings.SyncVideoInMode); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func patchSettings(ctx context.Context, db *sqlx.DB, key string, value any) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE settings SET value = ? WHERE key = ?
+	`, value, key)
+	return err
+}
+
 func GetSettings(ctx context.Context, db *sqlx.DB) (Settings, error) {
 	var settings Settings
 	err := db.GetContext(ctx, &settings, `

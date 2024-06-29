@@ -183,6 +183,15 @@ type Settings struct {
 	SyncVideoInMode bool           `json:"sync_video_in_mode"`
 }
 
+type PatchSettings struct {
+	Location        *types.Location `json:"location,omitempty"`
+	Latitude        *float64        `json:"latitude,omitempty"`
+	Longitude       *float64        `json:"longitude,omitempty"`
+	SunriseOffset   *types.Duration `json:"sunrise_offset,omitempty"`
+	SunsetOffset    *types.Duration `json:"sunset_offset,omitempty"`
+	SyncVideoInMode *bool           `json:"sync_video_in_mode,omitempty"`
+}
+
 type UpdateSettings struct {
 	Location        types.Location `json:"location"`
 	Latitude        float64        `json:"latitude"`

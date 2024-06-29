@@ -8,6 +8,7 @@ import {
   getApiDevicesByUuidUptime,
   getApiDevicesByUuidVideoInMode,
   getApiPagesHome,
+  getApiSettings,
 } from "~/client/services.gen";
 import {
   createQueryKeyStore,
@@ -15,6 +16,13 @@ import {
 } from "@lukemorales/query-key-factory";
 
 export const api = createQueryKeyStore({
+  settings: {
+    get: {
+      queryKey: null,
+      queryFn: getApiSettings,
+      throwOnError: true,
+    },
+  },
   devices: {
     list: {
       queryKey: null,

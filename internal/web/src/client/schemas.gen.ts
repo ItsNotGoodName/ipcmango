@@ -905,6 +905,43 @@ export const $ManualFileScan = {
     type: 'object'
 } as const;
 
+export const $PatchSettings = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/PatchSettings.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        latitude: {
+            format: 'double',
+            type: 'number'
+        },
+        location: {
+            examples: ['UTC'],
+            type: 'string'
+        },
+        longitude: {
+            format: 'double',
+            type: 'number'
+        },
+        sunrise_offset: {
+            examples: ['0s'],
+            type: 'string'
+        },
+        sunset_offset: {
+            examples: ['0s'],
+            type: 'string'
+        },
+        sync_video_in_mode: {
+            type: 'boolean'
+        }
+    },
+    type: 'object'
+} as const;
+
 export const $ScanResult = {
     additionalProperties: false,
     properties: {

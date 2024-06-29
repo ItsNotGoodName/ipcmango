@@ -334,6 +334,19 @@ export type ManualFileScan = {
     start_time?: string;
 };
 
+export type PatchSettings = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    latitude?: number;
+    location?: string;
+    longitude?: number;
+    sunrise_offset?: string;
+    sunset_offset?: string;
+    sync_video_in_mode?: boolean;
+};
+
 export type ScanResult = {
     /**
      * A URL to the JSON Schema for this object.
@@ -665,6 +678,12 @@ export type GetApiPagesHomeResponse = GetHomePage;
 export type DeleteApiSettingsResponse = Settings;
 
 export type GetApiSettingsResponse = Settings;
+
+export type PatchApiSettingsData = {
+    requestBody: PatchSettings;
+};
+
+export type PatchApiSettingsResponse = Settings;
 
 export type PutApiSettingsData = {
     requestBody: UpdateSettings;
@@ -1262,6 +1281,19 @@ export type $OpenApiTs = {
             };
         };
         get: {
+            res: {
+                /**
+                 * OK
+                 */
+                200: Settings;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+        patch: {
+            req: PatchApiSettingsData;
             res: {
                 /**
                  * OK

@@ -966,6 +966,35 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
+		Summary: "Patch settings",
+		Method:  http.MethodPatch,
+		Path:    "/api/settings",
+	}, func(ctx context.Context, input *struct {
+		Body PatchSettings
+	},
+	) (*SettingOutput, error) {
+		err := system.PatchSettings(ctx, app.DB, system.PatchSettingsArgs{
+			Location:        input.Body.Location,
+			Latitude:        input.Body.Latitude,
+			Longitude:       input.Body.Longitude,
+			SunriseOffset:   input.Body.SunriseOffset,
+			SunsetOffset:    input.Body.SunsetOffset,
+			SyncVideoInMode: input.Body.SyncVideoInMode,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		settings, err := system.GetSettings(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &SettingOutput{
+			Body: NewSettings(settings),
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
 		Summary: "Default settings",
 		Method:  http.MethodDelete,
 		Path:    "/api/settings",

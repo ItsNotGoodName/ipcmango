@@ -1092,6 +1092,50 @@
         },
         "type": "object"
       },
+      "PatchSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/schemas/PatchSettings.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "location": {
+            "examples": [
+              "UTC"
+            ],
+            "type": "string"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "sunrise_offset": {
+            "examples": [
+              "0s"
+            ],
+            "type": "string"
+          },
+          "sunset_offset": {
+            "examples": [
+              "0s"
+            ],
+            "type": "string"
+          },
+          "sync_video_in_mode": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "ScanResult": {
         "additionalProperties": false,
         "properties": {
@@ -3037,6 +3081,41 @@
           }
         },
         "summary": "Get settings"
+      },
+      "patch": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Patch settings"
       },
       "put": {
         "requestBody": {

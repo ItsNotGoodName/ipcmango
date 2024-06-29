@@ -52,7 +52,7 @@ export function SwitchControl(
       <Switch.Input class="peer" {...props.inputProps} />
       <Switch.Control
         class={cn(
-          "inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors disabled:cursor-not-allowed disabled:opacity-50 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background ui-checked:bg-primary ui-not-checked:bg-input",
+          "inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background ui-disabled:cursor-not-allowed ui-disabled:opacity-50 ui-checked:bg-primary ui-not-checked:bg-input",
           props.class,
         )}
         {...rest}
