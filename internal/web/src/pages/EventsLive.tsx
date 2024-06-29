@@ -6,6 +6,7 @@ import {
   createEffect,
   createSignal,
   onCleanup,
+  untrack,
 } from "solid-js";
 import { formatDate, useQueryFilter } from "~/lib/utils";
 import { LayoutNormal } from "~/ui/Layout";
@@ -20,7 +21,7 @@ import {
 import { linkVariants } from "~/ui/Link";
 import { PageError, PageTitle } from "~/ui/Page";
 import { Skeleton } from "~/ui/Skeleton";
-import { RiArrowsArrowDownSLine } from "solid-icons/ri";
+import { RiArrowsArrowDownSLine, RiSystemDeleteBinLine } from "solid-icons/ri";
 import { Button } from "~/ui/Button";
 import {
   BreadcrumbsItem,
@@ -45,6 +46,15 @@ import { createQuery } from "@tanstack/solid-query";
 import { DeviceEventsOutput } from "~/client";
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
 import { getQueryString } from "~/client/core/request";
+import {
+  SelectRoot,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectPortal,
+  SelectContent,
+  SelectListbox,
+} from "~/ui/Select";
 
 export default function () {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -55,9 +65,11 @@ export default function () {
   const setDataOpen = (value: boolean) =>
     setSearchParams({ data: value ? String(value) : "" });
 
-  const deviceFilter = useQueryFilter("device");
-  const codeFilter = useQueryFilter("code");
-  const actionFilter = useQueryFilter("action");
+  const deviceFilter = useQueryFilter("devices");
+  const codeFilter = useQueryFilter("codes");
+  const actionFilter = useQueryFilter("actions");
+  const limit = () =>
+    searchParams.limit == undefined ? 100 : Number(searchParams.limit);
 
   const [events, setEvents] = createSignal<DeviceEventsOutput[]>([]);
 
@@ -65,13 +77,18 @@ export default function () {
     const sse = new EventSource(
       "/api/events" +
         getQueryString({
-          "device-uuids": deviceFilter.values(),
-          code: codeFilter.values(),
+          devices: deviceFilter.values(),
+          codes: codeFilter.values(),
+          actions: actionFilter.values(),
         }),
     );
 
     sse.onmessage = (ev: MessageEvent<string>) => {
-      setEvents((prev) => [JSON.parse(ev.data) as DeviceEventsOutput, ...prev]);
+      const newEvent = JSON.parse(ev.data) as DeviceEventsOutput;
+      const end = untrack(limit);
+      setEvents((prev) =>
+        end == 0 ? [newEvent, ...prev] : [newEvent, ...prev.slice(0, end - 1)],
+      );
     };
 
     onCleanup(() => sse.close());
@@ -92,19 +109,59 @@ export default function () {
       </PageTitle>
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
         <Suspense fallback={<Skeleton class="h-32" />}>
-          <div class="flex gap-2">
-            <DeviceFilterCombobox
-              deviceIDs={deviceFilter.values()}
-              setDeviceIDs={deviceFilter.setValues}
-            />
-            <EventCodeFilterCombobox
-              codes={codeFilter.values()}
-              setCodes={codeFilter.setValues}
-            />
-            <EventActionFilterCombobox
-              actions={actionFilter.values()}
-              setActions={actionFilter.setValues}
-            />
+          <div class="flex justify-between gap-2">
+            <div class="flex flex-wrap gap-2">
+              <DeviceFilterCombobox
+                deviceIDs={deviceFilter.values()}
+                setDeviceIDs={deviceFilter.setValues}
+              />
+              <EventCodeFilterCombobox
+                codes={codeFilter.values()}
+                setCodes={codeFilter.setValues}
+              />
+              <EventActionFilterCombobox
+                actions={actionFilter.values()}
+                setActions={actionFilter.setValues}
+              />
+              <SelectRoot
+                options={[
+                  { value: 0, name: "Unlimited" },
+                  { value: 10, name: "10" },
+                  { value: 25, name: "25" },
+                  { value: 100, name: "100" },
+                ]}
+                optionTextValue="name"
+                optionValue="value"
+                onChange={(value) => setSearchParams({ limit: value.value })}
+                value={{ value: limit(), name: "" }}
+                itemComponent={(props) => (
+                  <SelectItem item={props.item}>
+                    {props.item.rawValue.name}
+                  </SelectItem>
+                )}
+                class="space-y-2"
+              >
+                <SelectTrigger>
+                  <SelectValue<{ name: string }>>
+                    {(state) => state.selectedOption()?.name}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectPortal>
+                  <SelectContent>
+                    <SelectListbox />
+                  </SelectContent>
+                </SelectPortal>
+              </SelectRoot>
+            </div>
+            <div>
+              <Button
+                size="icon"
+                variant="destructive"
+                onClick={() => setEvents([])}
+              >
+                <RiSystemDeleteBinLine class="size-6" />
+              </Button>
+            </div>
           </div>
           <TableRoot>
             <TableHeader>
@@ -115,16 +172,18 @@ export default function () {
                 <TableHead>Action</TableHead>
                 <TableHead>Index</TableHead>
                 <TableHead>
-                  <Button
-                    data-expanded={dataOpen()}
-                    onClick={() => setDataOpen(!dataOpen())}
-                    title="Data"
-                    size="icon"
-                    variant="ghost"
-                    class="[&[data-expanded=true]>svg]:rotate-180"
-                  >
-                    <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
-                  </Button>
+                  <div class="flex items-center justify-end">
+                    <Button
+                      data-expanded={dataOpen()}
+                      onClick={() => setDataOpen(!dataOpen())}
+                      title="Data"
+                      size="icon"
+                      variant="ghost"
+                      class="[&[data-expanded=true]>svg]:rotate-180"
+                    >
+                      <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
+                    </Button>
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -166,16 +225,18 @@ export default function () {
                         <TableCell>{v.action}</TableCell>
                         <TableCell>{v.index.toString()}</TableCell>
                         <TableCell>
-                          <Button
-                            data-expanded={rowDataOpen()}
-                            onClick={() => setRowDataOpen(!rowDataOpen())}
-                            title="Data"
-                            size="icon"
-                            variant="ghost"
-                            class="[&[data-expanded=true]>svg]:rotate-180"
-                          >
-                            <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
-                          </Button>
+                          <div class="flex items-center justify-end">
+                            <Button
+                              data-expanded={rowDataOpen()}
+                              onClick={() => setRowDataOpen(!rowDataOpen())}
+                              title="Data"
+                              size="icon"
+                              variant="ghost"
+                              class="[&[data-expanded=true]>svg]:rotate-180"
+                            >
+                              <RiArrowsArrowDownSLine class="h-5 w-5 shrink-0 transition-transform duration-200" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                       <JSONTableRow

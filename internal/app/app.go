@@ -608,16 +608,16 @@ func Register(api huma.API, app App) {
 	}, map[string]any{
 		"message": DeviceEventsOutput{},
 	}, func(ctx context.Context, input *struct {
-		DeviceUUIDs []string `query:"device-uuids"`
-		Codes       []string `query:"codes"`
-		Actions     []string `query:"actions"`
+		Devices []string `query:"device"`
+		Codes   []string `query:"codes"`
+		Actions []string `query:"actions"`
 	}, send sse.Sender,
 	) {
 		eventC, unsub := bus.SubscribeChannel[bus.EventCreated]("app(/api/events)")
 		defer unsub()
 
 		for event := range eventC {
-			if len(input.DeviceUUIDs) != 0 && !slices.Contains(input.DeviceUUIDs, event.DeviceKey.UUID) {
+			if len(input.Devices) != 0 && !slices.Contains(input.Devices, event.DeviceKey.UUID) {
 				continue
 			}
 			if len(input.Codes) != 0 && !slices.Contains(input.Codes, event.Event.Code) {

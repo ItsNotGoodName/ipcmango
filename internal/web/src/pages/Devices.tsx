@@ -84,7 +84,7 @@ export default function () {
     throwOnError: true,
   }));
 
-  const queryFilter = useQueryFilter("device");
+  const queryFilter = useQueryFilter("devices");
   const devices = () =>
     queryFilter.values().length == 0
       ? data.data
