@@ -114,7 +114,6 @@ export default function () {
         setDefaultDialog(false);
       }),
     onError: (error) => toast.error(error.name, error.message),
-    throwOnError: true,
   }));
 
   const syncVideoInModeMutation = useMutation();

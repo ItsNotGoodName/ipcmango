@@ -194,3 +194,19 @@ export function useQueryNumber(key: string, defaultValue?: number) {
     setValue,
   };
 }
+
+export function useQueryString(key: string, defaultValue?: string) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const value = () =>
+    searchParams[key] == undefined ? defaultValue : searchParams[key];
+  const setValue = (value: string) =>
+    setSearchParams({
+      [key]: value != undefined ? value : defaultValue,
+    });
+
+  return {
+    value,
+    setValue,
+  };
+}

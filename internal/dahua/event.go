@@ -27,6 +27,13 @@ type Event struct {
 	Created_At types.Time
 }
 
+func DeleteEvents(ctx context.Context, db *sqlx.DB) error {
+	_, err := db.ExecContext(ctx, `
+		DELETE FROM dahua_events
+	`)
+	return err
+}
+
 type EventFilter struct {
 	DeviceIDs []int64
 	Codes     []string

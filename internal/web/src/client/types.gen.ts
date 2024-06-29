@@ -675,11 +675,13 @@ export type GetApiEventActionsResponse = Array<(string)>;
 
 export type GetApiEventCodesResponse = Array<(string)>;
 
+export type DeleteApiEventsResponse = void;
+
 export type GetApiEventsData = {
     actions?: Array<(string)>;
-    ascending?: boolean;
     codes?: Array<(string)>;
     device?: Array<(string)>;
+    order?: 'ascending' | 'descending';
     page?: number;
     perPage?: number;
 };
@@ -1290,6 +1292,18 @@ export type $OpenApiTs = {
         };
     };
     '/api/events': {
+        delete: {
+            res: {
+                /**
+                 * No Content
+                 */
+                204: void;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
         get: {
             req: GetApiEventsData;
             res: {

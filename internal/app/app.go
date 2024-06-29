@@ -21,7 +21,6 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/coaxialcontrolio"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/pagination"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/sse"
 	"github.com/google/uuid"
@@ -602,16 +601,27 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
+		Summary: "Delete events",
+		Method:  http.MethodDelete,
+		Path:    "/api/events",
+	}, func(ctx context.Context, input *struct{},
+	) (*struct{}, error) {
+		err := dahua.DeleteEvents(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+		return &struct{}{}, nil
+	})
+	huma.Register(api, huma.Operation{
 		Summary: "List events",
 		Method:  http.MethodGet,
 		Path:    "/api/events",
 	}, func(ctx context.Context, input *struct {
-		Ascending bool     `query:"ascending"`
-		Devices   []string `query:"device"`
-		Codes     []string `query:"codes"`
-		Actions   []string `query:"actions"`
-		Page      int      `query:"page"`
-		PerPage   int      `query:"per_page"`
+		PageQuery
+		OrderQuery
+		Devices []string `query:"device"`
+		Codes   []string `query:"codes"`
+		Actions []string `query:"actions"`
 	},
 	) (*ListEventsOutput, error) {
 		deviceIDs, err := dahua.GetDeviceIDs(ctx, app.DB, input.Devices)
@@ -620,11 +630,8 @@ func Register(api huma.API, app App) {
 		}
 
 		res, err := dahua.ListEvents(ctx, app.DB, dahua.ListEventsParams{
-			Page: pagination.Page{
-				Page:    input.Page,
-				PerPage: input.PerPage,
-			},
-			Ascending: input.Ascending,
+			Page:      input.GetPage(),
+			Ascending: input.Order.Ascending(),
 			Filter: dahua.EventFilter{
 				DeviceIDs: deviceIDs,
 				Codes:     input.Codes,

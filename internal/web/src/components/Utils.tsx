@@ -4,28 +4,38 @@ import { PagePagination } from "~/client";
 
 import { cn } from "~/lib/utils";
 
-enum Sort {
-  ASC = 1,
-  DESC = 2,
+enum Order {
+  Unknown = "",
+  Ascending = "ascending",
+  Descending = "descending",
 }
 
 export function SortButton(
   props: ParentProps<{
-    onClick?: () => void;
-    sort?: Sort;
+    onToggle: (order: Order) => void;
+    order?: Order | string;
   }>,
 ) {
   return (
     <button
-      onClick={props.onClick}
+      onClick={() => {
+        if (props.order == Order.Ascending) {
+          props.onToggle(Order.Descending);
+        } else if (props.order == Order.Descending) {
+          props.onToggle(Order.Unknown);
+        } else {
+          props.onToggle(Order.Ascending);
+        }
+      }}
       class={cn(
         "flex items-center whitespace-nowrap text-nowrap",
-        props.sort && "text-blue-500",
+        (props.order == Order.Ascending || props.order == Order.Descending) &&
+          "text-blue-500",
       )}
     >
       {props.children}
       <RiArrowsArrowDownSLine
-        data-selected={props.sort == Sort.ASC}
+        data-selected={props.order == Order.Ascending}
         class="size-5 transition-all data-[selected=true]:rotate-180"
       />
     </button>

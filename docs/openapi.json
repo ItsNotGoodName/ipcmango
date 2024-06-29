@@ -3054,14 +3054,59 @@
       }
     },
     "/api/events": {
+      "delete": {
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete events"
+      },
       "get": {
         "parameters": [
           {
             "explode": false,
             "in": "query",
-            "name": "ascending",
+            "name": "page",
             "schema": {
-              "type": "boolean"
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "perPage",
+            "schema": {
+              "default": 20,
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "enum": [
+                "ascending",
+                "descending"
+              ],
+              "type": "string"
             }
           },
           {
@@ -3095,24 +3140,6 @@
                 "type": "string"
               },
               "type": "array"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "per_page",
-            "schema": {
-              "format": "int64",
-              "type": "integer"
             }
           }
         ],

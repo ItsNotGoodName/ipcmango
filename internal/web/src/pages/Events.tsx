@@ -5,19 +5,25 @@ import {
   For,
   Show,
   Suspense,
+  batch,
   createEffect,
   createSignal,
 } from "solid-js";
 import {
   RiArrowsArrowDownSLine,
   RiDocumentClipboardLine,
+  RiSystemDeleteBinLine,
   RiSystemFilterLine,
 } from "solid-icons/ri";
 import { Button } from "~/ui/Button";
 import { LayoutNormal } from "~/ui/Layout";
 import { PageError, PageTitle } from "~/ui/Page";
 import { Skeleton } from "~/ui/Skeleton";
-import { createQuery } from "@tanstack/solid-query";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/solid-query";
 import {
   ComboboxRoot,
   ComboboxItem,
@@ -43,13 +49,14 @@ import {
   PaginationRoot,
   PaginationStart,
 } from "~/ui/Pagination";
-import { formatDate } from "@solid-primitives/date";
 import { A } from "@solidjs/router";
 import {
+  formatDate,
   parseDate,
   useQueryBoolean,
   useQueryFilter,
   useQueryNumber,
+  useQueryString,
 } from "~/lib/utils";
 import { linkVariants } from "~/ui/Link";
 import {
@@ -72,6 +79,18 @@ import {
   SelectContent,
   SelectListbox,
 } from "~/ui/Select";
+import { deleteApiEvents } from "~/client";
+import { toast } from "~/ui/Toast";
+import {
+  AlertDialogRoot,
+  AlertDialogTrigger,
+  AlertDialogModal,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "~/ui/AlertDialog";
 
 export function JSONTableRow(props: {
   colspan?: number;
@@ -206,11 +225,15 @@ export function ExpandButton(props: {
 }
 
 export default function () {
+  const client = useQueryClient();
+
   const pageQuery = useQueryNumber("page", 1);
   const perPageQuery = useQueryNumber("perPage", 10);
+
   const devicesQuery = useQueryFilter("devices");
   const codesQuery = useQueryFilter("codes");
   const actionsQuery = useQueryFilter("actions");
+  const orderQuery = useQueryString("order");
 
   const devices = createQuery(() => ({
     ...api.devices.list,
@@ -224,11 +247,23 @@ export default function () {
       device: devicesQuery.values(),
       codes: codesQuery.values(),
       actions: actionsQuery.values(),
+      order: orderQuery.value(),
     }),
     throwOnError: true,
   }));
 
   const queryData = useQueryBoolean("data");
+
+  const [deleteDialog, setDeleteDialog] = createSignal(false);
+  const deleteMutation = createMutation(() => ({
+    mutationFn: () => deleteApiEvents(),
+    onSuccess: () =>
+      batch(() => {
+        client.invalidateQueries({ queryKey: api.events.list._def });
+        setDeleteDialog(false);
+      }),
+    onError: (error) => toast.error(error.name, error.message),
+  }));
 
   return (
     <LayoutNormal class="max-w-4xl">
@@ -236,49 +271,82 @@ export default function () {
 
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
         <Suspense fallback={<Skeleton class="h-32" />}>
-          <div class="flex flex-wrap gap-2">
-            <DeviceFilterCombobox
-              deviceIDs={devicesQuery.values()}
-              setDeviceIDs={devicesQuery.setValues}
-            />
-            <EventCodeFilterCombobox
-              codes={codesQuery.values()}
-              setCodes={codesQuery.setValues}
-            />
-            <EventActionFilterCombobox
-              actions={actionsQuery.values()}
-              setActions={actionsQuery.setValues}
-            />
-            <SelectRoot
-              options={[
-                { value: 10, name: "10" },
-                { value: 25, name: "25" },
-                { value: 100, name: "100" },
-              ]}
-              optionTextValue="name"
-              optionValue="value"
-              onChange={(value) => perPageQuery.setValue(value.value)}
-              value={{ value: perPageQuery.value(), name: "" }}
-              itemComponent={(props) => (
-                <SelectItem item={props.item}>
-                  {props.item.rawValue.name}
-                </SelectItem>
-              )}
-              class="space-y-2"
-            >
-              <SelectTrigger>
-                <SelectValue<{ name: string }>>
-                  {(state) =>
-                    state.selectedOption()?.name ?? perPageQuery.value()
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectPortal>
-                <SelectContent>
-                  <SelectListbox />
-                </SelectContent>
-              </SelectPortal>
-            </SelectRoot>
+          <div class="flex justify-between gap-2">
+            <div class="flex flex-wrap gap-2">
+              <DeviceFilterCombobox
+                deviceIDs={devicesQuery.values()}
+                setDeviceIDs={devicesQuery.setValues}
+              />
+              <EventCodeFilterCombobox
+                codes={codesQuery.values()}
+                setCodes={codesQuery.setValues}
+              />
+              <EventActionFilterCombobox
+                actions={actionsQuery.values()}
+                setActions={actionsQuery.setValues}
+              />
+              <SelectRoot
+                options={[
+                  { value: 10, name: "10" },
+                  { value: 25, name: "25" },
+                  { value: 100, name: "100" },
+                ]}
+                optionTextValue="name"
+                optionValue="value"
+                onChange={(value) => perPageQuery.setValue(value?.value)}
+                value={{ value: perPageQuery.value(), name: "" }}
+                itemComponent={(props) => (
+                  <SelectItem item={props.item}>
+                    {props.item.rawValue.name}
+                  </SelectItem>
+                )}
+                class="space-y-2"
+              >
+                <SelectTrigger>
+                  <SelectValue<{ name: string }>>
+                    {(state) =>
+                      state.selectedOption()?.name ?? perPageQuery.value()
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectPortal>
+                  <SelectContent>
+                    <SelectListbox />
+                  </SelectContent>
+                </SelectPortal>
+              </SelectRoot>
+            </div>
+
+            <div>
+              <AlertDialogRoot
+                open={deleteDialog()}
+                onOpenChange={setDeleteDialog}
+              >
+                <AlertDialogTrigger
+                  as={Button}
+                  disabled={deleteMutation.isPending}
+                  variant="destructive"
+                  size="icon"
+                >
+                  <RiSystemDeleteBinLine class="size-5" />
+                </AlertDialogTrigger>
+                <AlertDialogModal>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete events?</AlertDialogTitle>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate()}
+                      variant="destructive"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogModal>
+              </AlertDialogRoot>
+            </div>
           </div>
 
           <PaginationRoot
@@ -309,7 +377,12 @@ export default function () {
             <TableHeader>
               <TableRow>
                 <TableHead>
-                  <SortButton>Created At</SortButton>
+                  <SortButton
+                    order={orderQuery.value()}
+                    onToggle={(order) => orderQuery.setValue(order)}
+                  >
+                    Created At
+                  </SortButton>
                 </TableHead>
                 <TableHead>Device</TableHead>
                 <TableHead>Code</TableHead>
