@@ -46,7 +46,7 @@ import {
   EventCodeFilterCombobox,
   ExpandButton,
   JSONTableRow,
-} from "./Events";
+} from "~/components/Events";
 import { api } from "./data";
 import { createQuery } from "@tanstack/solid-query";
 import { DeviceEvent } from "~/client";
