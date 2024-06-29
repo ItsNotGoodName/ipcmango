@@ -1,6 +1,6 @@
 import { A, useSearchParams } from "@solidjs/router";
 import { ErrorBoundary, For, Show, Suspense, createSignal } from "solid-js";
-import { PageError } from "~/ui/Page";
+import { PageError, PageTitle } from "~/ui/Page";
 import { LayoutNormal } from "~/ui/Layout";
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "~/ui/Tabs";
 import {
@@ -93,7 +93,7 @@ export default function () {
   return (
     <LayoutNormal>
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
-        <h1>Devices</h1>
+        <PageTitle>Devices</PageTitle>
         <div class="flex">
           <DeviceFilterCombobox
             deviceIDs={queryFilter.values()}

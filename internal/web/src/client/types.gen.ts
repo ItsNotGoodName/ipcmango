@@ -652,7 +652,12 @@ export type PostApiEndpointsByUuidData = {
 
 export type PostApiEndpointsByUuidResponse = EmailEndpoint;
 
+export type GetApiEventActionsResponse = Array<(string)>;
+
+export type GetApiEventCodesResponse = Array<(string)>;
+
 export type GetApiEventsData = {
+    actions?: Array<(string)>;
     codes?: Array<(string)>;
     deviceUuids?: Array<(string)>;
 };
@@ -1217,6 +1222,34 @@ export type $OpenApiTs = {
                  * OK
                  */
                 200: EmailEndpoint;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/event-actions': {
+        get: {
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<(string)>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/event-codes': {
+        get: {
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<(string)>;
                 /**
                  * Error
                  */

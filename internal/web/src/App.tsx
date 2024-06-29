@@ -11,6 +11,8 @@ const Settings = lazy(() => import("~/pages/Settings"));
 import loadSettings from "~/pages/Settings.data";
 const Devices = lazy(() => import("~/pages/Devices"));
 import loadDevices from "~/pages/Devices.data";
+const Emails = lazy(() => import("~/pages/Emails"));
+import loadEmails from "~/pages/Emails.data";
 const Events = lazy(() => import("~/pages/Events"));
 import loadEvents from "~/pages/Events.data";
 const EventsLive = lazy(() => import("~/pages/EventsLive"));
@@ -32,6 +34,7 @@ function App() {
       <Route path="/" component={Home} load={loadHome} />
       <Route path="/settings" component={Settings} load={loadSettings} />
       <Route path="/devices" component={Devices} load={loadDevices} />
+      <Route path="/emails" component={Emails} load={loadEmails} />
       <Route path="/events" component={Events} load={loadEvents} />
       <Route path="/events/live" component={EventsLive} load={loadEventsLive} />
       <Route path="/files" component={Files} load={loadFiles} />

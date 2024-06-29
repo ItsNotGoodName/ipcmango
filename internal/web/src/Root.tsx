@@ -31,6 +31,9 @@ const menuLinkVariants = cva(
   "relative flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors ui-disabled:pointer-events-none ui-disabled:opacity-50",
   {
     variants: {
+      size: {
+        icon: "px-1.5",
+      },
       variant: {
         default:
           "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
@@ -88,9 +91,21 @@ function MenuLinks(props: { onClick?: () => void }) {
         onClick={props.onClick}
         href="/events"
         noScroll
+        end
       >
         <RiWeatherFlashlightLine class="size-5" />
         Events
+      </A>
+      <A
+        class={menuLinkVariants()}
+        activeClass={menuLinkVariants({ variant: "active" })}
+        inactiveClass={menuLinkVariants()}
+        onClick={props.onClick}
+        href="/events/live"
+        noScroll
+      >
+        <RiWeatherFlashlightLine class="size-5" />
+        Events Live
       </A>
       <A
         class={menuLinkVariants()}
@@ -131,7 +146,7 @@ function Header(props: HeaderProps) {
         <div
           onClick={props.onMobileMenuClick}
           title="Menu"
-          class={cn(menuLinkVariants(), "md:hidden")}
+          class={cn(menuLinkVariants({ size: "icon" }), "md:hidden")}
         >
           <RiSystemMenuLine class="size-6" />
         </div>
@@ -142,14 +157,14 @@ function Header(props: HeaderProps) {
         >
           <RiSystemMenuLine class="size-6" />
         </button>
-        <div class="flex flex-1 items-baseline gap-2 truncate">
+        <div class="flex-1 items-baseline truncate">
           <A href="/" class="flex items-center text-xl">
             IPCManView
           </A>
         </div>
         <div class="flex">
           <button
-            class={menuLinkVariants()}
+            class={menuLinkVariants({ size: "icon" })}
             onClick={toggleTheme}
             title={useThemeTitle()}
           >
@@ -157,9 +172,9 @@ function Header(props: HeaderProps) {
           </button>
           <A
             href="/settings"
-            class={menuLinkVariants()}
-            activeClass={menuLinkVariants({ variant: "active" })}
-            inactiveClass={menuLinkVariants()}
+            class={menuLinkVariants({ size: "icon" })}
+            activeClass={menuLinkVariants({ size: "icon", variant: "active" })}
+            inactiveClass={menuLinkVariants({ size: "icon" })}
           >
             <RiSystemSettings2Line class="size-6" />
           </A>

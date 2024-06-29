@@ -45,6 +45,7 @@ import {
   NumberFieldLabel,
   NumberFieldRoot,
 } from "~/ui/NumberField";
+import { PageTitle } from "~/ui/Page";
 
 function useMutation() {
   const client = useQueryClient();
@@ -138,7 +139,7 @@ export default function () {
 
   return (
     <LayoutNormal class="max-w-lg">
-      <h1>Settings</h1>
+      <PageTitle>Settings</PageTitle>
 
       <SwitchRoot
         validationState={syncVideoInModeMutation.error ? "invalid" : "valid"}

@@ -1,7 +1,25 @@
+import { Menubar } from "@kobalte/core/menubar";
 import { createVirtualizer } from "@tanstack/solid-virtual";
 import { createSignal } from "solid-js";
 import { formatDate } from "~/lib/utils";
 import { Button } from "~/ui/Button";
+import {
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarGroup,
+  MenubarGroupLabel,
+  MenubarItem,
+  MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarRoot,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "~/ui/Menubar";
 
 type Item = {
   color: string;
@@ -31,6 +49,33 @@ export default function () {
 
   return (
     <div class="flex h-full flex-col">
+      <Menubar class="flex h-10 items-center space-x-1 border-b bg-background p-1">
+        <MenubarMenu>
+          <MenubarTrigger>File</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem>
+              New Tab <MenubarShortcut>⌘+T</MenubarShortcut>
+            </MenubarItem>
+            <MenubarItem>
+              New Window <MenubarShortcut>⌘+N</MenubarShortcut>
+            </MenubarItem>
+            <MenubarItem disabled>New Incognito Window</MenubarItem>
+            <MenubarSeparator />
+            <MenubarSub overlap gutter={4} shift={-8}>
+              <MenubarSubTrigger>Share</MenubarSubTrigger>
+              <MenubarSubContent>
+                <MenubarItem>Email Link</MenubarItem>
+                <MenubarItem>Messages</MenubarItem>
+                <MenubarItem>Notes</MenubarItem>
+              </MenubarSubContent>
+            </MenubarSub>
+            <MenubarSeparator />
+            <MenubarItem>
+              Print... <MenubarShortcut>⌘+P</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
       <div class="flex-1">{formatDate(cursor())}</div>
       <div class="flex h-20 flex-col border-t">
         <div

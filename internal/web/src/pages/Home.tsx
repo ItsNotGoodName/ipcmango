@@ -3,7 +3,7 @@ import { A } from "@solidjs/router";
 import { CardRoot } from "~/ui/Card";
 import { ErrorBoundary, ParentProps, Suspense } from "solid-js";
 import { BiRegularCctv } from "solid-icons/bi";
-import { PageError, PageLoading } from "~/ui/Page";
+import { PageError, PageLoading, PageSubTitle } from "~/ui/Page";
 import { LayoutNormal } from "~/ui/Layout";
 import {
   RiBusinessMailLine,
@@ -207,7 +207,7 @@ export default function () {
           {/* </div> */}
           <div class="flex flex-col sm:flex-row">
             <CardRoot class="p-4">
-              <h1>Build</h1>
+              <PageSubTitle>Build</PageSubTitle>
               <div class="relative overflow-x-auto">
                 <table class="w-full">
                   <tbody>

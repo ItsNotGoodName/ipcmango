@@ -1,9 +1,25 @@
 import { writeClipboard } from "@solid-primitives/clipboard";
 import hljs from "~/lib/hljs";
 import { Show } from "solid-js";
-import { RiDocumentClipboardLine } from "solid-icons/ri";
+import { RiDocumentClipboardLine, RiSystemFilterLine } from "solid-icons/ri";
 import { Button } from "~/ui/Button";
 import { LayoutNormal } from "~/ui/Layout";
+import { PageTitle } from "~/ui/Page";
+import { createQuery } from "@tanstack/solid-query";
+import {
+  ComboboxRoot,
+  ComboboxItem,
+  ComboboxItemLabel,
+  ComboboxControl,
+  ComboboxTrigger,
+  ComboboxIcon,
+  ComboboxState,
+  ComboboxReset,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxListbox,
+} from "~/ui/Combobox";
+import { api } from "./data";
 
 export function JSONTableRow(props: {
   colspan?: number;
@@ -38,6 +54,85 @@ export function JSONTableRow(props: {
     </tr>
   );
 }
+
+export function EventCodeFilterCombobox(props: {
+  codes: Array<string>;
+  setCodes: (value: Array<string>) => void;
+}) {
+  const data = createQuery(() => api.eventCodes.list);
+
+  return (
+    <ComboboxRoot<string>
+      multiple
+      options={data.data || []}
+      placeholder="Code"
+      value={data.data?.filter((v) => props.codes.includes(v))}
+      onChange={(value) => props.setCodes(value)}
+      itemComponent={(props) => (
+        <ComboboxItem item={props.item}>
+          <ComboboxItemLabel>{props.item.rawValue}</ComboboxItemLabel>
+        </ComboboxItem>
+      )}
+    >
+      <ComboboxControl<string> aria-label="Code">
+        {(state) => (
+          <ComboboxTrigger>
+            <ComboboxIcon as={RiSystemFilterLine} class="size-4" />
+            Code
+            <ComboboxState state={state} />
+            <ComboboxReset state={state} class="size-4" />
+          </ComboboxTrigger>
+        )}
+      </ComboboxControl>
+      <ComboboxContent>
+        <ComboboxInput />
+        <ComboboxListbox />
+      </ComboboxContent>
+    </ComboboxRoot>
+  );
+}
+
+export function EventActionFilterCombobox(props: {
+  actions: Array<string>;
+  setActions: (value: Array<string>) => void;
+}) {
+  const data = createQuery(() => api.eventActions.list);
+
+  return (
+    <ComboboxRoot<string>
+      multiple
+      options={data.data || []}
+      placeholder="Action"
+      value={data.data?.filter((v) => props.actions.includes(v))}
+      onChange={(value) => props.setActions(value)}
+      itemComponent={(props) => (
+        <ComboboxItem item={props.item}>
+          <ComboboxItemLabel>{props.item.rawValue}</ComboboxItemLabel>
+        </ComboboxItem>
+      )}
+    >
+      <ComboboxControl<string> aria-label="Action">
+        {(state) => (
+          <ComboboxTrigger>
+            <ComboboxIcon as={RiSystemFilterLine} class="size-4" />
+            Action
+            <ComboboxState state={state} />
+            <ComboboxReset state={state} class="size-4" />
+          </ComboboxTrigger>
+        )}
+      </ComboboxControl>
+      <ComboboxContent>
+        <ComboboxInput />
+        <ComboboxListbox />
+      </ComboboxContent>
+    </ComboboxRoot>
+  );
+}
+
 export default function () {
-  return <LayoutNormal class="max-w-4xl"></LayoutNormal>;
+  return (
+    <LayoutNormal class="max-w-4xl">
+      <PageTitle>Events</PageTitle>
+    </LayoutNormal>
+  );
 }

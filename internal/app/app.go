@@ -571,6 +571,36 @@ func Register(api huma.API, app App) {
 			},
 		}, nil
 	})
+	huma.Register(api, huma.Operation{
+		Summary: "List event codes",
+		Method:  http.MethodGet,
+		Path:    "/api/event-codes",
+	}, func(ctx context.Context, input *struct{},
+	) (*EventCodesOutput, error) {
+		body, err := dahua.ListEventCodes(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &EventCodesOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "List event actions",
+		Method:  http.MethodGet,
+		Path:    "/api/event-actions",
+	}, func(ctx context.Context, input *struct{},
+	) (*EventActionsOutput, error) {
+		body, err := dahua.ListEventActions(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &EventActionsOutput{
+			Body: body,
+		}, nil
+	})
 	sse.Register(api, huma.Operation{
 		Summary: "Listen for events",
 		Method:  http.MethodGet,
@@ -580,6 +610,7 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		DeviceUUIDs []string `query:"device-uuids"`
 		Codes       []string `query:"codes"`
+		Actions     []string `query:"actions"`
 	}, send sse.Sender,
 	) {
 		eventC, unsub := bus.SubscribeChannel[bus.EventCreated]("app(/api/events)")
@@ -590,6 +621,9 @@ func Register(api huma.API, app App) {
 				continue
 			}
 			if len(input.Codes) != 0 && !slices.Contains(input.Codes, event.Event.Code) {
+				continue
+			}
+			if len(input.Actions) != 0 && !slices.Contains(input.Actions, event.Event.Action) {
 				continue
 			}
 			err := send.Data(DeviceEventsOutput{
@@ -1581,4 +1615,12 @@ func GetFileCursor(ctx context.Context, db *sqlx.DB, deviceID int64) (dahua.Scan
 		SELECT * FROM dahua_scan_cursors WHERE device_id = ?
 	`, deviceID)
 	return v, err
+}
+
+type EventCodesOutput struct {
+	Body []string
+}
+
+type EventActionsOutput struct {
+	Body []string
 }

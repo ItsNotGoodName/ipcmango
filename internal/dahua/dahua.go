@@ -576,3 +576,19 @@ func StorageFromFilePath(filePath string) Storage {
 	}
 	return StorageLocal
 }
+
+func ListEventCodes(ctx context.Context, db *sqlx.DB) ([]string, error) {
+	var codes []string
+	err := db.Select(&codes, `
+		SELECT DISTINCT code FROM dahua_events
+	`)
+	return codes, err
+}
+
+func ListEventActions(ctx context.Context, db *sqlx.DB) ([]string, error) {
+	var actions []string
+	err := db.Select(&actions, `
+		SELECT DISTINCT action FROM dahua_events
+	`)
+	return actions, err
+}
