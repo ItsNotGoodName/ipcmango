@@ -31,10 +31,6 @@ const menuLinkVariants = cva(
   "relative flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors ui-disabled:pointer-events-none ui-disabled:opacity-50",
   {
     variants: {
-      size: {
-        default: "h-10 px-4 py-2",
-        icon: "h-10 w-10",
-      },
       variant: {
         default:
           "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
@@ -153,7 +149,7 @@ function Header(props: HeaderProps) {
         </div>
         <div class="flex">
           <button
-            class={menuLinkVariants({ size: "icon" })}
+            class={menuLinkVariants()}
             onClick={toggleTheme}
             title={useThemeTitle()}
           >
@@ -161,9 +157,9 @@ function Header(props: HeaderProps) {
           </button>
           <A
             href="/settings"
-            class={menuLinkVariants({ size: "icon" })}
-            activeClass={menuLinkVariants({ size: "icon", variant: "active" })}
-            inactiveClass={menuLinkVariants({ size: "icon" })}
+            class={menuLinkVariants()}
+            activeClass={menuLinkVariants({ variant: "active" })}
+            inactiveClass={menuLinkVariants()}
           >
             <RiSystemSettings2Line class="size-6" />
           </A>

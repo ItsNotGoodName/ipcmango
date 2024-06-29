@@ -1,13 +1,21 @@
-// // # Changes
-// // - Replace React Hook Form with Modular Forms
-// //
-// // # URLs
-// // https://ui.shadcn.com/docs/components/form
-// import { JSX, Show, createUniqueId, splitProps, createContext, useContext, ParentProps, } from "solid-js";
-// import { FieldStore, FormStore, setValue } from "@modular-forms/solid";
-// import { Checkbox } from "@kobalte/core";
+// # Changes
+// - Replace React Hook Form with Modular Forms
 //
-// import { cn } from "~/lib/utils"
+// # URLs
+// https://ui.shadcn.com/docs/components/form
+import {
+  JSX,
+  Show,
+  createUniqueId,
+  splitProps,
+  createContext,
+  useContext,
+  ParentProps,
+} from "solid-js";
+import { FieldStore, FormStore, setValue } from "@modular-forms/solid";
+import { Checkbox } from "@kobalte/core";
+
+import { cn } from "~/lib/utils";
 // import { Label, LabelProps } from "./Label"
 //
 // type FieldContextValue = {
@@ -116,18 +124,23 @@
 //   )
 // }
 //
-// export function FormMessage(props: JSX.HTMLAttributes<HTMLParagraphElement> & { form: FormStore<any, any> }) {
-//   const [_, rest] = splitProps(props, ["class", "form", "children"])
-//   const body = () => props.form.response.message ? props.form.response.message : props.children
-//
-//   return (
-//     <Show when={body()}>
-//       <p
-//         class={cn("text-destructive text-sm font-medium", props.class)}
-//         {...rest}
-//       >
-//         {body()}
-//       </p>
-//     </Show>
-//   )
-// }
+export function FormMessage(
+  props: JSX.HTMLAttributes<HTMLParagraphElement> & {
+    form: FormStore<any, any>;
+  },
+) {
+  const [_, rest] = splitProps(props, ["class", "form", "children"]);
+  const body = () =>
+    props.form.response.message ? props.form.response.message : props.children;
+
+  return (
+    <Show when={body()}>
+      <p
+        class={cn("text-sm font-medium text-destructive", props.class)}
+        {...rest}
+      >
+        {body()}
+      </p>
+    </Show>
+  );
+}

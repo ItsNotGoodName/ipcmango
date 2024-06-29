@@ -13,6 +13,7 @@
   "dependencies": {
     "@kobalte/core": "^0.13.1",
     "@lukemorales/query-key-factory": "^1.3.4",
+    "@modular-forms/solid": "^0.22.1",
     "@solid-primitives/clipboard": "^1.5.10",
     "@solid-primitives/date": "^2.0.21",
     "@solid-primitives/storage": "^3.5.0",
