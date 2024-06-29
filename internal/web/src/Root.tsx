@@ -10,6 +10,8 @@ import {
   RiBusinessMailLine,
   RiDocumentBookLine,
   RiSystemSettings2Line,
+  RiDesignRulerLine,
+  RiSystemTimeLine,
 } from "solid-icons/ri";
 import { Portal } from "solid-js/web";
 import { makePersisted } from "@solid-primitives/storage";
@@ -51,7 +53,6 @@ function MenuLinks(props: { onClick?: () => void }) {
   return (
     <div class="flex flex-col">
       <A
-        class={menuLinkVariants()}
         activeClass={menuLinkVariants({ variant: "active" })}
         inactiveClass={menuLinkVariants()}
         onClick={props.onClick}
@@ -63,7 +64,6 @@ function MenuLinks(props: { onClick?: () => void }) {
         Home
       </A>
       <A
-        class={menuLinkVariants()}
         activeClass={menuLinkVariants({ variant: "active" })}
         inactiveClass={menuLinkVariants()}
         onClick={props.onClick}
@@ -74,7 +74,6 @@ function MenuLinks(props: { onClick?: () => void }) {
         Devices
       </A>
       <A
-        class={menuLinkVariants()}
         activeClass={menuLinkVariants({ variant: "active" })}
         inactiveClass={menuLinkVariants()}
         onClick={props.onClick}
@@ -85,7 +84,6 @@ function MenuLinks(props: { onClick?: () => void }) {
         Emails
       </A>
       <A
-        class={menuLinkVariants()}
         activeClass={menuLinkVariants({ variant: "active" })}
         inactiveClass={menuLinkVariants()}
         onClick={props.onClick}
@@ -96,19 +94,31 @@ function MenuLinks(props: { onClick?: () => void }) {
         <RiWeatherFlashlightLine class="size-5" />
         Events
       </A>
+      <div class="pl-4">
+        <A
+          activeClass={menuLinkVariants({ variant: "active" })}
+          inactiveClass={menuLinkVariants()}
+          onClick={props.onClick}
+          href="/events/live"
+          noScroll
+        >
+          <RiSystemTimeLine class="size-5" />
+          Live
+        </A>
+      </div>
+      <div class="pl-4">
+        <A
+          activeClass={menuLinkVariants({ variant: "active" })}
+          inactiveClass={menuLinkVariants()}
+          onClick={props.onClick}
+          href="/events/rules"
+          noScroll
+        >
+          <RiDesignRulerLine class="size-5" />
+          Rules
+        </A>
+      </div>
       <A
-        class={menuLinkVariants()}
-        activeClass={menuLinkVariants({ variant: "active" })}
-        inactiveClass={menuLinkVariants()}
-        onClick={props.onClick}
-        href="/events/live"
-        noScroll
-      >
-        <RiWeatherFlashlightLine class="size-5" />
-        Events Live
-      </A>
-      <A
-        class={menuLinkVariants()}
         activeClass={menuLinkVariants({ variant: "active" })}
         inactiveClass={menuLinkVariants()}
         onClick={props.onClick}
@@ -172,6 +182,7 @@ function Header(props: HeaderProps) {
           </button>
           <A
             href="/settings"
+            title="Settings"
             class={menuLinkVariants({ size: "icon" })}
             activeClass={menuLinkVariants({ size: "icon", variant: "active" })}
             inactiveClass={menuLinkVariants({ size: "icon" })}

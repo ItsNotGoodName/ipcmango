@@ -138,7 +138,7 @@ export default function () {
     );
 
   return (
-    <LayoutNormal class="max-w-lg">
+    <LayoutNormal class="max-w-xl">
       <PageTitle>Settings</PageTitle>
 
       <SwitchRoot
@@ -191,7 +191,7 @@ export default function () {
       <Seperator />
 
       <SunForm onSubmit={submitSunForm} class="flex flex-col gap-2">
-        <div class="flex gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row">
           <SunField name="sunrise_offset">
             {(field, props) => (
               <TextFieldRoot
@@ -251,7 +251,7 @@ export default function () {
         onSubmit={submitCoordinateForm}
         class="flex flex-col gap-2"
       >
-        <div class="flex gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row">
           <CoordinateField name="latitude" type="number">
             {(field) => (
               <NumberFieldRoot

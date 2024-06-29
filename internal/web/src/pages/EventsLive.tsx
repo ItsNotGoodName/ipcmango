@@ -143,7 +143,7 @@ export default function () {
               >
                 <SelectTrigger>
                   <SelectValue<{ name: string }>>
-                    {(state) => state.selectedOption()?.name}
+                    {(state) => state.selectedOption()?.name ?? limit()}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectPortal>
@@ -154,11 +154,7 @@ export default function () {
               </SelectRoot>
             </div>
             <div>
-              <Button
-                size="icon"
-                variant="destructive"
-                onClick={() => setEvents([])}
-              >
+              <Button size="icon" onClick={() => setEvents([])}>
                 <RiSystemDeleteBinLine class="size-6" />
               </Button>
             </div>

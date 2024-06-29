@@ -17,6 +17,8 @@ const Events = lazy(() => import("~/pages/Events"));
 import loadEvents from "~/pages/Events.data";
 const EventsLive = lazy(() => import("~/pages/EventsLive"));
 import loadEventsLive from "~/pages/EventsLive.data";
+const EventsRules = lazy(() => import("~/pages/EventsRules"));
+import loadEventsRules from "~/pages/EventsRules.data";
 const Files = lazy(() => import("~/pages/Files"));
 import loadFiles from "~/pages/Files.data";
 
@@ -37,6 +39,11 @@ function App() {
       <Route path="/emails" component={Emails} load={loadEmails} />
       <Route path="/events" component={Events} load={loadEvents} />
       <Route path="/events/live" component={EventsLive} load={loadEventsLive} />
+      <Route
+        path="/events/rules"
+        component={EventsRules}
+        load={loadEventsRules}
+      />
       <Route path="/files" component={Files} load={loadFiles} />
       <Route path="*404" component={NotFound} />
     </Router>
