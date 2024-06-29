@@ -59,7 +59,10 @@ export function EventCodeFilterCombobox(props: {
   codes: Array<string>;
   setCodes: (value: Array<string>) => void;
 }) {
-  const data = createQuery(() => api.eventCodes.list);
+  const data = createQuery(() => ({
+    ...api.eventCodes.list,
+    throwOnError: true,
+  }));
 
   return (
     <ComboboxRoot<string>
@@ -96,7 +99,10 @@ export function EventActionFilterCombobox(props: {
   actions: Array<string>;
   setActions: (value: Array<string>) => void;
 }) {
-  const data = createQuery(() => api.eventActions.list);
+  const data = createQuery(() => ({
+    ...api.eventActions.list,
+    throwOnError: true,
+  }));
 
   return (
     <ComboboxRoot<string>

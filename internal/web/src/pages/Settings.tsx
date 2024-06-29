@@ -1,8 +1,7 @@
-import { createForm, reset, setValue } from "@modular-forms/solid";
+import { createForm, reset, setValue, setValues } from "@modular-forms/solid";
 import { LayoutNormal } from "~/ui/Layout";
 import {
   SwitchControl,
-  SwitchDescription,
   SwitchErrorMessage,
   SwitchLabel,
   SwitchRoot,
@@ -13,10 +12,9 @@ import {
   createQuery,
   useQueryClient,
 } from "@tanstack/solid-query";
-import { PatchSettings, patchApiSettings } from "~/client";
+import { PatchSettings, deleteApiSettings, patchApiSettings } from "~/client";
 import {
   SelectContent,
-  SelectDescription,
   SelectErrorMessage,
   SelectItem,
   SelectLabel,
@@ -27,25 +25,35 @@ import {
   SelectValue,
 } from "~/ui/Select";
 import {
-  TextFieldDescription,
   TextFieldErrorMessage,
   TextFieldInput,
   TextFieldLabel,
   TextFieldRoot,
 } from "~/ui/TextField";
-import { Show, batch, createSignal } from "solid-js";
+import { ErrorBoundary, Show, Suspense, batch, createSignal } from "solid-js";
 import { Button } from "~/ui/Button";
 import { Seperator } from "~/ui/Seperator";
 import { FormMessage } from "~/ui/Form";
 import { validationState } from "~/lib/utils";
 import {
-  NumberFieldDescription,
   NumberFieldErrorMessage,
   NumberFieldInput,
   NumberFieldLabel,
   NumberFieldRoot,
 } from "~/ui/NumberField";
-import { PageTitle } from "~/ui/Page";
+import { PageError, PageSubTitle, PageTitle } from "~/ui/Page";
+import { toast } from "~/ui/Toast";
+import {
+  AlertDialogRoot,
+  AlertDialogTrigger,
+  AlertDialogTitle,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogModal,
+} from "~/ui/AlertDialog";
+import { Skeleton } from "~/ui/Skeleton";
 
 function useMutation() {
   const client = useQueryClient();
@@ -84,11 +92,35 @@ function createToggle(formOpen: boolean, onOpen: () => void) {
 }
 
 export default function () {
-  const data = createQuery(() => api.settings.get);
+  const client = useQueryClient();
+
+  const data = createQuery(() => ({
+    ...api.settings.get,
+    throwOnError: true,
+  }));
+
+  const locations = createQuery(() => ({
+    ...api.locations.list,
+    throwOnError: true,
+  }));
+
+  // Default
+  const [defaultDialog, setDefaultDialog] = createSignal(false);
+  const defaultMutation = createMutation(() => ({
+    mutationFn: () => deleteApiSettings(),
+    onSuccess: (data) =>
+      batch(() => {
+        client.setQueryData(api.settings.get.queryKey, data);
+        setDefaultDialog(false);
+      }),
+    onError: (error) => toast.error(error.name, error.message),
+    throwOnError: true,
+  }));
 
   const syncVideoInModeMutation = useMutation();
   const locationMutation = useMutation();
 
+  // Sun
   const [sunForm, { Field: SunField, Form: SunForm }] =
     createForm<UpdateSunForm>({
       initialValues: {
@@ -110,6 +142,7 @@ export default function () {
       onSuccess: sunFormToggle.setClose,
     });
 
+  // Coordinate
   const [coordinateForm, { Field: CoordinateField, Form: CoordinateForm }] =
     createForm<UpdateCoordinateForm>({
       initialValues: {
@@ -136,184 +169,260 @@ export default function () {
         onSuccess: coordinateFormToggle.setClose,
       },
     );
+  const [coordinateDetectLoading, setCoordinateDetectLoading] =
+    createSignal(false);
+  const detectCoordinate = () => {
+    if (coordinateDetectLoading()) return;
+    setCoordinateDetectLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        batch(() => {
+          setCoordinateDetectLoading(false);
+          coordinateFormToggle.setOpen();
+        });
+        setValues(coordinateForm, {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+      },
+      (error) =>
+        batch(() => {
+          setCoordinateDetectLoading(false);
+          toast.error("Error", error.message);
+        }),
+    );
+  };
 
   return (
     <LayoutNormal class="max-w-xl">
       <PageTitle>Settings</PageTitle>
 
-      <SwitchRoot
-        validationState={syncVideoInModeMutation.error ? "invalid" : "valid"}
-        disabled={syncVideoInModeMutation.isPending}
-        checked={data.data?.sync_video_in_mode}
-        class="flex items-center justify-between gap-2"
-        onChange={(isChecked) =>
-          syncVideoInModeMutation.mutate({ sync_video_in_mode: isChecked })
-        }
-      >
-        <div>
-          <SwitchLabel>Sync Video In Mode</SwitchLabel>
-          <SwitchDescription>TODO</SwitchDescription>
-          <SwitchErrorMessage>
-            {syncVideoInModeMutation.error?.message}
-          </SwitchErrorMessage>
-        </div>
-        <SwitchControl />
-      </SwitchRoot>
+      <ErrorBoundary fallback={(error) => <PageError error={error} />}>
+        <Suspense fallback={<Skeleton class="h-32" />}>
+          <SwitchRoot
+            validationState={
+              syncVideoInModeMutation.error ? "invalid" : "valid"
+            }
+            disabled={syncVideoInModeMutation.isPending}
+            checked={data.data?.sync_video_in_mode}
+            class="flex items-center justify-between gap-2"
+            onChange={(isChecked) =>
+              syncVideoInModeMutation.mutate({ sync_video_in_mode: isChecked })
+            }
+          >
+            <div>
+              <SwitchLabel>Sync Video In Mode</SwitchLabel>
+              <SwitchErrorMessage>
+                {syncVideoInModeMutation.error?.message}
+              </SwitchErrorMessage>
+            </div>
+            <SwitchControl />
+          </SwitchRoot>
+        </Suspense>
+
+        <Seperator />
+
+        <Suspense fallback={<Skeleton class="h-32" />}>
+          <SelectRoot
+            validationState={locationMutation.error ? "invalid" : "valid"}
+            disabled={locationMutation.isPending}
+            options={locations.data || []}
+            value={data.data?.location}
+            onChange={(value) => locationMutation.mutate({ location: value })}
+            itemComponent={(props) => (
+              <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
+            )}
+            class="space-y-2"
+          >
+            <SelectLabel>Location</SelectLabel>
+            <SelectTrigger>
+              <SelectValue<string>>
+                {(state) => state.selectedOption()}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectPortal>
+              <SelectContent>
+                <SelectListbox />
+              </SelectContent>
+            </SelectPortal>
+            <SelectErrorMessage>
+              {locationMutation.error?.message}
+            </SelectErrorMessage>
+          </SelectRoot>
+        </Suspense>
+
+        <PageSubTitle>Sun Offset</PageSubTitle>
+
+        <Suspense fallback={<Skeleton class="h-32" />}>
+          <SunForm onSubmit={submitSunForm} class="flex flex-col gap-2">
+            <div class="flex flex-col gap-4 sm:flex-row">
+              <SunField name="sunrise_offset">
+                {(field, props) => (
+                  <TextFieldRoot
+                    validationState={validationState(field.error)}
+                    onFocusIn={sunFormToggle.setOpen}
+                    value={
+                      sunFormToggle.open()
+                        ? field.value
+                        : data.data?.sunrise_offset
+                    }
+                    class="flex-1 space-y-2"
+                  >
+                    <TextFieldLabel>Sunrise Offset</TextFieldLabel>
+                    <TextFieldInput {...props} />
+                    <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
+                  </TextFieldRoot>
+                )}
+              </SunField>
+              <SunField name="sunset_offset">
+                {(field, props) => (
+                  <TextFieldRoot
+                    validationState={validationState(field.error)}
+                    onFocusIn={sunFormToggle.setOpen}
+                    value={
+                      sunFormToggle.open()
+                        ? field.value
+                        : data.data?.sunset_offset
+                    }
+                    class="flex-1 space-y-2"
+                  >
+                    <TextFieldLabel>Sunset Offset</TextFieldLabel>
+                    <TextFieldInput {...props} />
+                    <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
+                  </TextFieldRoot>
+                )}
+              </SunField>
+            </div>
+            <FormMessage form={sunForm} />
+            <Show when={sunFormToggle.open()}>
+              <div class="flex flex-col gap-2 sm:flex-row-reverse">
+                <Button disabled={sunForm.submitting} type="submit">
+                  Save
+                </Button>
+                <Button
+                  disabled={sunForm.submitting}
+                  onClick={sunFormToggle.setClose}
+                  variant="secondary"
+                  type="button"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </Show>
+          </SunForm>
+        </Suspense>
+
+        <PageSubTitle>Coordinate</PageSubTitle>
+
+        <Suspense fallback={<Skeleton class="h-32" />}>
+          <CoordinateForm
+            onSubmit={submitCoordinateForm}
+            class="flex flex-col gap-2"
+          >
+            <div class="flex flex-col gap-4 sm:flex-row">
+              <CoordinateField name="latitude" type="number">
+                {(field) => (
+                  <NumberFieldRoot
+                    validationState={validationState(field.error)}
+                    onFocusIn={coordinateFormToggle.setOpen}
+                    value={
+                      coordinateFormToggle.open()
+                        ? field.value
+                        : data.data?.latitude
+                    }
+                    onChange={(value) =>
+                      setValue(coordinateForm, "latitude", value)
+                    }
+                    class="flex-1 space-y-2"
+                  >
+                    <NumberFieldLabel>Latitude</NumberFieldLabel>
+                    <NumberFieldInput />
+                    <NumberFieldErrorMessage>
+                      {field.error}
+                    </NumberFieldErrorMessage>
+                  </NumberFieldRoot>
+                )}
+              </CoordinateField>
+              <CoordinateField name="longitude" type="number">
+                {(field) => (
+                  <NumberFieldRoot
+                    validationState={validationState(field.error)}
+                    onFocusIn={coordinateFormToggle.setOpen}
+                    value={
+                      coordinateFormToggle.open()
+                        ? field.value
+                        : data.data?.longitude
+                    }
+                    onChange={(value) =>
+                      setValue(coordinateForm, "longitude", value)
+                    }
+                    class="flex-1 space-y-2"
+                  >
+                    <NumberFieldLabel>Longitude</NumberFieldLabel>
+                    <NumberFieldInput />
+                    <NumberFieldErrorMessage>
+                      {field.error}
+                    </NumberFieldErrorMessage>
+                  </NumberFieldRoot>
+                )}
+              </CoordinateField>
+            </div>
+            <FormMessage form={coordinateForm} />
+            <div class="flex flex-col gap-2 sm:flex-row-reverse">
+              <Button
+                disabled={coordinateDetectLoading()}
+                onClick={detectCoordinate}
+                type="button"
+              >
+                Detect
+              </Button>
+              <Show when={coordinateFormToggle.open()}>
+                <Button disabled={coordinateForm.submitting} type="submit">
+                  Save
+                </Button>
+                <Button
+                  disabled={coordinateForm.submitting}
+                  onClick={coordinateFormToggle.setClose}
+                  variant="secondary"
+                  type="button"
+                >
+                  Cancel
+                </Button>
+              </Show>
+            </div>
+          </CoordinateForm>
+        </Suspense>
+      </ErrorBoundary>
 
       <Seperator />
 
-      <SelectRoot
-        validationState={locationMutation.error ? "invalid" : "valid"}
-        disabled={locationMutation.isPending}
-        options={["Local", "UTC"]}
-        value={data.data?.location}
-        onChange={(value) => locationMutation.mutate({ location: value })}
-        itemComponent={(props) => (
-          <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
-        )}
-        class="space-y-2"
-      >
-        <SelectLabel>Location</SelectLabel>
-        <SelectTrigger>
-          <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-        </SelectTrigger>
-        <SelectPortal>
-          <SelectContent>
-            <SelectListbox />
-          </SelectContent>
-        </SelectPortal>
-        <SelectDescription>TODO</SelectDescription>
-        <SelectErrorMessage>
-          {locationMutation.error?.message}
-        </SelectErrorMessage>
-      </SelectRoot>
-
-      <Seperator />
-
-      <SunForm onSubmit={submitSunForm} class="flex flex-col gap-2">
-        <div class="flex flex-col gap-4 sm:flex-row">
-          <SunField name="sunrise_offset">
-            {(field, props) => (
-              <TextFieldRoot
-                validationState={validationState(field.error)}
-                onFocusIn={sunFormToggle.setOpen}
-                value={
-                  sunFormToggle.open() ? field.value : data.data?.sunrise_offset
-                }
-                class="flex-1 space-y-2"
+      <div class="flex gap-2">
+        <AlertDialogRoot open={defaultDialog()} onOpenChange={setDefaultDialog}>
+          <AlertDialogTrigger
+            as={Button}
+            disabled={defaultMutation.isPending}
+            variant="destructive"
+          >
+            Default
+          </AlertDialogTrigger>
+          <AlertDialogModal>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Default settings?</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={defaultMutation.isPending}
+                onClick={() => defaultMutation.mutate()}
+                variant="destructive"
               >
-                <TextFieldLabel>Sunrise Offset</TextFieldLabel>
-                <TextFieldInput {...props} />
-                <TextFieldDescription>TODO</TextFieldDescription>
-                <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
-              </TextFieldRoot>
-            )}
-          </SunField>
-          <SunField name="sunset_offset">
-            {(field, props) => (
-              <TextFieldRoot
-                validationState={validationState(field.error)}
-                onFocusIn={sunFormToggle.setOpen}
-                value={
-                  sunFormToggle.open() ? field.value : data.data?.sunset_offset
-                }
-                class="flex-1 space-y-2"
-              >
-                <TextFieldLabel>Sunset Offset</TextFieldLabel>
-                <TextFieldInput {...props} />
-                <TextFieldDescription>TODO</TextFieldDescription>
-                <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
-              </TextFieldRoot>
-            )}
-          </SunField>
-        </div>
-        <Show when={sunFormToggle.open()}>
-          <FormMessage form={sunForm} />
-          <div class="flex justify-end gap-2">
-            <Button
-              disabled={sunForm.submitting}
-              onClick={sunFormToggle.setClose}
-              variant="secondary"
-              type="button"
-            >
-              Cancel
-            </Button>
-            <Button disabled={sunForm.submitting} type="submit">
-              Save
-            </Button>
-          </div>
-        </Show>
-      </SunForm>
-
-      <Seperator />
-
-      <CoordinateForm
-        onSubmit={submitCoordinateForm}
-        class="flex flex-col gap-2"
-      >
-        <div class="flex flex-col gap-4 sm:flex-row">
-          <CoordinateField name="latitude" type="number">
-            {(field) => (
-              <NumberFieldRoot
-                validationState={validationState(field.error)}
-                onFocusIn={coordinateFormToggle.setOpen}
-                value={
-                  coordinateFormToggle.open()
-                    ? field.value
-                    : data.data?.latitude
-                }
-                onChange={(value) =>
-                  setValue(coordinateForm, "latitude", value)
-                }
-                class="flex-1 space-y-2"
-              >
-                <NumberFieldLabel>Latitude</NumberFieldLabel>
-                <NumberFieldInput />
-                <NumberFieldDescription>TODO</NumberFieldDescription>
-                <NumberFieldErrorMessage>{field.error}</NumberFieldErrorMessage>
-              </NumberFieldRoot>
-            )}
-          </CoordinateField>
-          <CoordinateField name="longitude" type="number">
-            {(field) => (
-              <NumberFieldRoot
-                validationState={validationState(field.error)}
-                onFocusIn={coordinateFormToggle.setOpen}
-                value={
-                  coordinateFormToggle.open()
-                    ? field.value
-                    : data.data?.longitude
-                }
-                onChange={(value) =>
-                  setValue(coordinateForm, "longitude", value)
-                }
-                class="flex-1 space-y-2"
-              >
-                <NumberFieldLabel>Longitude</NumberFieldLabel>
-                <NumberFieldInput />
-                <NumberFieldDescription>TODO</NumberFieldDescription>
-                <NumberFieldErrorMessage>{field.error}</NumberFieldErrorMessage>
-              </NumberFieldRoot>
-            )}
-          </CoordinateField>
-        </div>
-        <Show when={coordinateFormToggle.open()}>
-          <FormMessage form={coordinateForm} />
-          <div class="flex justify-end gap-2">
-            <Button
-              disabled={coordinateForm.submitting}
-              onClick={coordinateFormToggle.setClose}
-              variant="secondary"
-              type="button"
-            >
-              Cancel
-            </Button>
-            <Button disabled={coordinateForm.submitting} type="submit">
-              Save
-            </Button>
-          </div>
-        </Show>
-      </CoordinateForm>
+                Default
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogModal>
+        </AlertDialogRoot>
+      </div>
     </LayoutNormal>
   );
 }

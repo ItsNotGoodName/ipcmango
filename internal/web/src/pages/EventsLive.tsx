@@ -59,7 +59,10 @@ import {
 export default function () {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const data = createQuery(() => api.devices.list);
+  const data = createQuery(() => ({
+    ...api.devices.list,
+    throwOnError: true,
+  }));
 
   const dataOpen = () => Boolean(searchParams.data);
   const setDataOpen = (value: boolean) =>
@@ -155,7 +158,7 @@ export default function () {
             </div>
             <div>
               <Button size="icon" onClick={() => setEvents([])}>
-                <RiSystemDeleteBinLine class="size-6" />
+                <RiSystemDeleteBinLine class="size-5" />
               </Button>
             </div>
           </div>

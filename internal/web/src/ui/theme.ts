@@ -20,8 +20,8 @@ query.addEventListener("change", (e: MediaQueryListEvent) => {
   setCurrentSystemTheme(e.matches ? Theme.Dark : Theme.Light);
 });
 
-const currentThemeSignal = createSignal(
-  localStorage.getItem(THEME_KEY) ?? Theme.System,
+const currentThemeSignal = createSignal<Theme>(
+  (localStorage.getItem(THEME_KEY) as Theme) ?? Theme.System,
 );
 export const useCurrentTheme = currentThemeSignal[0];
 const setCurrentTheme = currentThemeSignal[1];
@@ -59,15 +59,4 @@ export const provideTheme = () => {
   createEffect(() => {
     document.getElementsByTagName("body")![0].className = themeClass();
   });
-};
-
-export const useThemeTitle = () => {
-  switch (useCurrentTheme()) {
-    case Theme.System:
-      return "System theme";
-    case Theme.Light:
-      return "Light theme";
-    case Theme.Dark:
-      return "Dark theme";
-  }
 };

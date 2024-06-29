@@ -2988,7 +2988,7 @@
           {
             "explode": false,
             "in": "query",
-            "name": "device-uuids",
+            "name": "device",
             "schema": {
               "items": {
                 "type": "string"
@@ -3073,6 +3073,36 @@
           }
         },
         "summary": "Listen for events"
+      }
+    },
+    "/api/locations": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List locations"
       }
     },
     "/api/pages/home": {

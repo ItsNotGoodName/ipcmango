@@ -659,7 +659,7 @@ export type GetApiEventCodesResponse = Array<(string)>;
 export type GetApiEventsData = {
     actions?: Array<(string)>;
     codes?: Array<(string)>;
-    deviceUuids?: Array<(string)>;
+    device?: Array<(string)>;
 };
 
 export type GetApiEventsResponse = Array<({
@@ -677,6 +677,8 @@ export type GetApiEventsResponse = Array<({
      */
     retry?: number;
 })>;
+
+export type GetApiLocationsResponse = Array<(string)>;
 
 export type GetApiPagesHomeResponse = GetHomePage;
 
@@ -1279,6 +1281,20 @@ export type $OpenApiTs = {
      */
     retry?: number;
 })>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/locations': {
+        get: {
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<(string)>;
                 /**
                  * Error
                  */

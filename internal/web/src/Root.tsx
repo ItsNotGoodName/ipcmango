@@ -12,12 +12,12 @@ import {
   RiSystemSettings2Line,
   RiDesignRulerLine,
   RiSystemTimeLine,
+  RiArrowsCornerDownRightLine,
 } from "solid-icons/ri";
 import { Portal } from "solid-js/web";
 import { makePersisted } from "@solid-primitives/storage";
 
 import { ThemeIcon } from "~/ui/ThemeIcon";
-import { toggleTheme, useThemeTitle } from "~/ui/theme";
 import { ToastList, ToastRegion } from "~/ui/Toast";
 import { cn } from "~/lib/utils";
 import { PageError, PageLoading } from "~/ui/Page";
@@ -28,6 +28,7 @@ import {
   SheetRoot,
   SheetTitle,
 } from "./ui/Sheet";
+import { Theme, toggleTheme, useCurrentTheme } from "./ui/theme";
 
 const menuLinkVariants = cva(
   "relative flex cursor-pointer select-none items-center gap-1 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors ui-disabled:pointer-events-none ui-disabled:opacity-50",
@@ -94,30 +95,28 @@ function MenuLinks(props: { onClick?: () => void }) {
         <RiWeatherFlashlightLine class="size-5" />
         Events
       </A>
-      <div class="pl-4">
-        <A
-          activeClass={menuLinkVariants({ variant: "active" })}
-          inactiveClass={menuLinkVariants()}
-          onClick={props.onClick}
-          href="/events/live"
-          noScroll
-        >
-          <RiSystemTimeLine class="size-5" />
-          Live
-        </A>
-      </div>
-      <div class="pl-4">
-        <A
-          activeClass={menuLinkVariants({ variant: "active" })}
-          inactiveClass={menuLinkVariants()}
-          onClick={props.onClick}
-          href="/events/rules"
-          noScroll
-        >
-          <RiDesignRulerLine class="size-5" />
-          Rules
-        </A>
-      </div>
+      <A
+        activeClass={menuLinkVariants({ variant: "active" })}
+        inactiveClass={menuLinkVariants()}
+        onClick={props.onClick}
+        href="/events/live"
+        noScroll
+      >
+        <RiArrowsCornerDownRightLine class="size-5" />
+        <RiSystemTimeLine class="size-5" />
+        Live
+      </A>
+      <A
+        activeClass={menuLinkVariants({ variant: "active" })}
+        inactiveClass={menuLinkVariants()}
+        onClick={props.onClick}
+        href="/events/rules"
+        noScroll
+      >
+        <RiArrowsCornerDownRightLine class="size-5" />
+        <RiDesignRulerLine class="size-5" />
+        Rules
+      </A>
       <A
         activeClass={menuLinkVariants({ variant: "active" })}
         inactiveClass={menuLinkVariants()}
@@ -150,6 +149,17 @@ type HeaderProps = {
 };
 
 function Header(props: HeaderProps) {
+  const themeTitle = () => {
+    switch (useCurrentTheme()) {
+      case Theme.System:
+        return "System Theme";
+      case Theme.Light:
+        return "Light Theme";
+      case Theme.Dark:
+        return "Dark Theme";
+    }
+  };
+
   return (
     <div class="z-10 h-12 w-full overflow-x-hidden border-b border-b-border bg-background text-foreground">
       <div class="flex h-full items-center px-1">
@@ -176,7 +186,7 @@ function Header(props: HeaderProps) {
           <button
             class={menuLinkVariants({ size: "icon" })}
             onClick={toggleTheme}
-            title={useThemeTitle()}
+            title={themeTitle()}
           >
             <ThemeIcon class="size-6" />
           </button>

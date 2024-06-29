@@ -20,7 +20,10 @@ export function DeviceFilterCombobox(props: {
   setDeviceIDs: (ids: string[]) => void;
   deviceIDs: string[];
 }) {
-  const data = createQuery(() => api.devices.list);
+  const data = createQuery(() => ({
+    ...api.devices.list,
+    throwOnError: true,
+  }));
 
   return (
     <ComboboxRoot<Device>

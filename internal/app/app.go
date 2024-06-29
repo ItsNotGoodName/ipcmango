@@ -1212,6 +1212,19 @@ func Register(api huma.API, app App) {
 			Body: body,
 		}, nil
 	})
+	huma.Register(api, huma.Operation{
+		Summary: "List locations",
+		Method:  http.MethodGet,
+		Path:    "/api/locations",
+	}, func(ctx context.Context, input *struct{},
+	) (*LocationsOutput, error) {
+		return &LocationsOutput{
+			Body: []string{
+				"Local",
+				"UTC",
+			},
+		}, nil
+	})
 }
 
 func NewEmailEndpoint(v dahua.EmailEndpoint, deviceUUIDs []string) EmailEndpoint {
@@ -1622,5 +1635,9 @@ type EventCodesOutput struct {
 }
 
 type EventActionsOutput struct {
+	Body []string
+}
+
+type LocationsOutput struct {
 	Body []string
 }
