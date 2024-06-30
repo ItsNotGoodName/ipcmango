@@ -20,13 +20,13 @@ type DeviceDeleted struct {
 }
 
 type EventCreated struct {
-	EventID    string
-	DeviceKey  types.Key
-	IgnoreDB   bool
-	IgnoreMQTT bool
-	IgnoreLive bool
-	Event      dahuacgi.Event
-	CreatedAt  time.Time
+	EventID   string
+	DeviceKey types.Key
+	AllowDB   bool
+	AllowMQTT bool
+	AllowLive bool
+	Event     dahuacgi.Event
+	CreatedAt time.Time
 }
 
 type CoaxialStatusUpdated struct {

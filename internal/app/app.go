@@ -678,6 +678,9 @@ func Register(api huma.API, app App) {
 		defer unsub()
 
 		for event := range eventC {
+			if !event.AllowLive {
+				continue
+			}
 			if len(input.Devices) != 0 && !slices.Contains(input.Devices, event.DeviceKey.UUID) {
 				continue
 			}
@@ -1310,11 +1313,11 @@ func Register(api huma.API, app App) {
 	},
 	) (*CreateEventRulesOutput, error) {
 		body, err := dahua.CreateEventRule(ctx, app.DB, dahua.CreateEventRuleArgs{
-			UUID:       core.Optional(input.Body.UUID, uuid.NewString()),
-			Code:       input.Body.Code,
-			IgnoreDB:   input.Body.IgnoreDB,
-			IgnoreLive: input.Body.IgnoreLive,
-			IgnoreMQTT: input.Body.IgnoreMQTT,
+			UUID:      core.Optional(input.Body.UUID, uuid.NewString()),
+			Code:      input.Body.Code,
+			AllowDB:   input.Body.AllowDB,
+			AllowLive: input.Body.AllowLive,
+			AllowMQTT: input.Body.AllowMQTT,
 		})
 		if err != nil {
 			return nil, err
@@ -1334,11 +1337,11 @@ func Register(api huma.API, app App) {
 	},
 	) (*ListEventRulesOutput, error) {
 		err := dahua.UpdateEventRule(ctx, app.DB, dahua.UpdateEventRuleArgs{
-			UUID:       input.UUID,
-			Code:       input.Body.Code,
-			IgnoreDB:   input.Body.IgnoreDB,
-			IgnoreLive: input.Body.IgnoreLive,
-			IgnoreMQTT: input.Body.IgnoreMQTT,
+			UUID:      input.UUID,
+			Code:      input.Body.Code,
+			AllowDB:   input.Body.AllowDB,
+			AllowLive: input.Body.AllowLive,
+			AllowMQTT: input.Body.AllowMQTT,
 		})
 		if err != nil {
 			return nil, err
@@ -1840,20 +1843,20 @@ func ListEventRules(ctx context.Context, db *sqlx.DB) ([]EventRule, error) {
 
 func NewEventRule(v dahua.EventRule) EventRule {
 	return EventRule{
-		UUID:       v.UUID,
-		Code:       v.Code,
-		IgnoreDB:   v.Ignore_DB,
-		IgnoreLive: v.Ignore_Live,
-		IgnoreMQTT: v.Ignore_MQTT,
-		CanDelete:  v.Can_Delete,
+		UUID:      v.UUID,
+		Code:      v.Code,
+		AllowDB:   v.Allow_DB,
+		AllowLive: v.Allow_Live,
+		AllowMQTT: v.Allow_MQTT,
+		CanDelete: v.Can_Delete,
 	}
 }
 
 type EventRule struct {
-	UUID       string `json:"uuid"`
-	Code       string `json:"code"`
-	IgnoreDB   bool   `json:"ignore_db"`
-	IgnoreLive bool   `json:"ignore_live"`
-	IgnoreMQTT bool   `json:"ignore_mqtt"`
-	CanDelete  bool   `json:"can_delete"`
+	UUID      string `json:"uuid"`
+	Code      string `json:"code"`
+	AllowDB   bool   `json:"allow_db"`
+	AllowLive bool   `json:"allow_live"`
+	AllowMQTT bool   `json:"allow_mqtt"`
+	CanDelete bool   `json:"can_delete"`
 }

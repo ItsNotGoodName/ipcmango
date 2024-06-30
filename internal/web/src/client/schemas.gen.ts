@@ -153,24 +153,24 @@ export const $CreateEventRule = {
             readOnly: true,
             type: 'string'
         },
+        allow_db: {
+            type: 'boolean'
+        },
+        allow_live: {
+            type: 'boolean'
+        },
+        allow_mqtt: {
+            type: 'boolean'
+        },
         code: {
             type: 'string'
-        },
-        ignore_db: {
-            type: 'boolean'
-        },
-        ignore_live: {
-            type: 'boolean'
-        },
-        ignore_mqtt: {
-            type: 'boolean'
         },
         uuid: {
             format: 'uuid',
             type: 'string'
         }
     },
-    required: ['code', 'ignore_db', 'ignore_live', 'ignore_mqtt'],
+    required: ['code', 'allow_db', 'allow_live', 'allow_mqtt'],
     type: 'object'
 } as const;
 
@@ -848,26 +848,26 @@ export const $EventRule = {
             readOnly: true,
             type: 'string'
         },
+        allow_db: {
+            type: 'boolean'
+        },
+        allow_live: {
+            type: 'boolean'
+        },
+        allow_mqtt: {
+            type: 'boolean'
+        },
         can_delete: {
             type: 'boolean'
         },
         code: {
             type: 'string'
         },
-        ignore_db: {
-            type: 'boolean'
-        },
-        ignore_live: {
-            type: 'boolean'
-        },
-        ignore_mqtt: {
-            type: 'boolean'
-        },
         uuid: {
             type: 'string'
         }
     },
-    required: ['uuid', 'code', 'ignore_db', 'ignore_live', 'ignore_mqtt', 'can_delete'],
+    required: ['uuid', 'code', 'allow_db', 'allow_live', 'allow_mqtt', 'can_delete'],
     type: 'object'
 } as const;
 
@@ -1289,20 +1289,20 @@ export const $UpdateEventRule = {
             readOnly: true,
             type: 'string'
         },
+        allow_db: {
+            type: 'boolean'
+        },
+        allow_live: {
+            type: 'boolean'
+        },
+        allow_mqtt: {
+            type: 'boolean'
+        },
         code: {
             type: 'string'
-        },
-        ignore_db: {
-            type: 'boolean'
-        },
-        ignore_live: {
-            type: 'boolean'
-        },
-        ignore_mqtt: {
-            type: 'boolean'
         }
     },
-    required: ['code', 'ignore_db', 'ignore_live', 'ignore_mqtt'],
+    required: ['code', 'allow_db', 'allow_live', 'allow_mqtt'],
     type: 'object'
 } as const;
 

@@ -128,11 +128,11 @@ func ListEvents(ctx context.Context, db *sqlx.DB, arg ListEventsParams) (ListEve
 
 type EventRule struct {
 	types.Key
-	Code        string
-	Ignore_DB   bool
-	Ignore_Live bool
-	Ignore_MQTT bool
-	Can_Delete  bool
+	Code       string
+	Allow_DB   bool
+	Allow_Live bool
+	Allow_MQTT bool
+	Can_Delete bool
 }
 
 func NormalizeEventRules(ctx context.Context, db *sqlx.DB) error {
@@ -143,37 +143,37 @@ func NormalizeEventRules(ctx context.Context, db *sqlx.DB) error {
 }
 
 type CreateEventRuleArgs struct {
-	UUID       string
-	Code       string
-	IgnoreDB   bool
-	IgnoreLive bool
-	IgnoreMQTT bool
+	UUID      string
+	Code      string
+	AllowDB   bool
+	AllowLive bool
+	AllowMQTT bool
 }
 
 func CreateEventRule(ctx context.Context, db *sqlx.DB, args CreateEventRuleArgs) (EventRule, error) {
 	var row EventRule
 	err := sqlx.GetContext(ctx, db, &row, `
 		INSERT INTO dahua_event_rules (
-			uuid, code, ignore_db, ignore_live, ignore_mqtt
+			uuid, code, allow_db, allow_live, allow_mqtt
 		) 
 		VALUES (?, ?, ?, ?, ?) 
 		RETURNING *;
 	`,
 		args.UUID,
 		args.Code,
-		args.IgnoreDB,
-		args.IgnoreLive,
-		args.IgnoreMQTT,
+		args.AllowDB,
+		args.AllowLive,
+		args.AllowMQTT,
 	)
 	return row, err
 }
 
 type UpdateEventRuleArgs struct {
-	UUID       string
-	Code       string
-	IgnoreDB   bool
-	IgnoreLive bool
-	IgnoreMQTT bool
+	UUID      string
+	Code      string
+	AllowDB   bool
+	AllowLive bool
+	AllowMQTT bool
 }
 
 func UpdateEventRule(ctx context.Context, db *sqlx.DB, args UpdateEventRuleArgs) error {
@@ -185,9 +185,9 @@ func UpdateEventRule(ctx context.Context, db *sqlx.DB, args UpdateEventRuleArgs)
 		return err
 	}
 
-	row.Ignore_DB = args.IgnoreDB
-	row.Ignore_Live = args.IgnoreLive
-	row.Ignore_MQTT = args.IgnoreMQTT
+	row.Allow_DB = args.AllowDB
+	row.Allow_Live = args.AllowLive
+	row.Allow_MQTT = args.AllowMQTT
 	if row.Can_Delete {
 		row.Code = args.Code
 	}
@@ -195,16 +195,16 @@ func UpdateEventRule(ctx context.Context, db *sqlx.DB, args UpdateEventRuleArgs)
 	_, err = db.ExecContext(ctx, `
 		UPDATE dahua_event_rules SET 
 			code = ?,
-			ignore_db = ?,
-			ignore_live = ?,
-			ignore_mqtt = ? 
+			allow_db = ?,
+			allow_live = ?,
+			allow_mqtt = ? 
 		WHERE uuid = ?
 		RETURNING *
 	`,
 		row.Code,
-		row.Ignore_DB,
-		row.Ignore_Live,
-		row.Ignore_MQTT,
+		row.Allow_DB,
+		row.Allow_Live,
+		row.Allow_MQTT,
 		row.UUID,
 	)
 	if err != nil {
@@ -278,16 +278,16 @@ func (w EventWorker) Serve(ctx context.Context) error {
 
 func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey types.Key, event dahuacgi.Event) error {
 	var eventRule struct {
-		Ignore_DB   bool
-		Ignore_Live bool
-		Ignore_MQTT bool
-		Code        string
+		Allow_DB   bool
+		Allow_Live bool
+		Allow_MQTT bool
+		Code       string
 	}
 	err := db.GetContext(ctx, &eventRule, `
 		SELECT
-			ignore_db,
-			ignore_live,
-			ignore_mqtt,
+			allow_db,
+			allow_live,
+			allow_mqtt,
 			code
 		FROM
 			dahua_event_device_rules
@@ -299,9 +299,9 @@ func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey types.Key, event da
 			)
 		UNION ALL
 		SELECT
-			ignore_db,
-			ignore_live,
-			ignore_mqtt,
+			allow_db,
+			allow_live,
+			allow_mqtt,
 			code
 		FROM
 			dahua_event_rules
@@ -316,15 +316,15 @@ func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey types.Key, event da
 	}
 
 	busEvent := bus.EventCreated{
-		EventID:    ulid.Make().String(),
-		DeviceKey:  deviceKey,
-		IgnoreDB:   eventRule.Ignore_DB,
-		IgnoreMQTT: eventRule.Ignore_MQTT,
-		IgnoreLive: eventRule.Ignore_Live,
-		Event:      event,
-		CreatedAt:  time.Now(),
+		EventID:   ulid.Make().String(),
+		DeviceKey: deviceKey,
+		AllowDB:   eventRule.Allow_DB,
+		AllowMQTT: eventRule.Allow_MQTT,
+		AllowLive: eventRule.Allow_Live,
+		Event:     event,
+		CreatedAt: time.Now(),
 	}
-	if !busEvent.IgnoreDB {
+	if busEvent.AllowDB {
 		v, err := json.MarshalIndent(busEvent.Event.Data, "", "  ")
 		if err != nil {
 			return err

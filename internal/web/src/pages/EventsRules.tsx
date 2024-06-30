@@ -177,21 +177,21 @@ export default function () {
                     <TableCell class="w-full">{item.code}</TableCell>
                     <TableCell>
                       <div class="flex justify-center">
-                        <CheckboxRoot checked={!item.ignore_db}>
+                        <CheckboxRoot checked={item.allow_db}>
                           <CheckboxControl />
                         </CheckboxRoot>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div class="flex justify-center">
-                        <CheckboxRoot checked={!item.ignore_live}>
+                        <CheckboxRoot checked={item.allow_live}>
                           <CheckboxControl />
                         </CheckboxRoot>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div class="flex justify-center">
-                        <CheckboxRoot checked={!item.ignore_mqtt}>
+                        <CheckboxRoot checked={item.allow_mqtt}>
                           <CheckboxControl />
                         </CheckboxRoot>
                       </div>

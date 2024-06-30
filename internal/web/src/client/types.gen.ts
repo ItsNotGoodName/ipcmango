@@ -51,10 +51,10 @@ export type CreateEventRule = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
+    allow_db: boolean;
+    allow_live: boolean;
+    allow_mqtt: boolean;
     code: string;
-    ignore_db: boolean;
-    ignore_live: boolean;
-    ignore_mqtt: boolean;
     uuid?: string;
 };
 
@@ -316,11 +316,11 @@ export type EventRule = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
+    allow_db: boolean;
+    allow_live: boolean;
+    allow_mqtt: boolean;
     can_delete: boolean;
     code: string;
-    ignore_db: boolean;
-    ignore_live: boolean;
-    ignore_mqtt: boolean;
     uuid: string;
 };
 
@@ -466,10 +466,10 @@ export type UpdateEventRule = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
+    allow_db: boolean;
+    allow_live: boolean;
+    allow_mqtt: boolean;
     code: string;
-    ignore_db: boolean;
-    ignore_live: boolean;
-    ignore_mqtt: boolean;
 };
 
 export type UpdateSettings = {

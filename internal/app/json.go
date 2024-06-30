@@ -225,18 +225,18 @@ type UpdateSettings struct {
 }
 
 type CreateEventRule struct {
-	UUID       *string `json:"uuid,omitempty" format:"uuid"`
-	Code       string  `json:"code"`
-	IgnoreDB   bool    `json:"ignore_db"`
-	IgnoreLive bool    `json:"ignore_live"`
-	IgnoreMQTT bool    `json:"ignore_mqtt"`
+	UUID      *string `json:"uuid,omitempty" format:"uuid"`
+	Code      string  `json:"code"`
+	AllowDB   bool    `json:"allow_db"`
+	AllowLive bool    `json:"allow_live"`
+	AllowMQTT bool    `json:"allow_mqtt"`
 }
 
 type UpdateEventRule struct {
-	Code       string `json:"code"`
-	IgnoreDB   bool   `json:"ignore_db"`
-	IgnoreLive bool   `json:"ignore_live"`
-	IgnoreMQTT bool   `json:"ignore_mqtt"`
+	Code      string `json:"code"`
+	AllowDB   bool   `json:"allow_db"`
+	AllowLive bool   `json:"allow_live"`
+	AllowMQTT bool   `json:"allow_mqtt"`
 }
 
 //---------- Pages
