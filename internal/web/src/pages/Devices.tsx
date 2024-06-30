@@ -221,7 +221,7 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
         <AlertDialogModal>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete {deleteDialog.value().name}?
+              Are you sure you wish to delete "{deleteDialog.value().name}"?
             </AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogFooter>

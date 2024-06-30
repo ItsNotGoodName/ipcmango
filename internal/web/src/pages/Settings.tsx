@@ -59,9 +59,7 @@ function useMutation() {
   const client = useQueryClient();
   return createMutation(() => ({
     mutationFn: (requestBody: PatchSettings) =>
-      patchApiSettings({
-        requestBody,
-      }),
+      patchApiSettings({ requestBody }),
     onSuccess: (data) => client.setQueryData(api.settings.get.queryKey, data),
   }));
 }
@@ -175,6 +173,7 @@ export default function () {
           setCoordinateDetectLoading(false);
           toast.error("Error", error.message);
         }),
+      { timeout: 10000 },
     );
   };
 
@@ -237,7 +236,7 @@ export default function () {
         <PageSubTitle>Sun Offset</PageSubTitle>
 
         <Suspense fallback={<Skeleton class="h-32" />}>
-          <SunForm onSubmit={submitSunForm} class="flex flex-col gap-2">
+          <SunForm onSubmit={submitSunForm} class="flex flex-col gap-4">
             <div class="flex flex-col gap-4 sm:flex-row">
               <SunField name="sunrise_offset">
                 {(field, props) => (
@@ -300,7 +299,7 @@ export default function () {
         <Suspense fallback={<Skeleton class="h-32" />}>
           <CoordinateForm
             onSubmit={submitCoordinateForm}
-            class="flex flex-col gap-2"
+            class="flex flex-col gap-4"
           >
             <div class="flex flex-col gap-4 sm:flex-row">
               <CoordinateField name="latitude" type="number">
@@ -390,7 +389,9 @@ export default function () {
           </AlertDialogTrigger>
           <AlertDialogModal>
             <AlertDialogHeader>
-              <AlertDialogTitle>Default settings?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Are you sure you wish to default all settings?
+              </AlertDialogTitle>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>

@@ -2,7 +2,6 @@ import {
   ErrorBoundary,
   For,
   Suspense,
-  batch,
   createEffect,
   createSignal,
 } from "solid-js";
@@ -111,12 +110,11 @@ export default function () {
 
   const [deleteDialog, setDeleteDialog] = createSignal(false);
   const deleteMutation = createMutation(() => ({
-    mutationFn: () => deleteApiEvents(),
+    mutationFn: deleteApiEvents,
     onSuccess: () =>
-      batch(() => {
-        client.invalidateQueries({ queryKey: api.events.list._def });
-        setDeleteDialog(false);
-      }),
+      client
+        .invalidateQueries({ queryKey: api.events.list._def })
+        .then(() => setDeleteDialog(false)),
     onError: (error) => toast.error(error.name, error.message),
   }));
 
@@ -188,7 +186,9 @@ export default function () {
                 </AlertDialogTrigger>
                 <AlertDialogModal>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete events?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      Are you sure you wish to delete all events?
+                    </AlertDialogTitle>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
