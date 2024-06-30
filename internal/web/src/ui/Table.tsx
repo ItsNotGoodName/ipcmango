@@ -74,6 +74,21 @@ export function TableHead(props: JSX.ThHTMLAttributes<HTMLTableCellElement>) {
   );
 }
 
+export function TableHeadBase(
+  props: JSX.ThHTMLAttributes<HTMLTableCellElement>,
+) {
+  const [_, rest] = splitProps(props, ["class"]);
+  return (
+    <th
+      class={cn(
+        "h-12 align-middle font-medium text-muted-foreground",
+        props.class,
+      )}
+      {...rest}
+    />
+  );
+}
+
 export function TableHeadEnd(
   props: JSX.ThHTMLAttributes<HTMLTableCellElement>,
 ) {

@@ -233,7 +233,6 @@ type CreateEventRule struct {
 }
 
 type UpdateEventRule struct {
-	UUID       string `json:"uuid"`
 	Code       string `json:"code"`
 	IgnoreDB   bool   `json:"ignore_db"`
 	IgnoreLive bool   `json:"ignore_live"`

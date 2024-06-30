@@ -18,6 +18,7 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  TableHeadBase,
   TableHeader,
   TableRoot,
   TableRow,
@@ -32,7 +33,8 @@ export default function () {
   }));
 
   const rowSelection = createRowSelection(
-    () => data.data?.map((v) => ({ id: v.code, disabled: !v.deletable })) ?? [],
+    () =>
+      data.data?.map((v) => ({ id: v.code, disabled: !v.can_delete })) ?? [],
   );
 
   return (
@@ -73,15 +75,15 @@ export default function () {
                   </CheckboxRoot>
                 </TableHead>
                 <TableHead class="w-full">Code</TableHead>
-                <TableHead class="w-0">
+                <TableHeadBase>
                   <button>DB</button>
-                </TableHead>
-                <TableHead class="w-0">
+                </TableHeadBase>
+                <TableHeadBase>
                   <button>Live</button>
-                </TableHead>
-                <TableHead class="w-0">
+                </TableHeadBase>
+                <TableHeadBase>
                   <button>MQTT</button>
-                </TableHead>
+                </TableHeadBase>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -98,7 +100,7 @@ export default function () {
                       </CheckboxRoot>
                     </TableCell>
                     <Show
-                      when={item.deletable}
+                      when={item.can_delete}
                       fallback={
                         <TableCell class="w-full">{item.code}</TableCell>
                       }
@@ -110,19 +112,25 @@ export default function () {
                       </td>
                     </Show>
                     <TableCell>
-                      <CheckboxRoot checked={!item.ignore_db}>
-                        <CheckboxControl />
-                      </CheckboxRoot>
+                      <div class="flex justify-center">
+                        <CheckboxRoot checked={!item.ignore_db}>
+                          <CheckboxControl />
+                        </CheckboxRoot>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <CheckboxRoot checked={!item.ignore_live}>
-                        <CheckboxControl />
-                      </CheckboxRoot>
+                      <div class="flex justify-center">
+                        <CheckboxRoot checked={!item.ignore_live}>
+                          <CheckboxControl />
+                        </CheckboxRoot>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <CheckboxRoot checked={!item.ignore_mqtt}>
-                        <CheckboxControl />
-                      </CheckboxRoot>
+                      <div class="flex justify-center">
+                        <CheckboxRoot checked={!item.ignore_mqtt}>
+                          <CheckboxControl />
+                        </CheckboxRoot>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}

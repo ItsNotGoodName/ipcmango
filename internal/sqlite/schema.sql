@@ -99,7 +99,7 @@ CREATE TABLE dahua_event_rules (
   ignore_db BOOLEAN NOT NULL DEFAULT false,
   ignore_live BOOLEAN NOT NULL DEFAULT false,
   ignore_mqtt BOOLEAN NOT NULL DEFAULT false,
-  deletable BOOLEAN NOT NULL default true
+  can_delete BOOLEAN NOT NULL default true
 );
 
 CREATE TABLE dahua_event_device_rules (
@@ -110,7 +110,7 @@ CREATE TABLE dahua_event_device_rules (
   ignore_db BOOLEAN NOT NULL DEFAULT false,
   ignore_live BOOLEAN NOT NULL DEFAULT false,
   ignore_mqtt BOOLEAN NOT NULL DEFAULT false,
-  deletable BOOLEAN NOT NULL default true,
+  can_delete BOOLEAN NOT NULL default true,
   UNIQUE (device_id, code),
   FOREIGN KEY (device_id) REFERENCES dahua_devices (id) ON UPDATE CASCADE ON DELETE CASCADE
 );

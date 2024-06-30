@@ -143,6 +143,37 @@ export const $CreateEmailEndpoint = {
     type: 'object'
 } as const;
 
+export const $CreateEventRule = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/CreateEventRule.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        code: {
+            type: 'string'
+        },
+        ignore_db: {
+            type: 'boolean'
+        },
+        ignore_live: {
+            type: 'boolean'
+        },
+        ignore_mqtt: {
+            type: 'boolean'
+        },
+        uuid: {
+            format: 'uuid',
+            type: 'string'
+        }
+    },
+    required: ['code', 'ignore_db', 'ignore_live', 'ignore_mqtt'],
+    type: 'object'
+} as const;
+
 export const $CreateStorageDestination = {
     additionalProperties: false,
     properties: {
@@ -810,11 +841,11 @@ export const $ErrorModel = {
 export const $EventRule = {
     additionalProperties: false,
     properties: {
+        can_delete: {
+            type: 'boolean'
+        },
         code: {
             type: 'string'
-        },
-        deletable: {
-            type: 'boolean'
         },
         ignore_db: {
             type: 'boolean'
@@ -824,9 +855,12 @@ export const $EventRule = {
         },
         ignore_mqtt: {
             type: 'boolean'
+        },
+        uuid: {
+            type: 'string'
         }
     },
-    required: ['code', 'ignore_db', 'ignore_live', 'ignore_mqtt', 'deletable'],
+    required: ['uuid', 'code', 'ignore_db', 'ignore_live', 'ignore_mqtt', 'can_delete'],
     type: 'object'
 } as const;
 
@@ -1252,12 +1286,9 @@ export const $UpdateEventRule = {
         },
         ignore_mqtt: {
             type: 'boolean'
-        },
-        uuid: {
-            type: 'string'
         }
     },
-    required: ['uuid', 'code', 'ignore_db', 'ignore_live', 'ignore_mqtt'],
+    required: ['code', 'ignore_db', 'ignore_live', 'ignore_mqtt'],
     type: 'object'
 } as const;
 

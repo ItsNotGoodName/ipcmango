@@ -155,6 +155,43 @@
         ],
         "type": "object"
       },
+      "CreateEventRule": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/schemas/CreateEventRule.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "ignore_db": {
+            "type": "boolean"
+          },
+          "ignore_live": {
+            "type": "boolean"
+          },
+          "ignore_mqtt": {
+            "type": "boolean"
+          },
+          "uuid": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "ignore_db",
+          "ignore_live",
+          "ignore_mqtt"
+        ],
+        "type": "object"
+      },
       "CreateStorageDestination": {
         "additionalProperties": false,
         "properties": {
@@ -980,11 +1017,11 @@
       "EventRule": {
         "additionalProperties": false,
         "properties": {
+          "can_delete": {
+            "type": "boolean"
+          },
           "code": {
             "type": "string"
-          },
-          "deletable": {
-            "type": "boolean"
           },
           "ignore_db": {
             "type": "boolean"
@@ -994,14 +1031,18 @@
           },
           "ignore_mqtt": {
             "type": "boolean"
+          },
+          "uuid": {
+            "type": "string"
           }
         },
         "required": [
+          "uuid",
           "code",
           "ignore_db",
           "ignore_live",
           "ignore_mqtt",
-          "deletable"
+          "can_delete"
         ],
         "type": "object"
       },
@@ -1515,13 +1556,9 @@
           },
           "ignore_mqtt": {
             "type": "boolean"
-          },
-          "uuid": {
-            "type": "string"
           }
         },
         "required": [
-          "uuid",
           "code",
           "ignore_db",
           "ignore_live",
@@ -2936,7 +2973,7 @@
         "summary": "Create email endpoint"
       }
     },
-    "/api/endpoints/{uuid}": {
+    "/api/email-endpoints/{uuid}": {
       "delete": {
         "parameters": [
           {
@@ -2964,7 +3001,7 @@
             "description": "Error"
           }
         },
-        "summary": "Delete endpoint"
+        "summary": "Delete email endpoint"
       },
       "get": {
         "parameters": [
@@ -3137,8 +3174,61 @@
           }
         },
         "summary": "List event rules"
-      },
+      }
+    },
+    "/api/event-rules/create": {
       "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventRule"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create event rule"
+      }
+    },
+    "/api/event-rules/{uuid}": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uuid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {

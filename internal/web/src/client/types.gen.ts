@@ -46,6 +46,18 @@ export type CreateEmailEndpoint = {
     uuid?: string;
 };
 
+export type CreateEventRule = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    code: string;
+    ignore_db: boolean;
+    ignore_live: boolean;
+    ignore_mqtt: boolean;
+    uuid?: string;
+};
+
 export type CreateStorageDestination = {
     name: string;
     password: string;
@@ -300,11 +312,12 @@ export type ErrorModel = {
 };
 
 export type EventRule = {
+    can_delete: boolean;
     code: string;
-    deletable: boolean;
     ignore_db: boolean;
     ignore_live: boolean;
     ignore_mqtt: boolean;
+    uuid: string;
 };
 
 export type FileScanCursor = {
@@ -449,7 +462,6 @@ export type UpdateEventRule = {
     ignore_db: boolean;
     ignore_live: boolean;
     ignore_mqtt: boolean;
-    uuid: string;
 };
 
 export type UpdateSettings = {
@@ -668,24 +680,24 @@ export type PostApiEmailEndpointsCreateData = {
 
 export type PostApiEmailEndpointsCreateResponse = EmailEndpoint;
 
-export type DeleteApiEndpointsByUuidData = {
+export type DeleteApiEmailEndpointsByUuidData = {
     uuid: string;
 };
 
-export type DeleteApiEndpointsByUuidResponse = void;
+export type DeleteApiEmailEndpointsByUuidResponse = void;
 
-export type GetApiEndpointsByUuidData = {
+export type GetApiEmailEndpointsByUuidData = {
     uuid: string;
 };
 
-export type GetApiEndpointsByUuidResponse = EmailEndpoint;
+export type GetApiEmailEndpointsByUuidResponse = EmailEndpoint;
 
-export type PostApiEndpointsByUuidData = {
+export type PostApiEmailEndpointsByUuidData = {
     requestBody: UpdateEmailEndpoint;
     uuid: string;
 };
 
-export type PostApiEndpointsByUuidResponse = EmailEndpoint;
+export type PostApiEmailEndpointsByUuidResponse = EmailEndpoint;
 
 export type GetApiEventActionsResponse = Array<(string)>;
 
@@ -693,11 +705,18 @@ export type GetApiEventCodesResponse = Array<(string)>;
 
 export type GetApiEventRulesResponse = Array<EventRule>;
 
-export type PostApiEventRulesData = {
-    requestBody: Array<UpdateEventRule>;
+export type PostApiEventRulesCreateData = {
+    requestBody: CreateEventRule;
 };
 
-export type PostApiEventRulesResponse = Array<EventRule>;
+export type PostApiEventRulesCreateResponse = Array<EventRule>;
+
+export type PostApiEventRulesByUuidData = {
+    requestBody: Array<UpdateEventRule>;
+    uuid: string;
+};
+
+export type PostApiEventRulesByUuidResponse = Array<EventRule>;
 
 export type DeleteApiEventsResponse = void;
 
@@ -1246,9 +1265,9 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/endpoints/{uuid}': {
+    '/api/email-endpoints/{uuid}': {
         delete: {
-            req: DeleteApiEndpointsByUuidData;
+            req: DeleteApiEmailEndpointsByUuidData;
             res: {
                 /**
                  * No Content
@@ -1261,7 +1280,7 @@ export type $OpenApiTs = {
             };
         };
         get: {
-            req: GetApiEndpointsByUuidData;
+            req: GetApiEmailEndpointsByUuidData;
             res: {
                 /**
                  * OK
@@ -1274,7 +1293,7 @@ export type $OpenApiTs = {
             };
         };
         post: {
-            req: PostApiEndpointsByUuidData;
+            req: PostApiEmailEndpointsByUuidData;
             res: {
                 /**
                  * OK
@@ -1328,8 +1347,25 @@ export type $OpenApiTs = {
                 default: ErrorModel;
             };
         };
+    };
+    '/api/event-rules/create': {
         post: {
-            req: PostApiEventRulesData;
+            req: PostApiEventRulesCreateData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<EventRule>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/event-rules/{uuid}': {
+        post: {
+            req: PostApiEventRulesByUuidData;
             res: {
                 /**
                  * OK

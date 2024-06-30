@@ -59,7 +59,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*GetDeviceOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -119,7 +119,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 		Body UpdateDevice
 	},
 	) (*UpdateDevicesOutput, error) {
@@ -159,7 +159,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodDelete,
 		Path:    "/api/devices/{uuid}",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*struct{}, error) {
 		return &struct{}{}, dahua.DeleteDevice(ctx, app.DB, input.UUID)
@@ -199,8 +199,8 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/coaxial/caps",
 	}, func(ctx context.Context, input *struct {
-		UUID    string `path:"uuid" format:"uuid"`
-		Channel int    `query:"channel"`
+		UUIDPath
+		Channel int `query:"channel"`
 	},
 	) (*GetDeviceCoaxialCapsOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -227,8 +227,8 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/coaxial/status",
 	}, func(ctx context.Context, input *struct {
-		UUID    string `path:"uuid" format:"uuid"`
-		Channel int    `query:"channel"`
+		UUIDPath
+		Channel int `query:"channel"`
 	},
 	) (*GetDeviceCoaxialStatusOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -255,7 +255,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/detail",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*GetDeviceDetailOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -282,7 +282,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/licenses",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*GetDeviceLicensesOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -309,8 +309,8 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/ptz/presets",
 	}, func(ctx context.Context, input *struct {
-		UUID    string `path:"uuid" format:"uuid"`
-		Channel int    `query:"channel"`
+		UUIDPath
+		Channel int `query:"channel"`
 	},
 	) (*ListDevicePTZPresetsOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -337,7 +337,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/software",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*GetDeviceSoftwareOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -364,7 +364,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/storage",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*ListDeviceStorageOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -391,7 +391,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/users",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*ListDeviceUsersOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -423,7 +423,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/users/active",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*ListDeviceActiveUsersOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -455,7 +455,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/groups",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*ListDeviceGroupsOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -482,7 +482,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/uptime",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*GetDeviceUptimeOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -509,7 +509,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/status",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*GetDeviceStatusOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -539,9 +539,9 @@ func Register(api huma.API, app App) {
 			},
 		},
 	}, func(ctx context.Context, input *struct {
-		UUID    string `path:"uuid" format:"uuid"`
-		Channel int    `query:"channel"`
-		Type    int    `query:"type"`
+		UUIDPath
+		Channel int `query:"channel"`
+		Type    int `query:"type"`
 	},
 	) (*huma.StreamResponse, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -715,7 +715,7 @@ func Register(api huma.API, app App) {
 			},
 		},
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 		// TODO: this should be path param wildcard but OpenAPI is stupid
 		Name string `query:"name" required:"true"`
 	},
@@ -779,7 +779,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/reboot",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*struct{}, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -799,7 +799,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/video-in-mode",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*DeviceVideoInModeOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -826,7 +826,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodDelete,
 		Path:    "/api/devices/{uuid}/scan/cursor",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*DeviceScanCursorOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -852,7 +852,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodGet,
 		Path:    "/api/devices/{uuid}/scan/cursor",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*DeviceScanCursorOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -874,7 +874,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/scan/manual",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 		Body ManualFileScan
 	},
 	) (*DeviceScanOutput, error) {
@@ -905,7 +905,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/scan/full",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*DeviceScanOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -932,7 +932,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/scan/quick",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*DeviceScanOutput, error) {
 		device, err := useDevice(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -959,7 +959,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/video-in-mode/sync",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 		Body DeviceVideoInModeSync
 	},
 	) (*DeviceVideoInModeOutput, error) {
@@ -998,7 +998,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/coaxial/white-light",
 	}, func(ctx context.Context, input *struct {
-		UUID    string `path:"uuid" format:"uuid"`
+		UUIDPath
 		Channel int    `query:"channel"`
 		Action  string `query:"action" enum:"on,off,toggle"`
 	},
@@ -1010,7 +1010,7 @@ func Register(api huma.API, app App) {
 		Method:  http.MethodPost,
 		Path:    "/api/devices/{uuid}/coaxial/speaker",
 	}, func(ctx context.Context, input *struct {
-		UUID    string `path:"uuid" format:"uuid"`
+		UUIDPath
 		Channel int    `query:"channel"`
 		Action  string `query:"action" enum:"on,off,toggle"`
 	},
@@ -1125,9 +1125,9 @@ func Register(api huma.API, app App) {
 	huma.Register(api, huma.Operation{
 		Summary: "Get email endpoint",
 		Method:  http.MethodGet,
-		Path:    "/api/endpoints/{uuid}",
+		Path:    "/api/email-endpoints/{uuid}",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*GetEmailEndpointOutput, error) {
 		body, err := GetEmailEndpoints(ctx, app.DB, types.Key{UUID: input.UUID})
@@ -1191,9 +1191,9 @@ func Register(api huma.API, app App) {
 	huma.Register(api, huma.Operation{
 		Summary: "Update email endpoint",
 		Method:  http.MethodPost,
-		Path:    "/api/endpoints/{uuid}",
+		Path:    "/api/email-endpoints/{uuid}",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 		Body UpdateEmailEndpoint
 	},
 	) (*GetEmailEndpointOutput, error) {
@@ -1225,11 +1225,11 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Delete endpoint",
+		Summary: "Delete email endpoint",
 		Method:  http.MethodDelete,
-		Path:    "/api/endpoints/{uuid}",
+		Path:    "/api/email-endpoints/{uuid}",
 	}, func(ctx context.Context, input *struct {
-		UUID string `path:"uuid" format:"uuid"`
+		UUIDPath
 	},
 	) (*struct{}, error) {
 		return &struct{}{}, dahua.DeleteEmailEndpoint(ctx, app.DB, input.UUID)
@@ -1321,8 +1321,9 @@ func Register(api huma.API, app App) {
 	huma.Register(api, huma.Operation{
 		Summary: "Update event rules",
 		Method:  http.MethodPost,
-		Path:    "/api/event-rules",
+		Path:    "/api/event-rules/{uuid}",
 	}, func(ctx context.Context, input *struct {
+		UUIDPath
 		Body []UpdateEventRule
 	},
 	) (*ListEventRulesOutput, error) {
@@ -1793,7 +1794,7 @@ func NewEventRule(v dahua.EventRule) EventRule {
 		IgnoreDB:   v.Ignore_DB,
 		IgnoreLive: v.Ignore_Live,
 		IgnoreMQTT: v.Ignore_MQTT,
-		Deletable:  v.Deletable,
+		CanDelete:  v.Can_Delete,
 	}
 }
 
@@ -1803,5 +1804,5 @@ type EventRule struct {
 	IgnoreDB   bool   `json:"ignore_db"`
 	IgnoreLive bool   `json:"ignore_live"`
 	IgnoreMQTT bool   `json:"ignore_mqtt"`
-	Deletable  bool   `json:"deletable"`
+	CanDelete  bool   `json:"can_delete"`
 }

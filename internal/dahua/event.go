@@ -132,12 +132,12 @@ type EventRule struct {
 	Ignore_DB   bool
 	Ignore_Live bool
 	Ignore_MQTT bool
-	Deletable   bool
+	Can_Delete  bool
 }
 
 func NormalizeEventRules(ctx context.Context, db *sqlx.DB) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO dahua_event_rules(code, deletable, uuid) VALUES ('All', false, ?) ON CONFLICT DO NOTHING
+		INSERT INTO dahua_event_rules(code, can_delete, uuid) VALUES ('All', false, ?) ON CONFLICT DO NOTHING
 	`, uuid.NewString())
 	return err
 }
