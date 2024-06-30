@@ -1308,7 +1308,42 @@ func Register(api huma.API, app App) {
 	}, func(ctx context.Context, input *struct {
 		Body CreateEventRule
 	},
+	) (*CreateEventRulesOutput, error) {
+		body, err := dahua.CreateEventRule(ctx, app.DB, dahua.CreateEventRuleArgs{
+			UUID:       core.Optional(input.Body.UUID, uuid.NewString()),
+			Code:       input.Body.Code,
+			IgnoreDB:   input.Body.IgnoreDB,
+			IgnoreLive: input.Body.IgnoreLive,
+			IgnoreMQTT: input.Body.IgnoreMQTT,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &CreateEventRulesOutput{
+			Body: NewEventRule(body),
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Update event rules",
+		Method:  http.MethodPost,
+		Path:    "/api/event-rules/{uuid}",
+	}, func(ctx context.Context, input *struct {
+		UUIDPath
+		Body UpdateEventRule
+	},
 	) (*ListEventRulesOutput, error) {
+		err := dahua.UpdateEventRule(ctx, app.DB, dahua.UpdateEventRuleArgs{
+			UUID:       input.UUID,
+			Code:       input.Body.Code,
+			IgnoreDB:   input.Body.IgnoreDB,
+			IgnoreLive: input.Body.IgnoreLive,
+			IgnoreMQTT: input.Body.IgnoreMQTT,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 		body, err := ListEventRules(ctx, app.DB)
 		if err != nil {
 			return nil, err
@@ -1319,22 +1354,34 @@ func Register(api huma.API, app App) {
 		}, nil
 	})
 	huma.Register(api, huma.Operation{
-		Summary: "Update event rules",
+		Summary: "Delete event rule by uuid",
 		Method:  http.MethodPost,
 		Path:    "/api/event-rules/{uuid}",
 	}, func(ctx context.Context, input *struct {
 		UUIDPath
-		Body []UpdateEventRule
 	},
-	) (*ListEventRulesOutput, error) {
-		body, err := ListEventRules(ctx, app.DB)
+	) (*struct{}, error) {
+		err := dahua.DeleteEventRule(ctx, app.DB, input.UUID)
 		if err != nil {
 			return nil, err
 		}
-
-		return &ListEventRulesOutput{
-			Body: body,
-		}, nil
+		return &struct{}{}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Delete event rules",
+		Method:  http.MethodDelete,
+		Path:    "/api/event-rules",
+	}, func(ctx context.Context, input *struct {
+		Body []string
+	},
+	) (*struct{}, error) {
+		for _, uuid := range input.Body {
+			err := dahua.DeleteEventRule(ctx, app.DB, uuid)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &struct{}{}, nil
 	})
 }
 
@@ -1760,6 +1807,10 @@ type ListEventsOutput struct {
 type ListEvents struct {
 	Pagination PagePagination `json:"pagination"`
 	Data       []DeviceEvent  `json:"data"`
+}
+
+type CreateEventRulesOutput struct {
+	Body EventRule
 }
 
 type ListEventRulesOutput struct {

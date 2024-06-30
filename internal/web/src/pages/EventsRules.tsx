@@ -1,7 +1,12 @@
+import Humanize from "humanize-plus";
 import { A } from "@solidjs/router";
-import { createQuery } from "@tanstack/solid-query";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/solid-query";
 import { RiSystemAddLine, RiSystemDeleteBinLine } from "solid-icons/ri";
-import { ErrorBoundary, For, Show, Suspense } from "solid-js";
+import { ErrorBoundary, For, Show, Suspense, createSignal } from "solid-js";
 import { createRowSelection } from "~/lib/utils";
 import {
   BreadcrumbsRoot,
@@ -23,10 +28,23 @@ import {
   TableRoot,
   TableRow,
 } from "~/ui/Table";
-import { TextFieldRoot, TextFieldInput } from "~/ui/TextField";
 import { api } from "./data";
+import { deleteApiEventRules } from "~/client";
+import { toast } from "~/ui/Toast";
+import {
+  AlertDialogRoot,
+  AlertDialogModal,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "~/ui/AlertDialog";
 
 export default function () {
+  const client = useQueryClient();
+
   const data = createQuery(() => ({
     ...api.eventRules.list,
     throwOnError: true,
@@ -34,8 +52,19 @@ export default function () {
 
   const rowSelection = createRowSelection(
     () =>
-      data.data?.map((v) => ({ id: v.code, disabled: !v.can_delete })) ?? [],
+      data.data?.map((v) => ({ id: v.uuid, disabled: !v.can_delete })) ?? [],
   );
+
+  const [deleteModal, setDeleteModal] = createSignal(false);
+  const deleteMutation = createMutation(() => ({
+    mutationFn: () =>
+      deleteApiEventRules({ requestBody: rowSelection.selections() }),
+    onSuccess: () =>
+      client
+        .invalidateQueries({ queryKey: api.eventRules.list.queryKey })
+        .then(() => setDeleteModal(false)),
+    onError: (error) => toast.error(error.name, error.message),
+  }));
 
   return (
     <LayoutNormal class="max-w-4xl">
@@ -51,11 +80,57 @@ export default function () {
         </BreadcrumbsRoot>
       </PageTitle>
 
+      <AlertDialogRoot
+        open={deleteModal() && rowSelection.multiple()}
+        onOpenChange={setDeleteModal}
+      >
+        <AlertDialogModal>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Are you sure you wish to delete {rowSelection.selections().length}{" "}
+              event{" "}
+              {Humanize.pluralize(
+                rowSelection.selections().length,
+                "rule",
+                "rules",
+              )}
+              ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <ul>
+                <For each={data.data}>
+                  {(e, index) => (
+                    <Show when={rowSelection.items[index()]?.checked}>
+                      <li>{e.code}</li>
+                    </Show>
+                  )}
+                </For>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogModal>
+      </AlertDialogRoot>
+
       <div class="flex justify-end gap-2">
         <Button size="icon">
           <RiSystemAddLine class="size-5" />
         </Button>
-        <Button size="icon" variant="destructive">
+        <Button
+          size="icon"
+          variant="destructive"
+          disabled={!rowSelection.multiple() || deleteMutation.isPending}
+          onClick={() => setDeleteModal(true)}
+        >
           <RiSystemDeleteBinLine class="size-5" />
         </Button>
       </div>
@@ -94,23 +169,12 @@ export default function () {
                       <CheckboxRoot
                         disabled={rowSelection.items[index()]?.disabled}
                         checked={rowSelection.items[index()]?.checked}
-                        onChange={(value) => rowSelection.set(item.code, value)}
+                        onChange={(value) => rowSelection.set(item.uuid, value)}
                       >
                         <CheckboxControl />
                       </CheckboxRoot>
                     </TableCell>
-                    <Show
-                      when={item.can_delete}
-                      fallback={
-                        <TableCell class="w-full">{item.code}</TableCell>
-                      }
-                    >
-                      <td class="w-full min-w-32 py-0 align-middle">
-                        <TextFieldRoot>
-                          <TextFieldInput />
-                        </TextFieldRoot>
-                      </td>
-                    </Show>
+                    <TableCell class="w-full">{item.code}</TableCell>
                     <TableCell>
                       <div class="flex justify-center">
                         <CheckboxRoot checked={!item.ignore_db}>

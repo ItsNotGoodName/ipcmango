@@ -312,6 +312,10 @@ export type ErrorModel = {
 };
 
 export type EventRule = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
     can_delete: boolean;
     code: string;
     ignore_db: boolean;
@@ -458,6 +462,10 @@ export type UpdateEmailEndpoint = {
 };
 
 export type UpdateEventRule = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
     code: string;
     ignore_db: boolean;
     ignore_live: boolean;
@@ -703,20 +711,25 @@ export type GetApiEventActionsResponse = Array<(string)>;
 
 export type GetApiEventCodesResponse = Array<(string)>;
 
+export type DeleteApiEventRulesData = {
+    requestBody: Array<(string)>;
+};
+
+export type DeleteApiEventRulesResponse = void;
+
 export type GetApiEventRulesResponse = Array<EventRule>;
 
 export type PostApiEventRulesCreateData = {
     requestBody: CreateEventRule;
 };
 
-export type PostApiEventRulesCreateResponse = Array<EventRule>;
+export type PostApiEventRulesCreateResponse = EventRule;
 
 export type PostApiEventRulesByUuidData = {
-    requestBody: Array<UpdateEventRule>;
     uuid: string;
 };
 
-export type PostApiEventRulesByUuidResponse = Array<EventRule>;
+export type PostApiEventRulesByUuidResponse = void;
 
 export type DeleteApiEventsResponse = void;
 
@@ -1335,6 +1348,19 @@ export type $OpenApiTs = {
         };
     };
     '/api/event-rules': {
+        delete: {
+            req: DeleteApiEventRulesData;
+            res: {
+                /**
+                 * No Content
+                 */
+                204: void;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
         get: {
             res: {
                 /**
@@ -1355,7 +1381,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<EventRule>;
+                200: EventRule;
                 /**
                  * Error
                  */
@@ -1368,9 +1394,9 @@ export type $OpenApiTs = {
             req: PostApiEventRulesByUuidData;
             res: {
                 /**
-                 * OK
+                 * No Content
                  */
-                200: Array<EventRule>;
+                204: void;
                 /**
                  * Error
                  */

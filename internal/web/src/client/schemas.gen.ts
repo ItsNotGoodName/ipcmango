@@ -841,6 +841,13 @@ export const $ErrorModel = {
 export const $EventRule = {
     additionalProperties: false,
     properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/EventRule.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
         can_delete: {
             type: 'boolean'
         },
@@ -1275,6 +1282,13 @@ export const $UpdateEmailEndpoint = {
 export const $UpdateEventRule = {
     additionalProperties: false,
     properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/UpdateEventRule.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
         code: {
             type: 'string'
         },

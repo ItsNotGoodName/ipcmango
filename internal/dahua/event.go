@@ -142,6 +142,85 @@ func NormalizeEventRules(ctx context.Context, db *sqlx.DB) error {
 	return err
 }
 
+type CreateEventRuleArgs struct {
+	UUID       string
+	Code       string
+	IgnoreDB   bool
+	IgnoreLive bool
+	IgnoreMQTT bool
+}
+
+func CreateEventRule(ctx context.Context, db *sqlx.DB, args CreateEventRuleArgs) (EventRule, error) {
+	var row EventRule
+	err := sqlx.GetContext(ctx, db, &row, `
+		INSERT INTO dahua_event_rules (
+			uuid, code, ignore_db, ignore_live, ignore_mqtt
+		) 
+		VALUES (?, ?, ?, ?, ?) 
+		RETURNING *;
+	`,
+		args.UUID,
+		args.Code,
+		args.IgnoreDB,
+		args.IgnoreLive,
+		args.IgnoreMQTT,
+	)
+	return row, err
+}
+
+type UpdateEventRuleArgs struct {
+	UUID       string
+	Code       string
+	IgnoreDB   bool
+	IgnoreLive bool
+	IgnoreMQTT bool
+}
+
+func UpdateEventRule(ctx context.Context, db *sqlx.DB, args UpdateEventRuleArgs) error {
+	var row EventRule
+	err := db.GetContext(ctx, &row, `
+		SELECT * FROM dahua_event_rules WHERE uuid = ?
+	`, args.UUID)
+	if err != nil {
+		return err
+	}
+
+	row.Ignore_DB = args.IgnoreDB
+	row.Ignore_Live = args.IgnoreLive
+	row.Ignore_MQTT = args.IgnoreMQTT
+	if row.Can_Delete {
+		row.Code = args.Code
+	}
+
+	_, err = db.ExecContext(ctx, `
+		UPDATE dahua_event_rules SET 
+			code = ?,
+			ignore_db = ?,
+			ignore_live = ?,
+			ignore_mqtt = ? 
+		WHERE uuid = ?
+		RETURNING *
+	`,
+		row.Code,
+		row.Ignore_DB,
+		row.Ignore_Live,
+		row.Ignore_MQTT,
+		row.UUID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteEventRule(ctx context.Context, db *sqlx.DB, uuid string) error {
+	_, err := db.ExecContext(ctx, `
+		DELETE FROM dahua_event_rules WHERE uuid = ? AND can_delete IS TRUE
+	`, uuid)
+	return err
+}
+
 func NewEventWorker(conn Conn, db *sqlx.DB) EventWorker {
 	return EventWorker{
 		conn: conn,
