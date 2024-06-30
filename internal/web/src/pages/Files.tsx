@@ -4,15 +4,9 @@ import { createSignal } from "solid-js";
 import { formatDate } from "~/lib/utils";
 import { Button } from "~/ui/Button";
 import {
-  MenubarCheckboxItem,
   MenubarContent,
-  MenubarGroup,
-  MenubarGroupLabel,
   MenubarItem,
   MenubarMenu,
-  MenubarRadioGroup,
-  MenubarRadioItem,
-  MenubarRoot,
   MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
@@ -21,23 +15,23 @@ import {
   MenubarTrigger,
 } from "~/ui/Menubar";
 
-type Item = {
-  color: string;
-  start_time: Date;
-  duration: number;
-};
+// type Item = {
+//   color: string;
+//   start_time: Date;
+//   duration: number;
+// };
 
 export default function () {
   // seconds, must be even
-  const [range, setRange] = createSignal(60 * 60);
+  // const [range, setRange] = createSignal(60 * 60);
   // current cursor position
-  const [cursor, setCursor] = createSignal(new Date(Date.now()));
+  const [cursor, _] = createSignal(new Date(Date.now()));
   // items to render
-  const [items, setItems] = createSignal<Array<Item>>();
+  // const [items, setItems] = createSignal<Array<Item>>();
   const [offset, setOffset] = createSignal(0);
 
-  let down = false;
-  let startX = 0;
+  // let down = false;
+  // let startX = 0;
 
   let ref: HTMLDivElement | null;
   const virtualizer = createVirtualizer({
