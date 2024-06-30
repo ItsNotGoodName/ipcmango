@@ -6,7 +6,9 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "~/ui/Tabs";
 import {
   TableBody,
   TableCell,
+  TableCellEnd,
   TableHead,
+  TableHeadEnd,
   TableHeader,
   TableRoot,
   TableRow,
@@ -52,7 +54,6 @@ import { createDate, createTimeAgo } from "@solid-primitives/date";
 import { api } from "./data";
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
 import { toast } from "~/ui/Toast";
-import { PositionEnd } from "~/components/Utils";
 import {
   AlertDialogRoot,
   AlertDialogModal,
@@ -243,7 +244,7 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
             <TableHead>IP</TableHead>
             <TableHead>Username</TableHead>
             <TableHead>Created At</TableHead>
-            <TableHead></TableHead>
+            <TableHeadEnd />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -262,21 +263,19 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
                 </TableCell>
                 <TableCell>{item.username}</TableCell>
                 <TableCell>{formatDate(parseDate(item.created_at))}</TableCell>
-                <TableCell class="py-0">
-                  <PositionEnd>
-                    <Button variant="ghost" size="icon">
-                      <RiDesignEditLine class="size-5" />
-                    </Button>
-                    <Button
-                      disabled={deleteMutation.isPending}
-                      onClick={() => deleteDialog.setValue(item)}
-                      variant="ghost"
-                      size="icon"
-                    >
-                      <RiSystemDeleteBinLine class="size-5" />
-                    </Button>
-                  </PositionEnd>
-                </TableCell>
+                <TableCellEnd>
+                  <Button variant="ghost" size="icon">
+                    <RiDesignEditLine class="size-5" />
+                  </Button>
+                  <Button
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteDialog.setValue(item)}
+                    variant="ghost"
+                    size="icon"
+                  >
+                    <RiSystemDeleteBinLine class="size-5" />
+                  </Button>
+                </TableCellEnd>
               </TableRow>
             )}
           </For>

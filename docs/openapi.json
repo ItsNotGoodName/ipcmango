@@ -977,6 +977,34 @@
         },
         "type": "object"
       },
+      "EventRule": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "deletable": {
+            "type": "boolean"
+          },
+          "ignore_db": {
+            "type": "boolean"
+          },
+          "ignore_live": {
+            "type": "boolean"
+          },
+          "ignore_mqtt": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "ignore_db",
+          "ignore_live",
+          "ignore_mqtt",
+          "deletable"
+        ],
+        "type": "object"
+      },
       "FileScanCursor": {
         "additionalProperties": false,
         "properties": {
@@ -1470,6 +1498,34 @@
         },
         "required": [
           "urls"
+        ],
+        "type": "object"
+      },
+      "UpdateEventRule": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "ignore_db": {
+            "type": "boolean"
+          },
+          "ignore_live": {
+            "type": "boolean"
+          },
+          "ignore_mqtt": {
+            "type": "boolean"
+          },
+          "uuid": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "code",
+          "ignore_db",
+          "ignore_live",
+          "ignore_mqtt"
         ],
         "type": "object"
       },
@@ -3051,6 +3107,77 @@
           }
         },
         "summary": "List event codes"
+      }
+    },
+    "/api/event-rules": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventRule"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List event rules"
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/UpdateEventRule"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventRule"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Update event rules"
       }
     },
     "/api/events": {

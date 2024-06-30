@@ -2,8 +2,6 @@ package dahua
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"slices"
@@ -11,11 +9,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 
-	"github.com/ItsNotGoodName/ipcmanview/internal/bus"
 	"github.com/ItsNotGoodName/ipcmanview/internal/types"
-	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuacgi"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/coaxialcontrolio"
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/intervideo"
@@ -459,91 +454,6 @@ func GetUptime(ctx context.Context, c dahuarpc.Conn) (DeviceUptime, error) {
 		Total:     now.Add(-time.Duration(uptime.Total) * time.Second),
 		Supported: true,
 	}, nil
-}
-
-func HandleEvent(ctx context.Context, db *sqlx.DB, deviceKey types.Key, event dahuacgi.Event) error {
-	var eventRule struct {
-		Ignore_DB   bool
-		Ignore_Live bool
-		Ignore_MQTT bool
-		Code        string
-	}
-	err := db.GetContext(ctx, &eventRule, `
-		SELECT
-			ignore_db,
-			ignore_live,
-			ignore_mqtt,
-			code
-		FROM
-			dahua_event_device_rules
-		WHERE
-			device_id = ?
-			AND (
-				dahua_event_device_rules.code = ?
-				OR dahua_event_device_rules.code = ''
-			)
-		UNION ALL
-		SELECT
-			ignore_db,
-			ignore_live,
-			ignore_mqtt,
-			code
-		FROM
-			dahua_event_rules
-		WHERE
-			dahua_event_rules.code = ?
-			OR dahua_event_rules.code = ''
-		ORDER BY
-			code DESC;
-	`, deviceKey.ID, event.Code, event.Code)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-
-	busEvent := bus.EventCreated{
-		EventID:    ulid.Make().String(),
-		DeviceKey:  deviceKey,
-		IgnoreDB:   eventRule.Ignore_DB,
-		IgnoreMQTT: eventRule.Ignore_MQTT,
-		IgnoreLive: eventRule.Ignore_Live,
-		Event:      event,
-		CreatedAt:  time.Now(),
-	}
-	if !busEvent.IgnoreDB {
-		v, err := json.MarshalIndent(busEvent.Event.Data, "", "  ")
-		if err != nil {
-			return err
-		}
-		data := types.NewJSON(v)
-		createdAt := types.NewTime(busEvent.CreatedAt)
-		_, err = db.ExecContext(ctx, `
-			INSERT INTO dahua_events (
-				id,
-				device_id,
-				code,
-			  action,
-				'index',
-				data,
-				created_at
-			) 
-			VALUES (?, ?, ?, ?, ?, ?, ?)
-		`,
-			busEvent.EventID,
-			deviceKey.ID,
-			busEvent.Event.Code,
-			busEvent.Event.Action,
-			busEvent.Event.Index,
-			data,
-			createdAt,
-		)
-		if err != nil {
-			return err
-		}
-	}
-
-	bus.Publish(busEvent)
-
-	return nil
 }
 
 func RebootDevice(ctx context.Context, c dahuarpc.Conn) error {

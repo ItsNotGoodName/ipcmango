@@ -18,7 +18,9 @@ import { LayoutNormal } from "~/ui/Layout";
 import {
   TableBody,
   TableCell,
+  TableCellEnd,
   TableHead,
+  TableHeadEnd,
   TableHeader,
   TableRoot,
   TableRow,
@@ -61,7 +63,6 @@ import {
   SelectContent,
   SelectListbox,
 } from "~/ui/Select";
-import { PositionEnd } from "~/components/Utils";
 
 export default function () {
   const data = createQuery(() => ({
@@ -175,14 +176,12 @@ export default function () {
                 <TableHead>Code</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Index</TableHead>
-                <TableHead>
-                  <PositionEnd>
-                    <ExpandButton
-                      expanded={dataQuery.value()}
-                      onClick={() => dataQuery.setValue(!dataQuery.value())}
-                    />
-                  </PositionEnd>
-                </TableHead>
+                <TableHeadEnd>
+                  <ExpandButton
+                    expanded={dataQuery.value()}
+                    onClick={() => dataQuery.setValue(!dataQuery.value())}
+                  />
+                </TableHeadEnd>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -223,14 +222,12 @@ export default function () {
                         <TableCell>{v.code}</TableCell>
                         <TableCell>{v.action}</TableCell>
                         <TableCell>{v.index.toString()}</TableCell>
-                        <TableCell class="py-0">
-                          <PositionEnd>
-                            <ExpandButton
-                              expanded={rowDataOpen()}
-                              onClick={() => setRowDataOpen(!rowDataOpen())}
-                            />
-                          </PositionEnd>
-                        </TableCell>
+                        <TableCellEnd>
+                          <ExpandButton
+                            expanded={rowDataOpen()}
+                            onClick={() => setRowDataOpen(!rowDataOpen())}
+                          />
+                        </TableCellEnd>
                       </TableRow>
                       <JSONTableRow
                         colspan={6}

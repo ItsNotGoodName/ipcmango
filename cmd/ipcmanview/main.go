@@ -88,6 +88,9 @@ func main() {
 			scheduler := quartzext.NewServiceScheduler(quartz.NewStdScheduler())
 			sutureext.Add(root, scheduler)
 
+			// Normalize dahua
+			core.Must(dahua.NormalizeEventRules(ctx, db))
+
 			// Create dahua store
 			dahuaStore := dahua.NewStore(db).Register()
 			sutureext.Add(root, dahuaStore)

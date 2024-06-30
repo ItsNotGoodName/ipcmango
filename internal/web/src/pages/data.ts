@@ -9,6 +9,7 @@ import {
   getApiDevicesByUuidVideoInMode,
   getApiEventActions,
   getApiEventCodes,
+  getApiEventRules,
   getApiEvents,
   getApiLocations,
   getApiPagesHome,
@@ -25,6 +26,12 @@ export const api = createQueryKeyStore({
     list: {
       queryKey: null,
       queryFn: getApiLocations,
+    },
+  },
+  eventRules: {
+    list: {
+      queryKey: null,
+      queryFn: getApiEventRules,
     },
   },
   eventCodes: {

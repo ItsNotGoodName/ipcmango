@@ -224,6 +224,22 @@ type UpdateSettings struct {
 	SyncVideoInMode bool           `json:"sync_video_in_mode"`
 }
 
+type CreateEventRule struct {
+	UUID       *string `json:"uuid,omitempty" format:"uuid"`
+	Code       string  `json:"code"`
+	IgnoreDB   bool    `json:"ignore_db"`
+	IgnoreLive bool    `json:"ignore_live"`
+	IgnoreMQTT bool    `json:"ignore_mqtt"`
+}
+
+type UpdateEventRule struct {
+	UUID       string `json:"uuid"`
+	Code       string `json:"code"`
+	IgnoreDB   bool   `json:"ignore_db"`
+	IgnoreLive bool   `json:"ignore_live"`
+	IgnoreMQTT bool   `json:"ignore_mqtt"`
+}
+
 //---------- Pages
 
 type GetHomePage struct {

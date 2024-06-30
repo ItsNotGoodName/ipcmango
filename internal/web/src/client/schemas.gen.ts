@@ -807,6 +807,29 @@ export const $ErrorModel = {
     type: 'object'
 } as const;
 
+export const $EventRule = {
+    additionalProperties: false,
+    properties: {
+        code: {
+            type: 'string'
+        },
+        deletable: {
+            type: 'boolean'
+        },
+        ignore_db: {
+            type: 'boolean'
+        },
+        ignore_live: {
+            type: 'boolean'
+        },
+        ignore_mqtt: {
+            type: 'boolean'
+        }
+    },
+    required: ['code', 'ignore_db', 'ignore_live', 'ignore_mqtt', 'deletable'],
+    type: 'object'
+} as const;
+
 export const $FileScanCursor = {
     additionalProperties: false,
     properties: {
@@ -1212,6 +1235,29 @@ export const $UpdateEmailEndpoint = {
         }
     },
     required: ['urls'],
+    type: 'object'
+} as const;
+
+export const $UpdateEventRule = {
+    additionalProperties: false,
+    properties: {
+        code: {
+            type: 'string'
+        },
+        ignore_db: {
+            type: 'boolean'
+        },
+        ignore_live: {
+            type: 'boolean'
+        },
+        ignore_mqtt: {
+            type: 'boolean'
+        },
+        uuid: {
+            type: 'string'
+        }
+    },
+    required: ['uuid', 'code', 'ignore_db', 'ignore_live', 'ignore_mqtt'],
     type: 'object'
 } as const;
 

@@ -38,10 +38,6 @@ export function SortButton(
   );
 }
 
-export function PositionEnd(props: ParentProps) {
-  return <div class="flex items-center justify-end" {...props} />;
-}
-
 export function PageMetadata(props: { pageResult?: PagePagination }) {
   return (
     <div class="flex justify-between">

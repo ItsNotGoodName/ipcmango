@@ -1,4 +1,5 @@
 import { A } from "@solidjs/router";
+import { createQuery } from "@tanstack/solid-query";
 import { RiSystemAddLine, RiSystemDeleteBinLine } from "solid-icons/ri";
 import { ErrorBoundary, For, Show, Suspense } from "solid-js";
 import { createRowSelection } from "~/lib/utils";
@@ -22,9 +23,17 @@ import {
   TableRow,
 } from "~/ui/Table";
 import { TextFieldRoot, TextFieldInput } from "~/ui/TextField";
+import { api } from "./data";
 
 export default function () {
-  const rowSelection = createRowSelection(() => []);
+  const data = createQuery(() => ({
+    ...api.eventRules.list,
+    throwOnError: true,
+  }));
+
+  const rowSelection = createRowSelection(
+    () => data.data?.map((v) => ({ id: v.code, disabled: !v.deletable })) ?? [],
+  );
 
   return (
     <LayoutNormal class="max-w-4xl">
@@ -76,17 +85,23 @@ export default function () {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <For each={[]}>
-                {() => (
+              <For each={data.data}>
+                {(item, index) => (
                   <TableRow>
                     <TableCell>
-                      <CheckboxRoot>
+                      <CheckboxRoot
+                        disabled={rowSelection.items[index()]?.disabled}
+                        checked={rowSelection.items[index()]?.checked}
+                        onChange={(value) => rowSelection.set(item.code, value)}
+                      >
                         <CheckboxControl />
                       </CheckboxRoot>
                     </TableCell>
                     <Show
-                      when={true}
-                      fallback={<TableCell class="w-full">All</TableCell>}
+                      when={item.deletable}
+                      fallback={
+                        <TableCell class="w-full">{item.code}</TableCell>
+                      }
                     >
                       <td class="w-full min-w-32 py-0 align-middle">
                         <TextFieldRoot>
@@ -95,17 +110,17 @@ export default function () {
                       </td>
                     </Show>
                     <TableCell>
-                      <CheckboxRoot>
+                      <CheckboxRoot checked={!item.ignore_db}>
                         <CheckboxControl />
                       </CheckboxRoot>
                     </TableCell>
                     <TableCell>
-                      <CheckboxRoot>
+                      <CheckboxRoot checked={!item.ignore_live}>
                         <CheckboxControl />
                       </CheckboxRoot>
                     </TableCell>
                     <TableCell>
-                      <CheckboxRoot>
+                      <CheckboxRoot checked={!item.ignore_mqtt}>
                         <CheckboxControl />
                       </CheckboxRoot>
                     </TableCell>

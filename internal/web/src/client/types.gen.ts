@@ -299,6 +299,14 @@ export type ErrorModel = {
     type?: string;
 };
 
+export type EventRule = {
+    code: string;
+    deletable: boolean;
+    ignore_db: boolean;
+    ignore_live: boolean;
+    ignore_mqtt: boolean;
+};
+
 export type FileScanCursor = {
     /**
      * A URL to the JSON Schema for this object.
@@ -434,6 +442,14 @@ export type UpdateEmailEndpoint = {
     global?: boolean;
     title_template?: string;
     urls: Array<(string)>;
+};
+
+export type UpdateEventRule = {
+    code: string;
+    ignore_db: boolean;
+    ignore_live: boolean;
+    ignore_mqtt: boolean;
+    uuid: string;
 };
 
 export type UpdateSettings = {
@@ -674,6 +690,14 @@ export type PostApiEndpointsByUuidResponse = EmailEndpoint;
 export type GetApiEventActionsResponse = Array<(string)>;
 
 export type GetApiEventCodesResponse = Array<(string)>;
+
+export type GetApiEventRulesResponse = Array<EventRule>;
+
+export type PostApiEventRulesData = {
+    requestBody: Array<UpdateEventRule>;
+};
+
+export type PostApiEventRulesResponse = Array<EventRule>;
 
 export type DeleteApiEventsResponse = void;
 
@@ -1284,6 +1308,33 @@ export type $OpenApiTs = {
                  * OK
                  */
                 200: Array<(string)>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
+    '/api/event-rules': {
+        get: {
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<EventRule>;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+        post: {
+            req: PostApiEventRulesData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<EventRule>;
                 /**
                  * Error
                  */

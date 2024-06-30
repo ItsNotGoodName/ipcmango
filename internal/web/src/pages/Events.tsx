@@ -46,8 +46,10 @@ import {
   TableBody,
   TableCell,
   TableCaption,
+  TableHeadEnd,
+  TableCellEnd,
 } from "~/ui/Table";
-import { PageMetadata, PositionEnd, SortButton } from "~/components/Utils";
+import { PageMetadata, SortButton } from "~/components/Utils";
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
 import {
   SelectRoot,
@@ -243,14 +245,12 @@ export default function () {
                 <TableHead>Code</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Index</TableHead>
-                <TableHead class="p-0">
-                  <PositionEnd>
-                    <ExpandButton
-                      expanded={queryData.value()}
-                      onClick={() => queryData.setValue(!queryData.value())}
-                    />
-                  </PositionEnd>
-                </TableHead>
+                <TableHeadEnd>
+                  <ExpandButton
+                    expanded={queryData.value()}
+                    onClick={() => queryData.setValue(!queryData.value())}
+                  />
+                </TableHeadEnd>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -282,14 +282,12 @@ export default function () {
                         <TableCell>{v.code}</TableCell>
                         <TableCell>{v.action}</TableCell>
                         <TableCell>{v.index.toString()}</TableCell>
-                        <TableCell class="py-0">
-                          <PositionEnd>
-                            <ExpandButton
-                              expanded={rowDataOpen()}
-                              onClick={() => setRowDataOpen(!rowDataOpen())}
-                            />
-                          </PositionEnd>
-                        </TableCell>
+                        <TableCellEnd>
+                          <ExpandButton
+                            expanded={rowDataOpen()}
+                            onClick={() => setRowDataOpen(!rowDataOpen())}
+                          />
+                        </TableCellEnd>
                       </TableRow>
                       <JSONTableRow
                         colspan={6}

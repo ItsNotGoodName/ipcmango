@@ -1286,6 +1286,55 @@ func Register(api huma.API, app App) {
 			},
 		}, nil
 	})
+	huma.Register(api, huma.Operation{
+		Summary: "List event rules",
+		Method:  http.MethodGet,
+		Path:    "/api/event-rules",
+	}, func(ctx context.Context, input *struct{},
+	) (*ListEventRulesOutput, error) {
+		body, err := ListEventRules(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ListEventRulesOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Create event rule",
+		Method:  http.MethodPost,
+		Path:    "/api/event-rules/create",
+	}, func(ctx context.Context, input *struct {
+		Body CreateEventRule
+	},
+	) (*ListEventRulesOutput, error) {
+		body, err := ListEventRules(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ListEventRulesOutput{
+			Body: body,
+		}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "Update event rules",
+		Method:  http.MethodPost,
+		Path:    "/api/event-rules",
+	}, func(ctx context.Context, input *struct {
+		Body []UpdateEventRule
+	},
+	) (*ListEventRulesOutput, error) {
+		body, err := ListEventRules(ctx, app.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ListEventRulesOutput{
+			Body: body,
+		}, nil
+	})
 }
 
 func NewEmailEndpoint(v dahua.EmailEndpoint, deviceUUIDs []string) EmailEndpoint {
@@ -1710,4 +1759,49 @@ type ListEventsOutput struct {
 type ListEvents struct {
 	Pagination PagePagination `json:"pagination"`
 	Data       []DeviceEvent  `json:"data"`
+}
+
+type ListEventRulesOutput struct {
+	Body []EventRule
+}
+
+func ListEventRules(ctx context.Context, db *sqlx.DB) ([]EventRule, error) {
+	rows, err := db.QueryxContext(ctx, `
+		SELECT * FROM dahua_event_rules
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := []EventRule{}
+	for rows.Next() {
+		var v dahua.EventRule
+		if err := rows.StructScan(&v); err != nil {
+			return nil, err
+		}
+		res = append(res, NewEventRule(v))
+	}
+
+	return res, nil
+}
+
+func NewEventRule(v dahua.EventRule) EventRule {
+	return EventRule{
+		UUID:       v.UUID,
+		Code:       v.Code,
+		IgnoreDB:   v.Ignore_DB,
+		IgnoreLive: v.Ignore_Live,
+		IgnoreMQTT: v.Ignore_MQTT,
+		Deletable:  v.Deletable,
+	}
+}
+
+type EventRule struct {
+	UUID       string `json:"uuid"`
+	Code       string `json:"code"`
+	IgnoreDB   bool   `json:"ignore_db"`
+	IgnoreLive bool   `json:"ignore_live"`
+	IgnoreMQTT bool   `json:"ignore_mqtt"`
+	Deletable  bool   `json:"deletable"`
 }

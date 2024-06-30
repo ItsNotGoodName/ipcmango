@@ -28,11 +28,15 @@ CREATE UNIQUE INDEX `dahua_devices_email` ON `dahua_devices` (`email`);
 -- create "dahua_events" table
 CREATE TABLE `dahua_events` (`id` text NOT NULL, `device_id` integer NOT NULL, `code` text NOT NULL, `action` text NOT NULL, `index` integer NOT NULL, `data` json NOT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
 -- create "dahua_event_rules" table
-CREATE TABLE `dahua_event_rules` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `code` text NOT NULL, `ignore_db` boolean NOT NULL DEFAULT false, `ignore_live` boolean NOT NULL DEFAULT false, `ignore_mqtt` boolean NOT NULL DEFAULT false);
+CREATE TABLE `dahua_event_rules` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `code` text NOT NULL, `ignore_db` boolean NOT NULL DEFAULT false, `ignore_live` boolean NOT NULL DEFAULT false, `ignore_mqtt` boolean NOT NULL DEFAULT false, `deletable` boolean NOT NULL DEFAULT true);
+-- create index "dahua_event_rules_uuid" to table: "dahua_event_rules"
+CREATE UNIQUE INDEX `dahua_event_rules_uuid` ON `dahua_event_rules` (`uuid`);
 -- create index "dahua_event_rules_code" to table: "dahua_event_rules"
 CREATE UNIQUE INDEX `dahua_event_rules_code` ON `dahua_event_rules` (`code`);
 -- create "dahua_event_device_rules" table
-CREATE TABLE `dahua_event_device_rules` (`device_id` integer NOT NULL, `code` text NOT NULL, `ignore_db` boolean NOT NULL DEFAULT false, `ignore_live` boolean NOT NULL DEFAULT false, `ignore_mqtt` boolean NOT NULL DEFAULT false, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+CREATE TABLE `dahua_event_device_rules` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `uuid` text NOT NULL, `device_id` integer NOT NULL, `code` text NOT NULL, `ignore_db` boolean NOT NULL DEFAULT false, `ignore_live` boolean NOT NULL DEFAULT false, `ignore_mqtt` boolean NOT NULL DEFAULT false, `deletable` boolean NOT NULL DEFAULT true, CONSTRAINT `0` FOREIGN KEY (`device_id`) REFERENCES `dahua_devices` (`id`) ON UPDATE CASCADE ON DELETE CASCADE);
+-- create index "dahua_event_device_rules_uuid" to table: "dahua_event_device_rules"
+CREATE UNIQUE INDEX `dahua_event_device_rules_uuid` ON `dahua_event_device_rules` (`uuid`);
 -- create index "dahua_event_device_rules_device_id_code" to table: "dahua_event_device_rules"
 CREATE UNIQUE INDEX `dahua_event_device_rules_device_id_code` ON `dahua_event_device_rules` (`device_id`, `code`);
 -- create "dahua_files" table
@@ -103,10 +107,14 @@ DROP INDEX `dahua_files_start_time`;
 DROP TABLE `dahua_files`;
 -- reverse: create index "dahua_event_device_rules_device_id_code" to table: "dahua_event_device_rules"
 DROP INDEX `dahua_event_device_rules_device_id_code`;
+-- reverse: create index "dahua_event_device_rules_uuid" to table: "dahua_event_device_rules"
+DROP INDEX `dahua_event_device_rules_uuid`;
 -- reverse: create "dahua_event_device_rules" table
 DROP TABLE `dahua_event_device_rules`;
 -- reverse: create index "dahua_event_rules_code" to table: "dahua_event_rules"
 DROP INDEX `dahua_event_rules_code`;
+-- reverse: create index "dahua_event_rules_uuid" to table: "dahua_event_rules"
+DROP INDEX `dahua_event_rules_uuid`;
 -- reverse: create "dahua_event_rules" table
 DROP TABLE `dahua_event_rules`;
 -- reverse: create "dahua_events" table
