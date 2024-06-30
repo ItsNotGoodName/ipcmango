@@ -34,13 +34,13 @@ func DeleteEvents(ctx context.Context, db *sqlx.DB) error {
 	return err
 }
 
-type EventFilter struct {
+type ListEventsFilter struct {
 	DeviceIDs []int64
 	Codes     []string
 	Actions   []string
 }
 
-func (arg EventFilter) where() sq.Eq {
+func (arg ListEventsFilter) where() sq.Eq {
 	where := sq.Eq{}
 	if len(arg.DeviceIDs) != 0 {
 		where["dahua_events.device_id"] = arg.DeviceIDs
@@ -57,7 +57,7 @@ func (arg EventFilter) where() sq.Eq {
 type ListEventsParams struct {
 	pagination.Page
 	Ascending bool
-	Filter    EventFilter
+	Filter    ListEventsFilter
 }
 
 type ListEventsResult struct {

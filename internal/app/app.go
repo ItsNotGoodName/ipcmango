@@ -632,7 +632,7 @@ func Register(api huma.API, app App) {
 		res, err := dahua.ListEvents(ctx, app.DB, dahua.ListEventsParams{
 			Page:      input.GetPage(),
 			Ascending: input.Order.Ascending(),
-			Filter: dahua.EventFilter{
+			Filter: dahua.ListEventsFilter{
 				DeviceIDs: deviceIDs,
 				Codes:     input.Codes,
 				Actions:   input.Actions,

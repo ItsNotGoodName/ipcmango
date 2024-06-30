@@ -35,7 +35,7 @@ import {
   useQueryBoolean,
   useQueryFilter,
   useQueryNumber,
-  useQueryString,
+  useQuerySort,
 } from "~/lib/utils";
 import { linkVariants } from "~/ui/Link";
 import {
@@ -86,7 +86,7 @@ export default function () {
   const devicesQuery = useQueryFilter("devices");
   const codesQuery = useQueryFilter("codes");
   const actionsQuery = useQueryFilter("actions");
-  const orderQuery = useQueryString("order");
+  const sortQuery = useQuerySort("sort");
 
   const devices = createQuery(() => ({
     ...api.devices.list,
@@ -100,7 +100,7 @@ export default function () {
       device: devicesQuery.values(),
       codes: codesQuery.values(),
       actions: actionsQuery.values(),
-      order: orderQuery.value(),
+      order: sortQuery.value().order,
     }),
     throwOnError: true,
   }));
@@ -180,6 +180,7 @@ export default function () {
                   disabled={deleteMutation.isPending}
                   variant="destructive"
                   size="icon"
+                  title="Delete Events"
                 >
                   <RiSystemDeleteBinLine class="size-5" />
                 </AlertDialogTrigger>
@@ -231,8 +232,9 @@ export default function () {
               <TableRow>
                 <TableHead>
                   <SortButton
-                    order={orderQuery.value()}
-                    onToggle={(order) => orderQuery.setValue(order)}
+                    field="createdAt"
+                    sort={sortQuery.value()}
+                    onToggle={sortQuery.setValue}
                   >
                     Created At
                   </SortButton>

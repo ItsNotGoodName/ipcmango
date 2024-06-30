@@ -1,4 +1,4 @@
-import { A, useSearchParams } from "@solidjs/router";
+import { A } from "@solidjs/router";
 import { ErrorBoundary, For, Show, Suspense, createSignal } from "solid-js";
 import { PageError, PageTitle } from "~/ui/Page";
 import { LayoutNormal } from "~/ui/Layout";
@@ -14,9 +14,11 @@ import {
 import { Skeleton } from "~/ui/Skeleton";
 import {
   createUptime,
+  createValueDialog,
   formatDate,
   parseDate,
   useQueryFilter,
+  useQueryString,
 } from "~/lib/utils";
 import { linkVariants } from "~/ui/Link";
 import {
@@ -26,10 +28,17 @@ import {
 } from "@tanstack/solid-query";
 import {
   GetApiDevicesResponse,
+  deleteApiDevicesByUuid,
   postApiDevicesByUuidVideoInModeSync,
 } from "~/client";
 import { Button } from "~/ui/Button";
-import { RiMediaImageLine, RiSystemRefreshLine } from "solid-icons/ri";
+import {
+  RiDesignEditLine,
+  RiMediaImageLine,
+  RiSystemAddLine,
+  RiSystemDeleteBinLine,
+  RiSystemRefreshLine,
+} from "solid-icons/ri";
 import { Image } from "@kobalte/core/image";
 import { ToggleButton } from "@kobalte/core/toggle-button";
 import Humanize from "humanize-plus";
@@ -43,6 +52,16 @@ import { createDate, createTimeAgo } from "@solid-primitives/date";
 import { api } from "./data";
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
 import { toast } from "~/ui/Toast";
+import { PositionEnd } from "~/components/Utils";
+import {
+  AlertDialogRoot,
+  AlertDialogModal,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "~/ui/AlertDialog";
 
 function EmptyTableCell(props: { colspan: number }) {
   return <TableCell colspan={props.colspan}>N/A</TableCell>;
@@ -77,32 +96,38 @@ function DeviceNameCell(props: { device: { uuid: string; name: string } }) {
 }
 
 export default function () {
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const data = createQuery(() => ({
     ...api.devices.list,
     throwOnError: true,
   }));
 
-  const queryFilter = useQueryFilter("devices");
+  const devicesFilter = useQueryFilter("devices");
+  const tabQuery = useQueryString("tab", "device");
   const devices = () =>
-    queryFilter.values().length == 0
+    devicesFilter.values().length == 0
       ? data.data
-      : data.data?.filter((v) => queryFilter.values().includes(v.uuid));
+      : data.data?.filter((v) => devicesFilter.values().includes(v.uuid));
 
   return (
     <LayoutNormal>
+      <PageTitle>Devices</PageTitle>
+
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
-        <PageTitle>Devices</PageTitle>
-        <div class="flex">
-          <DeviceFilterCombobox
-            deviceIDs={queryFilter.values()}
-            setDeviceIDs={queryFilter.setValues}
-          />
+        <div class="flex justify-between gap-2">
+          <Suspense fallback={<Skeleton class="h-10 w-24" />}>
+            <DeviceFilterCombobox
+              deviceIDs={devicesFilter.values()}
+              setDeviceIDs={devicesFilter.setValues}
+            />
+          </Suspense>
+          <Button size="icon">
+            <RiSystemAddLine class="size-5" />
+          </Button>
         </div>
+
         <TabsRoot
-          value={searchParams.tab || "device"}
-          onChange={(value) => setSearchParams({ tab: value })}
+          value={tabQuery.value()}
+          onChange={(value) => tabQuery.setValue(value)}
         >
           <div class="flex flex-col gap-2">
             <div class="overflow-x-auto">
@@ -173,37 +198,91 @@ export default function () {
 }
 
 function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
+  const client = useQueryClient();
+
+  const deleteDialog = createValueDialog({ uuid: "", name: "" });
+  const deleteMutation = createMutation(() => ({
+    mutationFn: () =>
+      deleteApiDevicesByUuid({ uuid: deleteDialog.value().uuid }),
+    onSuccess: () =>
+      client
+        .invalidateQueries({ queryKey: api.devices.list.queryKey })
+        .then(() => deleteDialog.setClose()),
+    onError: (error) => toast.error(error.name, error.message),
+  }));
+
   return (
-    <TableRoot>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Device</TableHead>
-          <TableHead>IP</TableHead>
-          <TableHead>Username</TableHead>
-          <TableHead>Created At</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        <For each={props.devices}>
-          {(item) => (
-            <TableRow>
-              <DeviceNameCell device={item} />
-              <TableCell>
-                <a
-                  class={linkVariants()}
-                  href={"http://" + item.ip}
-                  target="_blank"
-                >
-                  {item.ip}
-                </a>
-              </TableCell>
-              <TableCell>{item.username}</TableCell>
-              <TableCell>{formatDate(parseDate(item.created_at))}</TableCell>
-            </TableRow>
-          )}
-        </For>
-      </TableBody>
-    </TableRoot>
+    <>
+      <AlertDialogRoot
+        open={deleteDialog.open()}
+        onOpenChange={deleteDialog.setClose}
+      >
+        <AlertDialogModal>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {deleteDialog.value().name}?
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+              variant="destructive"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogModal>
+      </AlertDialogRoot>
+
+      <TableRoot>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Device</TableHead>
+            <TableHead>IP</TableHead>
+            <TableHead>Username</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <For each={props.devices}>
+            {(item) => (
+              <TableRow>
+                <DeviceNameCell device={item} />
+                <TableCell>
+                  <a
+                    class={linkVariants()}
+                    href={"http://" + item.ip}
+                    target="_blank"
+                  >
+                    {item.ip}
+                  </a>
+                </TableCell>
+                <TableCell>{item.username}</TableCell>
+                <TableCell>{formatDate(parseDate(item.created_at))}</TableCell>
+                <TableCell class="py-0">
+                  <PositionEnd>
+                    <Button variant="ghost" size="icon">
+                      <RiDesignEditLine class="size-5" />
+                    </Button>
+                    <Button
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteDialog.setValue(item)}
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <RiSystemDeleteBinLine class="size-5" />
+                    </Button>
+                  </PositionEnd>
+                </TableCell>
+              </TableRow>
+            )}
+          </For>
+        </TableBody>
+      </TableRoot>
+    </>
   );
 }
 

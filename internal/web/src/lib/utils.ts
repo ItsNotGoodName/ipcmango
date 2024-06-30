@@ -86,19 +86,21 @@ export function createRowSelection<T>(
   };
 }
 
-type CreateValueModalReturn<T> = {
+type CreateValueDialogReturn<T> = {
   open: Accessor<boolean>;
   value: Accessor<T>;
   setClose: () => void;
   setValue: Setter<T>;
 };
 
-export function createModal<T>(value: T): CreateValueModalReturn<T> {
-  const [getOpen, setOpen] = createSignal(false);
-  const [getValue, setValue] = createSignal(value);
+export function createValueDialog<T>(
+  defaultValue: T,
+): CreateValueDialogReturn<T> {
+  const [open, setOpen] = createSignal(false);
+  const [value, setValue] = createSignal(defaultValue);
   return {
-    open: getOpen,
-    value: getValue,
+    open,
+    value,
     setClose: () => setOpen(false),
     setValue: (...args) =>
       batch(() => {
@@ -106,6 +108,21 @@ export function createModal<T>(value: T): CreateValueModalReturn<T> {
         // @ts-ignore
         return setValue(...args);
       }),
+  };
+}
+
+export function createFormToggle(formOpen: boolean, onOpen: () => void) {
+  const [open, setOpen] = createSignal(formOpen);
+  return {
+    open,
+    setOpen: () => {
+      if (open() == true) return;
+      batch(() => {
+        setOpen(true);
+        onOpen();
+      });
+    },
+    setClose: () => setOpen(false),
   };
 }
 
@@ -120,7 +137,9 @@ export function useHiddenScrollbar(): void {
   onCleanup(() => html.style.removeProperty("scrollbar-width"));
 }
 
-export function validationState(error?: string | boolean): "invalid" | "valid" {
+export function validationState(
+  error?: string | boolean | null | Error,
+): "invalid" | "valid" {
   return error ? "invalid" : "valid";
 }
 
@@ -187,6 +206,43 @@ export function useQueryNumber(key: string, defaultValue?: number) {
     setSearchParams({
       [key]: value != undefined ? String(value) : defaultValue,
     });
+  };
+
+  return {
+    value,
+    setValue,
+  };
+}
+
+export type Sort = {
+  field?: string;
+  order?: "ascending" | "descending";
+};
+
+type QuerySortReturn = {
+  value: Accessor<Sort>;
+  setValue: (value: Sort) => void;
+};
+
+export function useQuerySort(
+  key: string,
+  defaultValue?: Sort,
+): QuerySortReturn {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const value = (): Sort => {
+    const value = searchParams[key];
+
+    if (value == undefined || value.length == 0) return defaultValue || {};
+    if (value[0] == "-") {
+      return { order: "descending", field: value.slice(1) };
+    }
+    return { order: "ascending", field: value };
+  };
+  const setValue = (sort: Sort) => {
+    const prefix = sort.order == "descending" ? "-" : "";
+    const suffix = sort.field ?? "";
+    setSearchParams({ [key]: prefix + suffix });
   };
 
   return {

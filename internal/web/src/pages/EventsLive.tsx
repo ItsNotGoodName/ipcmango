@@ -112,6 +112,7 @@ export default function () {
           <BreadcrumbsItem>Live</BreadcrumbsItem>
         </BreadcrumbsRoot>
       </PageTitle>
+
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
         <Suspense fallback={<Skeleton class="h-32" />}>
           <div class="flex justify-between gap-2">

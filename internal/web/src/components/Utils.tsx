@@ -2,40 +2,36 @@ import { RiArrowsArrowDownSLine } from "solid-icons/ri";
 import { ParentProps } from "solid-js";
 import { PagePagination } from "~/client";
 
-import { cn } from "~/lib/utils";
-
-enum Order {
-  Unknown = "",
-  Ascending = "ascending",
-  Descending = "descending",
-}
+import { Sort, cn } from "~/lib/utils";
 
 export function SortButton(
   props: ParentProps<{
-    onToggle: (order: Order) => void;
-    order?: Order | string;
+    field: string;
+    onToggle: (value: Sort) => void;
+    sort: Sort;
   }>,
 ) {
+  const active = () => props.field == props.sort.field;
   return (
     <button
       onClick={() => {
-        if (props.order == Order.Ascending) {
-          props.onToggle(Order.Descending);
-        } else if (props.order == Order.Descending) {
-          props.onToggle(Order.Unknown);
-        } else {
-          props.onToggle(Order.Ascending);
-        }
+        if (!active() || props.sort.order == undefined)
+          return props.onToggle({ field: props.field, order: "descending" });
+        if (props.sort.order == "descending")
+          return props.onToggle({ field: props.field, order: "ascending" });
+        return props.onToggle({ order: undefined });
       }}
       class={cn(
         "flex items-center whitespace-nowrap text-nowrap",
-        (props.order == Order.Ascending || props.order == Order.Descending) &&
+        active() &&
+          (props.sort.order == "ascending" ||
+            props.sort.order == "descending") &&
           "text-blue-500",
       )}
     >
       {props.children}
       <RiArrowsArrowDownSLine
-        data-selected={props.order == Order.Ascending}
+        data-selected={active() && props.sort.order == "ascending"}
         class="size-5 transition-all data-[selected=true]:rotate-180"
       />
     </button>

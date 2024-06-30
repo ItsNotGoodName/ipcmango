@@ -34,7 +34,7 @@ import { ErrorBoundary, Show, Suspense, batch, createSignal } from "solid-js";
 import { Button } from "~/ui/Button";
 import { Seperator } from "~/ui/Seperator";
 import { FormMessage } from "~/ui/Form";
-import { validationState } from "~/lib/utils";
+import { createFormToggle, validationState } from "~/lib/utils";
 import {
   NumberFieldErrorMessage,
   NumberFieldInput,
@@ -76,21 +76,6 @@ type UpdateCoordinateForm = {
   longitude: string | number;
 };
 
-function createToggle(formOpen: boolean, onOpen: () => void) {
-  const [open, setOpen] = createSignal(formOpen);
-  return {
-    open,
-    setOpen: () => {
-      if (open() == true) return;
-      batch(() => {
-        setOpen(true);
-        onOpen();
-      });
-    },
-    setClose: () => setOpen(false),
-  };
-}
-
 export default function () {
   const client = useQueryClient();
 
@@ -127,7 +112,7 @@ export default function () {
         sunset_offset: "",
       },
     });
-  const sunFormToggle = createToggle(false, () => {
+  const sunFormToggle = createFormToggle(false, () => {
     reset(sunForm, {
       initialValues: {
         sunrise_offset: data.data?.sunrise_offset || "",
@@ -149,7 +134,7 @@ export default function () {
         longitude: 0,
       },
     });
-  const coordinateFormToggle = createToggle(false, () => {
+  const coordinateFormToggle = createFormToggle(false, () => {
     reset(coordinateForm, {
       initialValues: {
         latitude: data.data?.latitude || 0,
@@ -200,9 +185,7 @@ export default function () {
       <ErrorBoundary fallback={(error) => <PageError error={error} />}>
         <Suspense fallback={<Skeleton class="h-32" />}>
           <SwitchRoot
-            validationState={
-              syncVideoInModeMutation.error ? "invalid" : "valid"
-            }
+            validationState={validationState(syncVideoInModeMutation.error)}
             disabled={syncVideoInModeMutation.isPending}
             checked={data.data?.sync_video_in_mode}
             class="flex items-center justify-between gap-2"
