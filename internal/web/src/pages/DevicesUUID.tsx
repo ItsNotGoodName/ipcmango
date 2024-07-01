@@ -7,7 +7,7 @@ import {
   BreadcrumbsSeparator,
 } from "~/ui/Breadcrumbs";
 import { LayoutCenter } from "~/ui/Layout";
-import { PageError, PageTitle } from "~/ui/Page";
+import { PageError, PageSubTitle, PageTitle } from "~/ui/Page";
 import { api } from "./data";
 import {
   ErrorBoundary,
@@ -17,7 +17,7 @@ import {
   batch,
   createSignal,
 } from "solid-js";
-import { formatDate, parseDate } from "~/lib/utils";
+import { formatDate, parseDate, useQueryString } from "~/lib/utils";
 import { Uptime } from "~/components/Utils";
 import { Skeleton } from "~/ui/Skeleton";
 import {
@@ -30,7 +30,6 @@ import { createTimeAgo } from "@solid-primitives/date";
 import { Image } from "@kobalte/core/image";
 import { RiMediaImageLine } from "solid-icons/ri";
 import { ToggleButton } from "@kobalte/core/toggle-button";
-import { linkVariants } from "~/ui/Link";
 import { Button } from "~/ui/Button";
 import { postApiDevicesByUuidReboot } from "~/client";
 import { toast } from "~/ui/Toast";
@@ -43,9 +42,12 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "~/ui/AlertDialog";
+import { TabsRoot, TabsList, TabsTrigger, TabsContent } from "~/ui/Tabs";
 
 export default function DevicesUUID() {
   const params = useParams<{ uuid: string }>();
+
+  const streamQuery = useQueryString("stream", "snapshot");
 
   const data = createQuery(() => ({
     ...api.devices.get(params.uuid),
@@ -96,53 +98,63 @@ export default function DevicesUUID() {
           </BreadcrumbsRoot>
         </PageTitle>
 
-        <div class="flex justify-center gap-4">
-          <div class="flex max-w-4xl flex-grow flex-col gap-4">
-            <div class="rounded border">
-              <Image>
-                <Image.Img
-                  src={`/api/devices/${params.uuid}/snapshot`}
-                  alt=""
-                />
-                <Image.Fallback>
-                  <RiMediaImageLine class="aspect-video h-full w-full" />
-                </Image.Fallback>
-              </Image>
-            </div>
+        <div class="flex justify-center gap-4 max-lg:flex-col">
+          <div class="w-full max-w-4xl">
+            <TabsRoot
+              class="rounded border"
+              value={streamQuery.value()}
+              onChange={(value) => streamQuery.setValue(value)}
+            >
+              <div class="border-b px-4 py-2">
+                <TabsList>
+                  <TabsTrigger value="snapshot">Snapshot</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="snapshot">
+                <Image>
+                  <Image.Img
+                    src={`/api/devices/${params.uuid}/snapshot`}
+                    alt=""
+                  />
+                  <Image.Fallback>
+                    <RiMediaImageLine class="aspect-video h-full w-full" />
+                  </Image.Fallback>
+                </Image>
+              </TabsContent>
 
-            <div class="rounded border p-2">
-              <AlertDialogRoot
-                open={rebootDialog()}
-                onOpenChange={setRebootDialog}
-              >
-                <AlertDialogModal>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Are you sure you wish to reboot the device?
-                    </AlertDialogTitle>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={rebootMutation.isPending}
-                      onClick={() => rebootMutation.mutate()}
-                      variant="destructive"
-                    >
-                      Reboot
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogModal>
-              </AlertDialogRoot>
-              <Button
-                disabled={rebootMutation.isPending}
-                onClick={[setRebootDialog, true]}
-              >
-                Reboot
-              </Button>
-            </div>
+              <div class="border-t px-4 py-2">
+                <AlertDialogRoot
+                  open={rebootDialog()}
+                  onOpenChange={setRebootDialog}
+                >
+                  <AlertDialogModal>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you sure you wish to reboot the device?
+                      </AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={rebootMutation.isPending}
+                        onClick={() => rebootMutation.mutate()}
+                      >
+                        Reboot
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogModal>
+                </AlertDialogRoot>
+                <Button
+                  disabled={rebootMutation.isPending}
+                  onClick={[setRebootDialog, true]}
+                >
+                  Reboot
+                </Button>
+              </div>
+            </TabsRoot>
           </div>
 
-          <div class="max-w-lg flex-1">
+          <div class="flex-1 lg:max-w-lg">
             <div class="rounded border p-4">
               <PropertyTable>
                 <PropertyRow name="Name">{data.data?.name}</PropertyRow>
@@ -151,6 +163,7 @@ export default function DevicesUUID() {
                     {data.data?.ip}
                   </a>
                 </PropertyRow>
+                <PropertyRow name="Username">{data.data?.username}</PropertyRow>
                 <PropertyRow name="Created At">
                   {formatDate(parseDate(data.data?.created_at))}
                 </PropertyRow>
