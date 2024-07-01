@@ -390,7 +390,7 @@ export default function () {
           <AlertDialogModal>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                Are you sure you wish to default all settings?
+                Are you sure you wish to default settings?
               </AlertDialogTitle>
             </AlertDialogHeader>
             <AlertDialogFooter>
