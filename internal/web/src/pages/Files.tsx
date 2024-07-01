@@ -21,7 +21,7 @@ import {
 //   duration: number;
 // };
 
-export default function () {
+export default function Files() {
   // seconds, must be even
   // const [range, setRange] = createSignal(60 * 60);
   // current cursor position

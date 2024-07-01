@@ -7,7 +7,7 @@ import {
 } from "solid-js";
 import { RiSystemDeleteBinLine } from "solid-icons/ri";
 import { Button } from "~/ui/Button";
-import { LayoutNormal } from "~/ui/Layout";
+import { LayoutCenter } from "~/ui/Layout";
 import { PageError, PageTitle } from "~/ui/Page";
 import { Skeleton } from "~/ui/Skeleton";
 import {
@@ -78,7 +78,7 @@ import {
   JSONTableRow,
 } from "~/components/Events";
 
-export default function () {
+export default function Events() {
   const client = useQueryClient();
 
   const pageQuery = useQueryNumber("page", 1);
@@ -119,7 +119,7 @@ export default function () {
   }));
 
   return (
-    <LayoutNormal class="max-w-4xl">
+    <LayoutCenter class="max-w-4xl">
       <PageTitle>Events</PageTitle>
 
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
@@ -305,6 +305,6 @@ export default function () {
           </TableRoot>
         </Suspense>
       </ErrorBoundary>
-    </LayoutNormal>
+    </LayoutCenter>
   );
 }

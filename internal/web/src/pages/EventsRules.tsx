@@ -16,7 +16,7 @@ import {
 } from "~/ui/Breadcrumbs";
 import { Button } from "~/ui/Button";
 import { CheckboxRoot, CheckboxControl } from "~/ui/Checkbox";
-import { LayoutNormal } from "~/ui/Layout";
+import { LayoutCenter } from "~/ui/Layout";
 import { PageError, PageTitle } from "~/ui/Page";
 import { Skeleton } from "~/ui/Skeleton";
 import {
@@ -42,7 +42,7 @@ import {
   AlertDialogAction,
 } from "~/ui/AlertDialog";
 
-export default function () {
+export default function EventsRules() {
   const client = useQueryClient();
 
   const data = createQuery(() => ({
@@ -67,7 +67,7 @@ export default function () {
   }));
 
   return (
-    <LayoutNormal class="max-w-4xl">
+    <LayoutCenter class="max-w-4xl">
       <PageTitle>
         <BreadcrumbsRoot>
           <BreadcrumbsItem>
@@ -203,6 +203,6 @@ export default function () {
           </TableRoot>
         </Suspense>
       </ErrorBoundary>
-    </LayoutNormal>
+    </LayoutCenter>
   );
 }

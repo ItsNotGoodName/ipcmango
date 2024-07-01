@@ -14,7 +14,7 @@ import {
   useQueryFilter,
   useQueryNumber,
 } from "~/lib/utils";
-import { LayoutNormal } from "~/ui/Layout";
+import { LayoutCenter } from "~/ui/Layout";
 import {
   TableBody,
   TableCell,
@@ -64,7 +64,7 @@ import {
   SelectListbox,
 } from "~/ui/Select";
 
-export default function () {
+export default function EventsLive() {
   const data = createQuery(() => ({
     ...api.devices.list,
     throwOnError: true,
@@ -101,7 +101,7 @@ export default function () {
   });
 
   return (
-    <LayoutNormal class="max-w-4xl">
+    <LayoutCenter class="max-w-4xl">
       <PageTitle>
         <BreadcrumbsRoot>
           <BreadcrumbsItem>
@@ -242,6 +242,6 @@ export default function () {
           </TableRoot>
         </Suspense>
       </ErrorBoundary>
-    </LayoutNormal>
+    </LayoutCenter>
   );
 }

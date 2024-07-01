@@ -1,5 +1,5 @@
-import { LayoutNormal } from "~/ui/Layout";
+import { LayoutCenter } from "~/ui/Layout";
 
 export function NotFound() {
-  return <LayoutNormal>Not Found</LayoutNormal>;
+  return <LayoutCenter>Not Found</LayoutCenter>;
 }

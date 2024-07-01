@@ -272,4 +272,3 @@ export type RouteLoadFuncArgs<T extends Params = Params, S = unknown> = {
   location: Location<S>;
   intent: "initial" | "navigate" | "native" | "preload";
 };
-

@@ -1,7 +1,7 @@
 import { A } from "@solidjs/router";
 import { ErrorBoundary, For, Show, Suspense, createSignal } from "solid-js";
 import { PageError, PageTitle } from "~/ui/Page";
-import { LayoutNormal } from "~/ui/Layout";
+import { LayoutCenter } from "~/ui/Layout";
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "~/ui/Tabs";
 import {
   TableBody,
@@ -41,6 +41,7 @@ import {
   RiSystemRefreshLine,
 } from "solid-icons/ri";
 import { Image } from "@kobalte/core/image";
+import { ToggleButton } from "@kobalte/core/toggle-button";
 import Humanize from "humanize-plus";
 import {
   TooltipArrow,
@@ -48,7 +49,7 @@ import {
   TooltipRoot,
   TooltipTrigger,
 } from "~/ui/Tooltip";
-import { createTimeAgo } from "@solid-primitives/date";
+import { createDate, createTimeAgo } from "@solid-primitives/date";
 import { api } from "./data";
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
 import { toast } from "~/ui/Toast";
@@ -95,7 +96,7 @@ function DeviceNameCell(props: { device: { uuid: string; name: string } }) {
   );
 }
 
-export default function () {
+export default function Devices() {
   const data = createQuery(() => ({
     ...api.devices.list,
     throwOnError: true,
@@ -109,7 +110,7 @@ export default function () {
       : data.data?.filter((v) => devicesFilter.values().includes(v.uuid));
 
   return (
-    <LayoutNormal>
+    <LayoutCenter>
       <PageTitle>Devices</PageTitle>
 
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
@@ -193,7 +194,7 @@ export default function () {
           </TabsContent>
         </TabsRoot>
       </ErrorBoundary>
-    </LayoutNormal>
+    </LayoutCenter>
   );
 }
 
@@ -408,7 +409,7 @@ function SnapshotGrid(props: { devices?: GetApiDevicesResponse }) {
                 <Image>
                   <Image.Img src={src()} />
                   <Image.Fallback>
-                    <RiMediaImageLine class="aspect-video h-full w-full" />
+                    <RiMediaImageLine class="h-full w-full" />
                   </Image.Fallback>
                 </Image>
               </div>
@@ -456,7 +457,18 @@ function DetailTable(props: { devices?: GetApiDevicesResponse }) {
                   )}
                 >
                   <Suspense fallback={<LoadingTableCell colspan={colspan} />}>
-                    <TableCell>{data.data?.sn}</TableCell>
+                    <TableCell>
+                      <ToggleButton>
+                        {(state) => (
+                          <Show
+                            when={state.pressed()}
+                            fallback={<>***************</>}
+                          >
+                            {data.data?.sn}
+                          </Show>
+                        )}
+                      </ToggleButton>
+                    </TableCell>
                     <TableCell>{data.data?.device_class}</TableCell>
                     <TableCell>{data.data?.device_type}</TableCell>
                     <TableCell>{data.data?.hardware_version}</TableCell>
@@ -580,7 +592,9 @@ function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
                     }
                   >
                     {(v) => {
-                      const effectiveTime = () => parseDate(v.effective_time);
+                      const [effectiveTime] = createDate(() =>
+                        parseDate(v.effective_time),
+                      );
                       const [effectiveTimeAgo] = createTimeAgo(effectiveTime, {
                         interval: 0,
                       });

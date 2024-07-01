@@ -1,5 +1,5 @@
 import { createForm, reset, setValue, setValues } from "@modular-forms/solid";
-import { LayoutNormal } from "~/ui/Layout";
+import { LayoutCenter } from "~/ui/Layout";
 import {
   SwitchControl,
   SwitchErrorMessage,
@@ -74,7 +74,7 @@ type UpdateCoordinateForm = {
   longitude: string | number;
 };
 
-export default function () {
+export default function Settings() {
   const client = useQueryClient();
 
   const data = createQuery(() => ({
@@ -178,7 +178,7 @@ export default function () {
   };
 
   return (
-    <LayoutNormal class="max-w-xl">
+    <LayoutCenter class="max-w-xl">
       <PageTitle>Settings</PageTitle>
 
       <ErrorBoundary fallback={(error) => <PageError error={error} />}>
@@ -406,6 +406,6 @@ export default function () {
           </AlertDialogModal>
         </AlertDialogRoot>
       </div>
-    </LayoutNormal>
+    </LayoutCenter>
   );
 }

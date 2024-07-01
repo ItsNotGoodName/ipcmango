@@ -4,7 +4,7 @@ import { CardRoot } from "~/ui/Card";
 import { ErrorBoundary, ParentProps, Suspense } from "solid-js";
 import { BiRegularCctv } from "solid-icons/bi";
 import { PageError, PageLoading, PageSubTitle } from "~/ui/Page";
-import { LayoutNormal } from "~/ui/Layout";
+import { LayoutCenter } from "~/ui/Layout";
 import {
   RiBusinessMailLine,
   RiDeviceDatabase2Line,
@@ -33,14 +33,14 @@ function StatValue(props: ParentProps) {
   return <p class="text-lg font-bold">{props.children}</p>;
 }
 
-export default function () {
+export default function Home() {
   const data = createQuery(() => ({
     ...pages.home,
     throwOnError: true,
   }));
 
   return (
-    <LayoutNormal>
+    <LayoutCenter>
       <ErrorBoundary fallback={(e) => <PageError error={e} />}>
         <Suspense fallback={<PageLoading />}>
           <div class="flex flex-col flex-wrap gap-4 sm:flex-row">
@@ -246,6 +246,6 @@ export default function () {
           </div>
         </Suspense>
       </ErrorBoundary>
-    </LayoutNormal>
+    </LayoutCenter>
   );
 }
