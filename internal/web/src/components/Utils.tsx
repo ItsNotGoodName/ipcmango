@@ -1,8 +1,8 @@
 import { RiArrowsArrowDownSLine } from "solid-icons/ri";
-import { ParentProps } from "solid-js";
+import { ParentProps, Show } from "solid-js";
 import { PagePagination } from "~/client";
 
-import { Sort, cn } from "~/lib/utils";
+import { Sort, cn, createUptime } from "~/lib/utils";
 
 export function SortButton(
   props: ParentProps<{
@@ -50,5 +50,18 @@ export function PageMetadata(props: { pageResult?: PagePagination }) {
         {props.pageResult?.total_pages || 0}
       </div>
     </div>
+  );
+}
+
+export function Uptime(props: { date: Date }) {
+  const uptime = createUptime(() => props.date);
+
+  return (
+    <>
+      <Show when={uptime().hasDays}>{uptime().days} days &nbsp</Show>
+      <Show when={uptime().hasHours}>{uptime().hours} hours &nbsp</Show>
+      <Show when={uptime().hasMinutes}>{uptime().minutes} minutes &nbsp</Show>
+      {uptime().seconds} seconds
+    </>
   );
 }

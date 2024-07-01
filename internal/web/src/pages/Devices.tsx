@@ -15,7 +15,6 @@ import {
 } from "~/ui/Table";
 import { Skeleton } from "~/ui/Skeleton";
 import {
-  createUptime,
   createValueDialog,
   formatDate,
   parseDate,
@@ -42,7 +41,6 @@ import {
   RiSystemRefreshLine,
 } from "solid-icons/ri";
 import { Image } from "@kobalte/core/image";
-import { ToggleButton } from "@kobalte/core/toggle-button";
 import Humanize from "humanize-plus";
 import {
   TooltipArrow,
@@ -50,7 +48,7 @@ import {
   TooltipRoot,
   TooltipTrigger,
 } from "~/ui/Tooltip";
-import { createDate, createTimeAgo } from "@solid-primitives/date";
+import { createTimeAgo } from "@solid-primitives/date";
 import { api } from "./data";
 import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
 import { toast } from "~/ui/Toast";
@@ -63,6 +61,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "~/ui/AlertDialog";
+import { Uptime } from "~/components/Utils";
 
 function EmptyTableCell(props: { colspan: number }) {
   return <TableCell colspan={props.colspan}>N/A</TableCell>;
@@ -244,6 +243,7 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
             <TableHead>IP</TableHead>
             <TableHead>Username</TableHead>
             <TableHead>Created At</TableHead>
+            <TableHead>Updated At</TableHead>
             <TableHeadEnd />
           </TableRow>
         </TableHeader>
@@ -263,18 +263,21 @@ function DeviceTable(props: { devices?: GetApiDevicesResponse }) {
                 </TableCell>
                 <TableCell>{item.username}</TableCell>
                 <TableCell>{formatDate(parseDate(item.created_at))}</TableCell>
+                <TableCell>{formatDate(parseDate(item.updated_at))}</TableCell>
                 <TableCellEnd>
-                  <Button variant="ghost" size="icon">
-                    <RiDesignEditLine class="size-5" />
-                  </Button>
-                  <Button
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteDialog.setValue(item)}
-                    variant="ghost"
-                    size="icon"
-                  >
-                    <RiSystemDeleteBinLine class="size-5" />
-                  </Button>
+                  <div class="flex justify-end gap-2">
+                    <Button size="icon">
+                      <RiDesignEditLine class="size-5" />
+                    </Button>
+                    <Button
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteDialog.setValue(item)}
+                      variant="destructive"
+                      size="icon"
+                    >
+                      <RiSystemDeleteBinLine class="size-5" />
+                    </Button>
+                  </div>
                 </TableCellEnd>
               </TableRow>
             )}
@@ -364,8 +367,12 @@ function UptimeTable(props: { devices?: GetApiDevicesResponse }) {
                       when={data.data?.supported}
                       fallback={<EmptyTableCell colspan={colspan} />}
                     >
-                      <UptimeTableCell date={parseDate(data.data?.last)} />
-                      <UptimeTableCell date={parseDate(data.data?.total)} />
+                      <TableCell>
+                        <Uptime date={parseDate(data.data?.last)} />
+                      </TableCell>
+                      <TableCell>
+                        <Uptime date={parseDate(data.data?.total)} />
+                      </TableCell>
                     </Show>
                   </Suspense>
                 </ErrorBoundary>
@@ -375,19 +382,6 @@ function UptimeTable(props: { devices?: GetApiDevicesResponse }) {
         </For>
       </TableBody>
     </TableRoot>
-  );
-}
-
-function UptimeTableCell(props: { date: Date }) {
-  const uptime = createUptime(() => props.date);
-
-  return (
-    <TableCell>
-      <Show when={uptime().hasDays}>{uptime().days} days &nbsp</Show>
-      <Show when={uptime().hasHours}>{uptime().hours} hours &nbsp</Show>
-      <Show when={uptime().hasMinutes}>{uptime().minutes} minutes &nbsp</Show>
-      {uptime().seconds} seconds
-    </TableCell>
   );
 }
 
@@ -414,7 +408,7 @@ function SnapshotGrid(props: { devices?: GetApiDevicesResponse }) {
                 <Image>
                   <Image.Img src={src()} />
                   <Image.Fallback>
-                    <RiMediaImageLine class="h-full w-full" />
+                    <RiMediaImageLine class="aspect-video h-full w-full" />
                   </Image.Fallback>
                 </Image>
               </div>
@@ -462,18 +456,7 @@ function DetailTable(props: { devices?: GetApiDevicesResponse }) {
                   )}
                 >
                   <Suspense fallback={<LoadingTableCell colspan={colspan} />}>
-                    <TableCell>
-                      <ToggleButton>
-                        {(state) => (
-                          <Show
-                            when={state.pressed()}
-                            fallback={<>***************</>}
-                          >
-                            {data.data?.sn}
-                          </Show>
-                        )}
-                      </ToggleButton>
-                    </TableCell>
+                    <TableCell>{data.data?.sn}</TableCell>
                     <TableCell>{data.data?.device_class}</TableCell>
                     <TableCell>{data.data?.device_type}</TableCell>
                     <TableCell>{data.data?.hardware_version}</TableCell>
@@ -597,9 +580,7 @@ function LicenseTable(props: { devices?: GetApiDevicesResponse }) {
                     }
                   >
                     {(v) => {
-                      const [effectiveTime] = createDate(() =>
-                        parseDate(v.effective_time),
-                      );
+                      const effectiveTime = () => parseDate(v.effective_time);
                       const [effectiveTimeAgo] = createTimeAgo(effectiveTime, {
                         interval: 0,
                       });

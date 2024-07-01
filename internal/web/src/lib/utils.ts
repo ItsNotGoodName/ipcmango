@@ -10,7 +10,7 @@ import {
 import { type ClassValue, clsx } from "clsx";
 import { createStore } from "solid-js/store";
 import { createDateNow, createTimeDifference } from "@solid-primitives/date";
-import { useSearchParams } from "@solidjs/router";
+import { Location, Params, useSearchParams } from "@solidjs/router";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -266,3 +266,10 @@ export function useQueryString(key: string, defaultValue?: string) {
     setValue,
   };
 }
+
+export type RouteLoadFuncArgs<T extends Params = Params, S = unknown> = {
+  params: T;
+  location: Location<S>;
+  intent: "initial" | "navigate" | "native" | "preload";
+};
+

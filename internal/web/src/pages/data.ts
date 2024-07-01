@@ -1,5 +1,6 @@
 import {
   getApiDevices,
+  getApiDevicesByUuid,
   getApiDevicesByUuidDetail,
   getApiDevicesByUuidLicenses,
   getApiDevicesByUuidSoftware,
@@ -63,6 +64,10 @@ export const api = createQueryKeyStore({
       queryKey: null,
       queryFn: getApiDevices,
     },
+    get: (uuid: string) => ({
+      queryKey: [uuid],
+      queryFn: () => getApiDevicesByUuid({ uuid }),
+    }),
     status: (uuid: string) => ({
       queryKey: [uuid],
       queryFn: () => getApiDevicesByUuidStatus({ uuid }),
