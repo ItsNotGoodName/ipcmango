@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/solid-query";
 import { api } from "./data";
-import { RouteLoadFuncArgs } from "~/lib/utils";
+import { RouteLoadFuncArgs } from "@solidjs/router";
 
-export default function (props: RouteLoadFuncArgs<{ uuid: string }>) {
+export default function (props: RouteLoadFuncArgs) {
   const client = useQueryClient();
   client.prefetchQuery({ ...api.devices.get(props.params.uuid) });
   client.prefetchQuery({ ...api.devices.detail(props.params.uuid) });

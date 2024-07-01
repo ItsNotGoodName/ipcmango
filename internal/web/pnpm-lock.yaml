@@ -94,7 +94,7 @@ importers:
         specifier: ^5.2.2
         version: 5.4.5
       vite:
-        specifier: ^5.3.0
+        specifier: ^5.2.0
         version: 5.3.2(@types/node@20.12.12)
       vite-plugin-solid:
         specifier: ^2.10.2

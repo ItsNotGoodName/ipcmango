@@ -7,7 +7,7 @@ import {
   BreadcrumbsSeparator,
 } from "~/ui/Breadcrumbs";
 import { LayoutCenter } from "~/ui/Layout";
-import { PageError, PageSubTitle, PageTitle } from "~/ui/Page";
+import { PageError, PageTitle } from "~/ui/Page";
 import { api } from "./data";
 import {
   ErrorBoundary,
