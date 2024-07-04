@@ -1,5 +1,5 @@
 // # Changes
-// N/A
+// - Remove margin on TabsContent
 //
 // # URLs
 // https://kobalte.dev/docs/core/components/tabs

@@ -1,5 +1,5 @@
 // # Changes
-// N/A
+// - More table cells and head types
 //
 // # URLs
 // https://ui.shadcn.com/docs/components/table

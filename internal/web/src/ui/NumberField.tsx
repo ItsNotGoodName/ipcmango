@@ -5,10 +5,10 @@
 // https://kobalte.dev/docs/core/components/number-field
 // https://ui.shadcn.com/docs/components/number-field
 import { ComponentProps, splitProps } from "solid-js";
+import { NumberField } from "@kobalte/core/number-field";
 
 import { cn } from "~/lib/utils";
 import { labelVariants } from "./Label";
-import { NumberField } from "@kobalte/core/number-field";
 
 export function NumberFieldInput(
   props: ComponentProps<typeof NumberField.Input>,

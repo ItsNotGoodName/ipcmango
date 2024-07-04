@@ -1,5 +1,5 @@
 // # Changes
-// N/A
+// - More forgiving on smaller screens
 //
 // # URLs
 // https://kobalte.dev/docs/core/components/pagination

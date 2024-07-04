@@ -23,7 +23,7 @@ import {
   ComboboxTrigger,
 } from "~/ui/Combobox";
 
-export function JSONTableRow(props: {
+export function EventJSONTableRow(props: {
   colspan?: number;
   expanded?: boolean;
   data: string;
@@ -137,7 +137,7 @@ export function EventActionFilterCombobox(props: {
   );
 }
 
-export function ExpandButton(props: {
+export function EventExpandButton(props: {
   expanded?: boolean;
   onClick: () => void;
 }) {

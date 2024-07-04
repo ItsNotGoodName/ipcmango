@@ -46,13 +46,13 @@ import {
 import {
   EventActionFilterCombobox,
   EventCodeFilterCombobox,
-  ExpandButton,
-  JSONTableRow,
-} from "~/components/Events";
+  EventExpandButton,
+  EventJSONTableRow,
+} from "~/components/Event";
 import { api } from "./data";
 import { createQuery } from "@tanstack/solid-query";
 import { DeviceEvent } from "~/client";
-import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
+import { DeviceFilterCombobox } from "~/components/Device";
 import { getQueryString } from "~/client/core/request";
 import {
   SelectRoot,
@@ -177,7 +177,7 @@ export default function EventsLive() {
                 <TableHead>Action</TableHead>
                 <TableHead>Index</TableHead>
                 <TableHeadEnd>
-                  <ExpandButton
+                  <EventExpandButton
                     expanded={dataQuery.value()}
                     onClick={() => dataQuery.setValue(!dataQuery.value())}
                   />
@@ -223,13 +223,13 @@ export default function EventsLive() {
                         <TableCell>{v.action}</TableCell>
                         <TableCell>{v.index.toString()}</TableCell>
                         <TableCellEnd>
-                          <ExpandButton
+                          <EventExpandButton
                             expanded={rowDataOpen()}
                             onClick={() => setRowDataOpen(!rowDataOpen())}
                           />
                         </TableCellEnd>
                       </TableRow>
-                      <JSONTableRow
+                      <EventJSONTableRow
                         colspan={6}
                         expanded={rowDataOpen()}
                         data={JSON.stringify(v.data, null, 2)}

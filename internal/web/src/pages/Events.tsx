@@ -49,7 +49,7 @@ import {
   TableCellEnd,
 } from "~/ui/Table";
 import { PageMetadata, SortButton } from "~/components/Utils";
-import { DeviceFilterCombobox } from "~/components/DeviceFilterCombobox";
+import { DeviceFilterCombobox } from "~/components/Device";
 import {
   SelectRoot,
   SelectItem,
@@ -74,9 +74,9 @@ import {
 import {
   EventActionFilterCombobox,
   EventCodeFilterCombobox,
-  ExpandButton,
-  JSONTableRow,
-} from "~/components/Events";
+  EventExpandButton,
+  EventJSONTableRow,
+} from "~/components/Event";
 
 export default function Events() {
   const client = useQueryClient();
@@ -246,7 +246,7 @@ export default function Events() {
                 <TableHead>Action</TableHead>
                 <TableHead>Index</TableHead>
                 <TableHeadEnd>
-                  <ExpandButton
+                  <EventExpandButton
                     expanded={queryData.value()}
                     onClick={() => queryData.setValue(!queryData.value())}
                   />
@@ -283,13 +283,13 @@ export default function Events() {
                         <TableCell>{v.action}</TableCell>
                         <TableCell>{v.index.toString()}</TableCell>
                         <TableCellEnd>
-                          <ExpandButton
+                          <EventExpandButton
                             expanded={rowDataOpen()}
                             onClick={() => setRowDataOpen(!rowDataOpen())}
                           />
                         </TableCellEnd>
                       </TableRow>
-                      <JSONTableRow
+                      <EventJSONTableRow
                         colspan={6}
                         expanded={rowDataOpen()}
                         data={JSON.stringify(v.data, null, 2)}
