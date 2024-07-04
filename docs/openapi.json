@@ -3263,7 +3263,7 @@
       }
     },
     "/api/event-rules/{uuid}": {
-      "post": {
+      "delete": {
         "parameters": [
           {
             "in": "path",
@@ -3291,6 +3291,55 @@
           }
         },
         "summary": "Delete event rule by uuid"
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uuid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventRule"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Update event rules"
       }
     },
     "/api/events": {

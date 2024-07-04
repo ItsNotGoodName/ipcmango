@@ -725,11 +725,18 @@ export type PostApiEventRulesCreateData = {
 
 export type PostApiEventRulesCreateResponse = EventRule;
 
-export type PostApiEventRulesByUuidData = {
+export type DeleteApiEventRulesByUuidData = {
     uuid: string;
 };
 
-export type PostApiEventRulesByUuidResponse = void;
+export type DeleteApiEventRulesByUuidResponse = void;
+
+export type PostApiEventRulesByUuidData = {
+    requestBody: UpdateEventRule;
+    uuid: string;
+};
+
+export type PostApiEventRulesByUuidResponse = Array<EventRule>;
 
 export type DeleteApiEventsResponse = void;
 
@@ -1390,13 +1397,26 @@ export type $OpenApiTs = {
         };
     };
     '/api/event-rules/{uuid}': {
-        post: {
-            req: PostApiEventRulesByUuidData;
+        delete: {
+            req: DeleteApiEventRulesByUuidData;
             res: {
                 /**
                  * No Content
                  */
                 204: void;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+        post: {
+            req: PostApiEventRulesByUuidData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<EventRule>;
                 /**
                  * Error
                  */

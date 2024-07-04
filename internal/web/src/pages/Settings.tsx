@@ -275,12 +275,9 @@ export default function Settings() {
                 )}
               </SunField>
             </div>
-            <FormMessage form={sunForm} />
             <Show when={sunFormToggle.open()}>
               <div class="flex flex-col gap-2 sm:flex-row-reverse">
-                <Button disabled={sunForm.submitting} type="submit">
-                  Save
-                </Button>
+                <Button disabled={sunForm.submitting}>Save</Button>
                 <Button
                   disabled={sunForm.submitting}
                   onClick={sunFormToggle.setClose}
@@ -291,6 +288,7 @@ export default function Settings() {
                 </Button>
               </div>
             </Show>
+            <FormMessage form={sunForm} />
           </SunForm>
         </Suspense>
 
@@ -349,7 +347,6 @@ export default function Settings() {
                 )}
               </CoordinateField>
             </div>
-            <FormMessage form={coordinateForm} />
             <div class="flex flex-col gap-2 sm:flex-row-reverse">
               <Button
                 disabled={coordinateDetectLoading()}
@@ -359,9 +356,7 @@ export default function Settings() {
                 Detect
               </Button>
               <Show when={coordinateFormToggle.open()}>
-                <Button disabled={coordinateForm.submitting} type="submit">
-                  Save
-                </Button>
+                <Button disabled={coordinateForm.submitting}>Save</Button>
                 <Button
                   disabled={coordinateForm.submitting}
                   onClick={coordinateFormToggle.setClose}
@@ -372,6 +367,7 @@ export default function Settings() {
                 </Button>
               </Show>
             </div>
+            <FormMessage form={coordinateForm} />
           </CoordinateForm>
         </Suspense>
       </ErrorBoundary>

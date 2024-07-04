@@ -31,7 +31,7 @@ type RowSelectionItem<T> = {
 };
 
 export type CreateRowSelectionReturn<T> = {
-  items: Array<RowSelectionItem<T> | undefined>;
+  items: Array<RowSelectionItem<T>>;
   multiple: Accessor<boolean>;
   all: Accessor<boolean>;
   selections: Accessor<Array<T>>;

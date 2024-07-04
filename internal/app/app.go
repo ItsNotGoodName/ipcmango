@@ -1358,7 +1358,7 @@ func Register(api huma.API, app App) {
 	})
 	huma.Register(api, huma.Operation{
 		Summary: "Delete event rule by uuid",
-		Method:  http.MethodPost,
+		Method:  http.MethodDelete,
 		Path:    "/api/event-rules/{uuid}",
 	}, func(ctx context.Context, input *struct {
 		UUIDPath
