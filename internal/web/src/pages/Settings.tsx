@@ -1,4 +1,10 @@
-import { createForm, reset, setValue, setValues } from "@modular-forms/solid";
+import {
+  createForm,
+  reset,
+  setValue,
+  setValues,
+  submit,
+} from "@modular-forms/solid";
 import { LayoutCenter } from "~/ui/Layout";
 import {
   SwitchControl,
@@ -33,15 +39,14 @@ import {
 import { ErrorBoundary, Show, Suspense, batch, createSignal } from "solid-js";
 import { Button } from "~/ui/Button";
 import { Seperator } from "~/ui/Seperator";
-import { FormMessage } from "~/ui/Form";
-import { createFormToggle, validationState } from "~/lib/utils";
+import { validationState } from "~/lib/utils";
 import {
   NumberFieldErrorMessage,
   NumberFieldInput,
   NumberFieldLabel,
   NumberFieldRoot,
 } from "~/ui/NumberField";
-import { PageError, PageSubTitle, PageTitle } from "~/ui/Page";
+import { PageError, PageTitle } from "~/ui/Page";
 import { toast } from "~/ui/Toast";
 import {
   AlertDialogRoot,
@@ -54,24 +59,16 @@ import {
   AlertDialogModal,
 } from "~/ui/AlertDialog";
 import { Skeleton } from "~/ui/Skeleton";
+import { AlertDescription, AlertRoot } from "~/ui/Alert";
+import { useBeforeLeave } from "@solidjs/router";
 
-function useMutation() {
-  const client = useQueryClient();
-  return createMutation(() => ({
-    mutationFn: (requestBody: PatchSettings) =>
-      patchApiSettings({ requestBody }),
-    onSuccess: (data) => client.setQueryData(api.settings.get.queryKey, data),
-  }));
-}
-
-type UpdateSunForm = {
-  sunset_offset: string;
-  sunrise_offset: string;
-};
-
-type UpdateCoordinateForm = {
-  latitude: string | number;
-  longitude: string | number;
+type Form = {
+  latitude?: number | string;
+  location?: string;
+  longitude?: number | string;
+  sunrise_offset?: string;
+  sunset_offset?: string;
+  sync_video_in_mode?: boolean;
 };
 
 export default function Settings() {
@@ -87,6 +84,40 @@ export default function Settings() {
     throwOnError: true,
   }));
 
+  // Form
+  const formMutation = createMutation(() => ({
+    mutationFn: (requestBody: PatchSettings) =>
+      patchApiSettings({ requestBody }),
+    onSuccess: (data) => client.setQueryData(api.settings.get.queryKey, data),
+  }));
+  const [form, { Field, Form }] = createForm<Form>();
+  const submitForm = (value: Form) =>
+    formMutation.mutateAsync(
+      {
+        ...value,
+        latitude:
+          value.latitude != undefined ? Number(value.latitude) : undefined,
+        longitude:
+          value.longitude != undefined ? Number(value.longitude) : undefined,
+      },
+      {
+        onSuccess: () => reset(form),
+      },
+    );
+
+  useBeforeLeave((e) => {
+    if (form.dirty && !e.defaultPrevented) {
+      // preventDefault to block immediately and prompt user async
+      e.preventDefault();
+      setTimeout(() => {
+        if (window.confirm("Discard unsaved changes - are you sure?")) {
+          // user wants to proceed anyway so retry with force=true
+          e.retry(true);
+        }
+      }, 100);
+    }
+  });
+
   // Default
   const [defaultDialog, setDefaultDialog] = createSignal(false);
   const defaultMutation = createMutation(() => ({
@@ -95,62 +126,12 @@ export default function Settings() {
       batch(() => {
         client.setQueryData(api.settings.get.queryKey, data);
         setDefaultDialog(false);
+        reset(form);
       }),
     onError: (error) => toast.error(error.name, error.message),
   }));
 
-  const syncVideoInModeMutation = useMutation();
-  const locationMutation = useMutation();
-
-  // Sun
-  const [sunForm, { Field: SunField, Form: SunForm }] =
-    createForm<UpdateSunForm>({
-      initialValues: {
-        sunrise_offset: "",
-        sunset_offset: "",
-      },
-    });
-  const sunFormToggle = createFormToggle(false, () => {
-    reset(sunForm, {
-      initialValues: {
-        sunrise_offset: data.data?.sunrise_offset || "",
-        sunset_offset: data.data?.sunset_offset || "",
-      },
-    });
-  });
-  const sunFormMutation = useMutation();
-  const submitSunForm = (value: UpdateSunForm) =>
-    sunFormMutation.mutateAsync(value, {
-      onSuccess: sunFormToggle.setClose,
-    });
-
-  // Coordinate
-  const [coordinateForm, { Field: CoordinateField, Form: CoordinateForm }] =
-    createForm<UpdateCoordinateForm>({
-      initialValues: {
-        latitude: 0,
-        longitude: 0,
-      },
-    });
-  const coordinateFormToggle = createFormToggle(false, () => {
-    reset(coordinateForm, {
-      initialValues: {
-        latitude: data.data?.latitude || 0,
-        longitude: data.data?.longitude || 0,
-      },
-    });
-  });
-  const coordinateFormMutation = useMutation();
-  const submitCoordinateForm = (value: UpdateCoordinateForm) =>
-    coordinateFormMutation.mutateAsync(
-      {
-        latitude: Number(value.latitude),
-        longitude: Number(value.longitude),
-      },
-      {
-        onSuccess: coordinateFormToggle.setClose,
-      },
-    );
+  // Detect coordinate
   const [coordinateDetectLoading, setCoordinateDetectLoading] =
     createSignal(false);
   const detectCoordinate = () => {
@@ -159,11 +140,8 @@ export default function Settings() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        batch(() => {
-          setCoordinateDetectLoading(false);
-          coordinateFormToggle.setOpen();
-        });
-        setValues(coordinateForm, {
+        setCoordinateDetectLoading(false);
+        setValues(form, {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
         });
@@ -171,7 +149,7 @@ export default function Settings() {
       (error) =>
         batch(() => {
           setCoordinateDetectLoading(false);
-          toast.error("Error", error.message);
+          toast.error("Detect Coordinate", error.message);
         }),
       { timeout: 10000 },
     );
@@ -182,69 +160,80 @@ export default function Settings() {
       <PageTitle>Settings</PageTitle>
 
       <ErrorBoundary fallback={(error) => <PageError error={error} />}>
-        <Suspense fallback={<Skeleton class="h-32" />}>
-          <SwitchRoot
-            validationState={validationState(syncVideoInModeMutation.error)}
-            disabled={syncVideoInModeMutation.isPending}
-            checked={data.data?.sync_video_in_mode}
-            class="flex items-center justify-between gap-2"
-            onChange={(isChecked) =>
-              syncVideoInModeMutation.mutate({ sync_video_in_mode: isChecked })
-            }
-          >
-            <div>
-              <SwitchLabel>Sync Video In Mode</SwitchLabel>
-              <SwitchErrorMessage>
-                {syncVideoInModeMutation.error?.message}
-              </SwitchErrorMessage>
-            </div>
-            <SwitchControl />
-          </SwitchRoot>
-        </Suspense>
-
-        <Seperator />
-
-        <Suspense fallback={<Skeleton class="h-32" />}>
-          <SelectRoot
-            validationState={locationMutation.error ? "invalid" : "valid"}
-            disabled={locationMutation.isPending}
-            options={locations.data || []}
-            value={data.data?.location}
-            onChange={(value) => locationMutation.mutate({ location: value })}
-            itemComponent={(props) => (
-              <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
+        <Form onSubmit={submitForm} class="flex flex-col gap-4">
+          <Field name="sync_video_in_mode" type="boolean">
+            {(field, props) => (
+              <SwitchRoot
+                validationState={validationState(field.error)}
+                checked={
+                  form.dirty && field.value != undefined
+                    ? field.value
+                    : data.data?.sync_video_in_mode
+                }
+                onChange={(value) =>
+                  setValue(form, "sync_video_in_mode", value)
+                }
+                class="flex items-center justify-between gap-2"
+              >
+                <div>
+                  <SwitchLabel>Sync Video In Mode</SwitchLabel>
+                  <SwitchErrorMessage>{field.error}</SwitchErrorMessage>
+                </div>
+                <SwitchControl {...props} />
+              </SwitchRoot>
             )}
-            class="space-y-2"
-          >
-            <SelectLabel>Location</SelectLabel>
-            <SelectTrigger>
-              <SelectValue<string>>
-                {(state) => state.selectedOption()}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectContent>
-                <SelectListbox />
-              </SelectContent>
-            </SelectPortal>
-            <SelectErrorMessage>
-              {locationMutation.error?.message}
-            </SelectErrorMessage>
-          </SelectRoot>
-        </Suspense>
-
-        <PageSubTitle>Sun Offset</PageSubTitle>
+          </Field>
+        </Form>
 
         <Suspense fallback={<Skeleton class="h-32" />}>
-          <SunForm onSubmit={submitSunForm} class="flex flex-col gap-4">
+          <Field name="location">
+            {(field) => {
+              const value = () =>
+                form.dirty && field.value != undefined
+                  ? field.value
+                  : data.data?.location;
+              return (
+                <SelectRoot
+                  validationState={validationState(field.error)}
+                  options={locations.data || []}
+                  value={value()}
+                  onChange={(newValue) =>
+                    newValue != value() && setValue(form, "location", newValue)
+                  }
+                  itemComponent={(props) => (
+                    <SelectItem item={props.item}>
+                      {props.item.rawValue}
+                    </SelectItem>
+                  )}
+                  class="space-y-2"
+                >
+                  <SelectLabel>Location</SelectLabel>
+                  <SelectTrigger>
+                    <SelectValue<string>>
+                      {(state) => state.selectedOption()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectContent>
+                      <SelectListbox />
+                    </SelectContent>
+                  </SelectPortal>
+                  <SelectErrorMessage>{field.error}</SelectErrorMessage>
+                </SelectRoot>
+              );
+            }}
+          </Field>
+        </Suspense>
+
+        <Suspense fallback={<Skeleton class="h-32" />}>
+          <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-4 sm:flex-row">
-              <SunField name="sunrise_offset">
+              <Field name="sunrise_offset">
                 {(field, props) => (
                   <TextFieldRoot
                     validationState={validationState(field.error)}
-                    onFocusIn={sunFormToggle.setOpen}
                     value={
-                      sunFormToggle.open()
+                      field.dirty && field.value != undefined
                         ? field.value
                         : data.data?.sunrise_offset
                     }
@@ -255,14 +244,13 @@ export default function Settings() {
                     <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
                   </TextFieldRoot>
                 )}
-              </SunField>
-              <SunField name="sunset_offset">
+              </Field>
+              <Field name="sunset_offset">
                 {(field, props) => (
                   <TextFieldRoot
                     validationState={validationState(field.error)}
-                    onFocusIn={sunFormToggle.setOpen}
                     value={
-                      sunFormToggle.open()
+                      field.dirty && field.value != undefined
                         ? field.value
                         : data.data?.sunset_offset
                     }
@@ -273,46 +261,24 @@ export default function Settings() {
                     <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
                   </TextFieldRoot>
                 )}
-              </SunField>
+              </Field>
             </div>
-            <Show when={sunFormToggle.open()}>
-              <div class="flex flex-col gap-2 sm:flex-row-reverse">
-                <Button disabled={sunForm.submitting}>Save</Button>
-                <Button
-                  disabled={sunForm.submitting}
-                  onClick={sunFormToggle.setClose}
-                  variant="secondary"
-                  type="button"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </Show>
-            <FormMessage form={sunForm} />
-          </SunForm>
+          </div>
         </Suspense>
 
-        <PageSubTitle>Coordinate</PageSubTitle>
-
         <Suspense fallback={<Skeleton class="h-32" />}>
-          <CoordinateForm
-            onSubmit={submitCoordinateForm}
-            class="flex flex-col gap-4"
-          >
+          <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-4 sm:flex-row">
-              <CoordinateField name="latitude" type="number">
+              <Field name="latitude" type="number">
                 {(field) => (
                   <NumberFieldRoot
                     validationState={validationState(field.error)}
-                    onFocusIn={coordinateFormToggle.setOpen}
                     value={
-                      coordinateFormToggle.open()
+                      form.dirty && field.value != undefined
                         ? field.value
                         : data.data?.latitude
                     }
-                    onChange={(value) =>
-                      setValue(coordinateForm, "latitude", value)
-                    }
+                    onChange={(value) => setValue(form, "latitude", value)}
                     class="flex-1 space-y-2"
                   >
                     <NumberFieldLabel>Latitude</NumberFieldLabel>
@@ -322,20 +288,17 @@ export default function Settings() {
                     </NumberFieldErrorMessage>
                   </NumberFieldRoot>
                 )}
-              </CoordinateField>
-              <CoordinateField name="longitude" type="number">
+              </Field>
+              <Field name="longitude" type="number">
                 {(field) => (
                   <NumberFieldRoot
                     validationState={validationState(field.error)}
-                    onFocusIn={coordinateFormToggle.setOpen}
                     value={
-                      coordinateFormToggle.open()
+                      form.dirty && field.value != undefined
                         ? field.value
                         : data.data?.longitude
                     }
-                    onChange={(value) =>
-                      setValue(coordinateForm, "longitude", value)
-                    }
+                    onChange={(value) => setValue(form, "longitude", value)}
                     class="flex-1 space-y-2"
                   >
                     <NumberFieldLabel>Longitude</NumberFieldLabel>
@@ -345,7 +308,7 @@ export default function Settings() {
                     </NumberFieldErrorMessage>
                   </NumberFieldRoot>
                 )}
-              </CoordinateField>
+              </Field>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row-reverse">
               <Button
@@ -355,26 +318,29 @@ export default function Settings() {
               >
                 Detect
               </Button>
-              <Show when={coordinateFormToggle.open()}>
-                <Button disabled={coordinateForm.submitting}>Save</Button>
-                <Button
-                  disabled={coordinateForm.submitting}
-                  onClick={coordinateFormToggle.setClose}
-                  variant="secondary"
-                  type="button"
-                >
-                  Cancel
-                </Button>
-              </Show>
             </div>
-            <FormMessage form={coordinateForm} />
-          </CoordinateForm>
+          </div>
         </Suspense>
       </ErrorBoundary>
 
       <Seperator />
 
-      <div class="flex gap-2">
+      <div class="flex justify-end gap-2 max-sm:flex-col">
+        <Button
+          type="submit"
+          onClick={() => submit(form)}
+          disabled={!form.dirty || form.submitting}
+        >
+          Submit
+        </Button>
+        <Button
+          type="submit"
+          onClick={() => reset(form)}
+          disabled={!form.dirty}
+          variant="secondary"
+        >
+          Cancel
+        </Button>
         <AlertDialogRoot open={defaultDialog()} onOpenChange={setDefaultDialog}>
           <AlertDialogTrigger
             as={Button}
@@ -402,6 +368,12 @@ export default function Settings() {
           </AlertDialogModal>
         </AlertDialogRoot>
       </div>
+
+      <Show when={form.response.message}>
+        <AlertRoot variant="destructive">
+          <AlertDescription>{form.response.message}</AlertDescription>
+        </AlertRoot>
+      </Show>
     </LayoutCenter>
   );
 }
