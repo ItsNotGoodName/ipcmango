@@ -4,11 +4,11 @@ go 1.22.3
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
-	github.com/danielgtaylor/huma/v2 v2.18.0
+	github.com/danielgtaylor/huma/v2 v2.20.0
 	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43
-	github.com/emersion/go-smtp v0.21.2
-	github.com/fxamacker/cbor/v2 v2.6.0
-	github.com/go-chi/chi/v5 v5.0.12
+	github.com/emersion/go-smtp v0.21.3
+	github.com/fxamacker/cbor/v2 v2.7.0
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/google/uuid v1.6.0
 	github.com/icholy/digest v0.1.23
 	github.com/jhillyerd/enmime v1.2.0
@@ -21,13 +21,13 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/phsym/console-slog v0.3.1
 	github.com/pkg/sftp v1.13.6
-	github.com/pressly/goose/v3 v3.20.0
+	github.com/pressly/goose/v3 v3.21.1
 	github.com/reugn/go-quartz v0.12.0
 	github.com/spf13/afero v1.11.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/thejerf/suture/v4 v4.0.5
-	github.com/tidwall/gjson v1.17.1
+	github.com/tidwall/gjson v1.17.3
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/crypto v0.21.0
 	modernc.org/sqlite v1.29.6
