@@ -54,6 +54,8 @@ type FileScanCursor struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+type File struct{}
+
 //---------- CRUD
 
 func NewPagePagination(result pagination.PageResult) PagePagination {

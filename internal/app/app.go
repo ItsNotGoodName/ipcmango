@@ -1266,7 +1266,6 @@ func Register(api huma.API, app App) {
 			return nil, err
 		}
 
-		fmt.Println()
 		body, err := ListStorageDestinations(ctx, app.DB)
 		if err != nil {
 			return nil, err
@@ -1385,6 +1384,24 @@ func Register(api huma.API, app App) {
 			}
 		}
 		return &struct{}{}, nil
+	})
+	huma.Register(api, huma.Operation{
+		Summary: "List files",
+		Method:  http.MethodGet,
+		Path:    "/api/files",
+	}, func(ctx context.Context, input *struct {
+		PageQuery
+		Devices []string `query:"device"`
+	},
+	) (*ListFilesOutput, error) {
+		return &ListFilesOutput{
+			Body: ListFiles{
+				Pagination: PagePagination{
+					Page: 1,
+				},
+				Data: []File{},
+			},
+		}, nil
 	})
 }
 
@@ -1859,4 +1876,13 @@ type EventRule struct {
 	AllowLive bool   `json:"allow_live"`
 	AllowMQTT bool   `json:"allow_mqtt"`
 	CanDelete bool   `json:"can_delete"`
+}
+
+type ListFilesOutput struct {
+	Body ListFiles
+}
+
+type ListFiles struct {
+	Pagination PagePagination `json:"pagination"`
+	Data       []File         `json:"data"`
 }

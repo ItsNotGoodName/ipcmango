@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GetApiDevicesResponse, PutApiDevicesData, PutApiDevicesResponse, PostApiDevicesCreateData, PostApiDevicesCreateResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, PostApiDevicesByUuidRebootData, PostApiDevicesByUuidRebootResponse, DeleteApiDevicesByUuidScanCursorData, DeleteApiDevicesByUuidScanCursorResponse, GetApiDevicesByUuidScanCursorData, GetApiDevicesByUuidScanCursorResponse, PostApiDevicesByUuidScanFullData, PostApiDevicesByUuidScanFullResponse, PostApiDevicesByUuidScanManualData, PostApiDevicesByUuidScanManualResponse, PostApiDevicesByUuidScanQuickData, PostApiDevicesByUuidScanQuickResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEmailEndpointsResponse, PutApiEmailEndpointsData, PutApiEmailEndpointsResponse, PostApiEmailEndpointsCreateData, PostApiEmailEndpointsCreateResponse, DeleteApiEmailEndpointsByUuidData, DeleteApiEmailEndpointsByUuidResponse, GetApiEmailEndpointsByUuidData, GetApiEmailEndpointsByUuidResponse, PostApiEmailEndpointsByUuidData, PostApiEmailEndpointsByUuidResponse, GetApiEventActionsResponse, GetApiEventCodesResponse, DeleteApiEventRulesData, DeleteApiEventRulesResponse, GetApiEventRulesResponse, PostApiEventRulesCreateData, PostApiEventRulesCreateResponse, DeleteApiEventRulesByUuidData, DeleteApiEventRulesByUuidResponse, PostApiEventRulesByUuidData, PostApiEventRulesByUuidResponse, DeleteApiEventsResponse, GetApiEventsData, GetApiEventsResponse, GetApiEventsSseData, GetApiEventsSseResponse, GetApiLocationsResponse, GetApiPagesHomeResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PatchApiSettingsData, PatchApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse, GetApiStorageDestinationsResponse, PutApiStorageDestinationsData, PutApiStorageDestinationsResponse } from './types.gen';
+import type { GetApiDevicesResponse, PutApiDevicesData, PutApiDevicesResponse, PostApiDevicesCreateData, PostApiDevicesCreateResponse, DeleteApiDevicesByUuidData, DeleteApiDevicesByUuidResponse, GetApiDevicesByUuidData, GetApiDevicesByUuidResponse, PostApiDevicesByUuidData, PostApiDevicesByUuidResponse, GetApiDevicesByUuidCoaxialCapsData, GetApiDevicesByUuidCoaxialCapsResponse, PostApiDevicesByUuidCoaxialSpeakerData, PostApiDevicesByUuidCoaxialSpeakerResponse, GetApiDevicesByUuidCoaxialStatusData, GetApiDevicesByUuidCoaxialStatusResponse, PostApiDevicesByUuidCoaxialWhiteLightData, PostApiDevicesByUuidCoaxialWhiteLightResponse, GetApiDevicesByUuidDetailData, GetApiDevicesByUuidDetailResponse, GetApiDevicesByUuidFileData, GetApiDevicesByUuidFileResponse, GetApiDevicesByUuidGroupsData, GetApiDevicesByUuidGroupsResponse, GetApiDevicesByUuidLicensesData, GetApiDevicesByUuidLicensesResponse, GetApiDevicesByUuidPtzPresetsData, GetApiDevicesByUuidPtzPresetsResponse, PostApiDevicesByUuidRebootData, PostApiDevicesByUuidRebootResponse, DeleteApiDevicesByUuidScanCursorData, DeleteApiDevicesByUuidScanCursorResponse, GetApiDevicesByUuidScanCursorData, GetApiDevicesByUuidScanCursorResponse, PostApiDevicesByUuidScanFullData, PostApiDevicesByUuidScanFullResponse, PostApiDevicesByUuidScanManualData, PostApiDevicesByUuidScanManualResponse, PostApiDevicesByUuidScanQuickData, PostApiDevicesByUuidScanQuickResponse, GetApiDevicesByUuidSnapshotData, GetApiDevicesByUuidSnapshotResponse, GetApiDevicesByUuidSoftwareData, GetApiDevicesByUuidSoftwareResponse, GetApiDevicesByUuidStatusData, GetApiDevicesByUuidStatusResponse, GetApiDevicesByUuidStorageData, GetApiDevicesByUuidStorageResponse, GetApiDevicesByUuidUptimeData, GetApiDevicesByUuidUptimeResponse, GetApiDevicesByUuidUsersData, GetApiDevicesByUuidUsersResponse, GetApiDevicesByUuidUsersActiveData, GetApiDevicesByUuidUsersActiveResponse, GetApiDevicesByUuidVideoInModeData, GetApiDevicesByUuidVideoInModeResponse, PostApiDevicesByUuidVideoInModeSyncData, PostApiDevicesByUuidVideoInModeSyncResponse, GetApiEmailEndpointsResponse, PutApiEmailEndpointsData, PutApiEmailEndpointsResponse, PostApiEmailEndpointsCreateData, PostApiEmailEndpointsCreateResponse, DeleteApiEmailEndpointsByUuidData, DeleteApiEmailEndpointsByUuidResponse, GetApiEmailEndpointsByUuidData, GetApiEmailEndpointsByUuidResponse, PostApiEmailEndpointsByUuidData, PostApiEmailEndpointsByUuidResponse, GetApiEventActionsResponse, GetApiEventCodesResponse, DeleteApiEventRulesData, DeleteApiEventRulesResponse, GetApiEventRulesResponse, PostApiEventRulesCreateData, PostApiEventRulesCreateResponse, DeleteApiEventRulesByUuidData, DeleteApiEventRulesByUuidResponse, PostApiEventRulesByUuidData, PostApiEventRulesByUuidResponse, DeleteApiEventsResponse, GetApiEventsData, GetApiEventsResponse, GetApiEventsSseData, GetApiEventsSseResponse, GetApiFilesData, GetApiFilesResponse, GetApiLocationsResponse, GetApiPagesHomeResponse, DeleteApiSettingsResponse, GetApiSettingsResponse, PatchApiSettingsData, PatchApiSettingsResponse, PutApiSettingsData, PutApiSettingsResponse, GetApiStorageDestinationsResponse, PutApiStorageDestinationsData, PutApiStorageDestinationsResponse } from './types.gen';
 
 /**
  * List devices
@@ -854,6 +854,28 @@ export const getApiEventsSse = (data: GetApiEventsSseData = {}): CancelablePromi
         device: data.device,
         codes: data.codes,
         actions: data.actions
+    },
+    errors: {
+        default: 'Error'
+    }
+}); };
+
+/**
+ * List files
+ * @param data The data for the request.
+ * @param data.page
+ * @param data.perPage
+ * @param data.device
+ * @returns ListFiles OK
+ * @throws ApiError
+ */
+export const getApiFiles = (data: GetApiFilesData = {}): CancelablePromise<GetApiFilesResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/files',
+    query: {
+        page: data.page,
+        perPage: data.perPage,
+        device: data.device
     },
     errors: {
         default: 'Error'

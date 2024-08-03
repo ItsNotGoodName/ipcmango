@@ -12,6 +12,7 @@ import {
   getApiEventCodes,
   getApiEventRules,
   getApiEvents,
+  getApiFiles,
   getApiLocations,
   getApiPagesHome,
   getApiSettings,
@@ -20,7 +21,7 @@ import {
   createQueryKeyStore,
   createQueryKeys,
 } from "@lukemorales/query-key-factory";
-import { GetApiEventsData } from "~/client";
+import { GetApiEventsData, GetApiFilesData } from "~/client";
 
 export const api = createQueryKeyStore({
   locations: {
@@ -95,6 +96,12 @@ export const api = createQueryKeyStore({
     video_in_mode: (uuid: string) => ({
       queryKey: [uuid],
       queryFn: () => getApiDevicesByUuidVideoInMode({ uuid }),
+    }),
+  },
+  files: {
+    list: (data: GetApiFilesData) => ({
+      queryKey: [data],
+      queryFn: () => getApiFiles(data),
     }),
   },
 });

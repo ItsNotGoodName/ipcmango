@@ -16,7 +16,7 @@ export type CreateDevice = {
      */
     readonly $schema?: string;
     email?: string;
-    features?: Array<('camera')>;
+    features?: Array<('camera')> | null;
     ip?: string;
     latitude?: number;
     location?: string;
@@ -37,12 +37,12 @@ export type CreateEmailEndpoint = {
     readonly $schema?: string;
     attachments?: boolean;
     body_template?: string;
-    device_uuids?: Array<(string)>;
+    device_uuids?: Array<(string)> | null;
     disabled?: boolean;
     expression?: string;
     global?: boolean;
     title_template?: string;
-    urls: Array<(string)>;
+    urls: Array<(string)> | null;
     uuid?: string;
 };
 
@@ -78,7 +78,7 @@ export type Device = {
     readonly $schema?: string;
     created_at: string;
     email: string;
-    features: Array<(string)>;
+    features: Array<(string)> | null;
     ip: string;
     latitude: number | null;
     location: string;
@@ -147,7 +147,7 @@ export type DeviceEvent = {
 };
 
 export type DeviceGroup = {
-    authority_list: Array<(string)>;
+    authority_list: Array<(string)> | null;
     id: number;
     memo: string;
     name: string;
@@ -214,7 +214,7 @@ export type DeviceUptime = {
 
 export type DeviceUser = {
     anonymous: boolean;
-    authority_list: Array<(string)>;
+    authority_list: Array<(string)> | null;
     group: string;
     id: number;
     memo: string;
@@ -255,13 +255,13 @@ export type EmailEndpoint = {
     attachments: boolean;
     body_template: string;
     created_at: string;
-    device_uuids: Array<(string)>;
+    device_uuids: Array<(string)> | null;
     disabled: boolean;
     expression: string;
     global: boolean;
     title_template: string;
     updated_at: string;
-    urls: Array<(string)>;
+    urls: Array<(string)> | null;
     uuid: string;
 };
 
@@ -292,7 +292,7 @@ export type ErrorModel = {
     /**
      * Optional list of individual error details
      */
-    errors?: Array<ErrorDetail>;
+    errors?: Array<ErrorDetail> | null;
     /**
      * A URI reference that identifies the specific occurrence of the problem.
      */
@@ -322,6 +322,10 @@ export type EventRule = {
     can_delete: boolean;
     code: string;
     uuid: string;
+};
+
+export type File = {
+    [key: string]: unknown;
 };
 
 export type FileScanCursor = {
@@ -355,7 +359,16 @@ export type ListEvents = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
-    data: Array<DeviceEvent>;
+    data: Array<DeviceEvent> | null;
+    pagination: PagePagination;
+};
+
+export type ListFiles = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    data: Array<File> | null;
     pagination: PagePagination;
 };
 
@@ -433,7 +446,7 @@ export type UpdateDevice = {
      */
     readonly $schema?: string;
     email?: string;
-    features?: Array<('camera')>;
+    features?: Array<('camera')> | null;
     ip: string;
     latitude: number | null;
     location?: string;
@@ -453,12 +466,12 @@ export type UpdateEmailEndpoint = {
     readonly $schema?: string;
     attachments?: boolean;
     body_template?: string;
-    device_uuids?: Array<(string)>;
+    device_uuids?: Array<(string)> | null;
     disabled?: boolean;
     expression?: string;
     global?: boolean;
     title_template?: string;
-    urls: Array<(string)>;
+    urls: Array<(string)> | null;
 };
 
 export type UpdateEventRule = {
@@ -485,13 +498,13 @@ export type UpdateSettings = {
     sync_video_in_mode: boolean;
 };
 
-export type GetApiDevicesResponse = Array<Device>;
+export type GetApiDevicesResponse = Array<Device> | null;
 
 export type PutApiDevicesData = {
-    requestBody: Array<CreateDevice>;
+    requestBody: Array<CreateDevice> | null;
 };
 
-export type PutApiDevicesResponse = Array<Device>;
+export type PutApiDevicesResponse = Array<Device> | null;
 
 export type PostApiDevicesCreateData = {
     requestBody: CreateDevice;
@@ -565,20 +578,20 @@ export type GetApiDevicesByUuidGroupsData = {
     uuid: string;
 };
 
-export type GetApiDevicesByUuidGroupsResponse = Array<DeviceGroup>;
+export type GetApiDevicesByUuidGroupsResponse = Array<DeviceGroup> | null;
 
 export type GetApiDevicesByUuidLicensesData = {
     uuid: string;
 };
 
-export type GetApiDevicesByUuidLicensesResponse = Array<DeviceLicense>;
+export type GetApiDevicesByUuidLicensesResponse = Array<DeviceLicense> | null;
 
 export type GetApiDevicesByUuidPtzPresetsData = {
     channel?: number;
     uuid: string;
 };
 
-export type GetApiDevicesByUuidPtzPresetsResponse = Array<DevicePTZPreset>;
+export type GetApiDevicesByUuidPtzPresetsResponse = Array<DevicePTZPreset> | null;
 
 export type PostApiDevicesByUuidRebootData = {
     uuid: string;
@@ -641,7 +654,7 @@ export type GetApiDevicesByUuidStorageData = {
     uuid: string;
 };
 
-export type GetApiDevicesByUuidStorageResponse = Array<DeviceStorage>;
+export type GetApiDevicesByUuidStorageResponse = Array<DeviceStorage> | null;
 
 export type GetApiDevicesByUuidUptimeData = {
     uuid: string;
@@ -653,13 +666,13 @@ export type GetApiDevicesByUuidUsersData = {
     uuid: string;
 };
 
-export type GetApiDevicesByUuidUsersResponse = Array<DeviceUser>;
+export type GetApiDevicesByUuidUsersResponse = Array<DeviceUser> | null;
 
 export type GetApiDevicesByUuidUsersActiveData = {
     uuid: string;
 };
 
-export type GetApiDevicesByUuidUsersActiveResponse = Array<DeviceActiveUser>;
+export type GetApiDevicesByUuidUsersActiveResponse = Array<DeviceActiveUser> | null;
 
 export type GetApiDevicesByUuidVideoInModeData = {
     uuid: string;
@@ -674,13 +687,13 @@ export type PostApiDevicesByUuidVideoInModeSyncData = {
 
 export type PostApiDevicesByUuidVideoInModeSyncResponse = DeviceVideoInMode;
 
-export type GetApiEmailEndpointsResponse = Array<EmailEndpoint>;
+export type GetApiEmailEndpointsResponse = Array<EmailEndpoint> | null;
 
 export type PutApiEmailEndpointsData = {
-    requestBody: Array<CreateEmailEndpoint>;
+    requestBody: Array<CreateEmailEndpoint> | null;
 };
 
-export type PutApiEmailEndpointsResponse = Array<EmailEndpoint>;
+export type PutApiEmailEndpointsResponse = Array<EmailEndpoint> | null;
 
 export type PostApiEmailEndpointsCreateData = {
     requestBody: CreateEmailEndpoint;
@@ -707,17 +720,17 @@ export type PostApiEmailEndpointsByUuidData = {
 
 export type PostApiEmailEndpointsByUuidResponse = EmailEndpoint;
 
-export type GetApiEventActionsResponse = Array<(string)>;
+export type GetApiEventActionsResponse = Array<(string)> | null;
 
-export type GetApiEventCodesResponse = Array<(string)>;
+export type GetApiEventCodesResponse = Array<(string)> | null;
 
 export type DeleteApiEventRulesData = {
-    requestBody: Array<(string)>;
+    requestBody: Array<(string)> | null;
 };
 
 export type DeleteApiEventRulesResponse = void;
 
-export type GetApiEventRulesResponse = Array<EventRule>;
+export type GetApiEventRulesResponse = Array<EventRule> | null;
 
 export type PostApiEventRulesCreateData = {
     requestBody: CreateEventRule;
@@ -736,14 +749,14 @@ export type PostApiEventRulesByUuidData = {
     uuid: string;
 };
 
-export type PostApiEventRulesByUuidResponse = Array<EventRule>;
+export type PostApiEventRulesByUuidResponse = Array<EventRule> | null;
 
 export type DeleteApiEventsResponse = void;
 
 export type GetApiEventsData = {
-    actions?: Array<(string)>;
-    codes?: Array<(string)>;
-    device?: Array<(string)>;
+    actions?: Array<(string)> | null;
+    codes?: Array<(string)> | null;
+    device?: Array<(string)> | null;
     order?: 'ascending' | 'descending';
     page?: number;
     perPage?: number;
@@ -752,9 +765,9 @@ export type GetApiEventsData = {
 export type GetApiEventsResponse = ListEvents;
 
 export type GetApiEventsSseData = {
-    actions?: Array<(string)>;
-    codes?: Array<(string)>;
-    device?: Array<(string)>;
+    actions?: Array<(string)> | null;
+    codes?: Array<(string)> | null;
+    device?: Array<(string)> | null;
 };
 
 export type GetApiEventsSseResponse = Array<({
@@ -773,7 +786,15 @@ export type GetApiEventsSseResponse = Array<({
     retry?: number;
 })>;
 
-export type GetApiLocationsResponse = Array<(string)>;
+export type GetApiFilesData = {
+    device?: Array<(string)> | null;
+    page?: number;
+    perPage?: number;
+};
+
+export type GetApiFilesResponse = ListFiles;
+
+export type GetApiLocationsResponse = Array<(string)> | null;
 
 export type GetApiPagesHomeResponse = GetHomePage;
 
@@ -793,13 +814,13 @@ export type PutApiSettingsData = {
 
 export type PutApiSettingsResponse = Settings;
 
-export type GetApiStorageDestinationsResponse = Array<StorageDestination>;
+export type GetApiStorageDestinationsResponse = Array<StorageDestination> | null;
 
 export type PutApiStorageDestinationsData = {
-    requestBody: Array<CreateStorageDestination>;
+    requestBody: Array<CreateStorageDestination> | null;
 };
 
-export type PutApiStorageDestinationsResponse = Array<StorageDestination>;
+export type PutApiStorageDestinationsResponse = Array<StorageDestination> | null;
 
 export type $OpenApiTs = {
     '/api/devices': {
@@ -808,7 +829,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<Device>;
+                200: Array<Device> | null;
                 /**
                  * Error
                  */
@@ -821,7 +842,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<Device>;
+                200: Array<Device> | null;
                 /**
                  * Error
                  */
@@ -982,7 +1003,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<DeviceGroup>;
+                200: Array<DeviceGroup> | null;
                 /**
                  * Error
                  */
@@ -997,7 +1018,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<DeviceLicense>;
+                200: Array<DeviceLicense> | null;
                 /**
                  * Error
                  */
@@ -1012,7 +1033,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<DevicePTZPreset>;
+                200: Array<DevicePTZPreset> | null;
                 /**
                  * Error
                  */
@@ -1160,7 +1181,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<DeviceStorage>;
+                200: Array<DeviceStorage> | null;
                 /**
                  * Error
                  */
@@ -1190,7 +1211,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<DeviceUser>;
+                200: Array<DeviceUser> | null;
                 /**
                  * Error
                  */
@@ -1205,7 +1226,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<DeviceActiveUser>;
+                200: Array<DeviceActiveUser> | null;
                 /**
                  * Error
                  */
@@ -1249,7 +1270,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<EmailEndpoint>;
+                200: Array<EmailEndpoint> | null;
                 /**
                  * Error
                  */
@@ -1262,7 +1283,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<EmailEndpoint>;
+                200: Array<EmailEndpoint> | null;
                 /**
                  * Error
                  */
@@ -1332,7 +1353,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<(string)>;
+                200: Array<(string)> | null;
                 /**
                  * Error
                  */
@@ -1346,7 +1367,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<(string)>;
+                200: Array<(string)> | null;
                 /**
                  * Error
                  */
@@ -1373,7 +1394,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<EventRule>;
+                200: Array<EventRule> | null;
                 /**
                  * Error
                  */
@@ -1416,7 +1437,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<EventRule>;
+                200: Array<EventRule> | null;
                 /**
                  * Error
                  */
@@ -1480,13 +1501,28 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/files': {
+        get: {
+            req: GetApiFilesData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: ListFiles;
+                /**
+                 * Error
+                 */
+                default: ErrorModel;
+            };
+        };
+    };
     '/api/locations': {
         get: {
             res: {
                 /**
                  * OK
                  */
-                200: Array<(string)>;
+                200: Array<(string)> | null;
                 /**
                  * Error
                  */
@@ -1566,7 +1602,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<StorageDestination>;
+                200: Array<StorageDestination> | null;
                 /**
                  * Error
                  */
@@ -1579,7 +1615,7 @@ export type $OpenApiTs = {
                 /**
                  * OK
                  */
-                200: Array<StorageDestination>;
+                200: Array<StorageDestination> | null;
                 /**
                  * Error
                  */

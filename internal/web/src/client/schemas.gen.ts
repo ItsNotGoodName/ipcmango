@@ -47,7 +47,7 @@ export const $CreateDevice = {
                 enum: ['camera'],
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         ip: {
             format: 'ipv4',
@@ -113,7 +113,7 @@ export const $CreateEmailEndpoint = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         disabled: {
             default: false,
@@ -132,7 +132,7 @@ export const $CreateEmailEndpoint = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         uuid: {
             format: 'uuid',
@@ -230,7 +230,7 @@ export const $Device = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         ip: {
             format: 'ipv4',
@@ -428,7 +428,7 @@ export const $DeviceGroup = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         id: {
             format: 'int64',
@@ -622,7 +622,7 @@ export const $DeviceUser = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         group: {
             type: 'string'
@@ -738,7 +738,7 @@ export const $EmailEndpoint = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         disabled: {
             type: 'boolean'
@@ -760,7 +760,7 @@ export const $EmailEndpoint = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         uuid: {
             type: 'string'
@@ -808,7 +808,7 @@ export const $ErrorModel = {
             items: {
                 '$ref': '#/components/schemas/ErrorDetail'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         instance: {
             description: 'A URI reference that identifies the specific occurrence of the problem.',
@@ -868,6 +868,11 @@ export const $EventRule = {
         }
     },
     required: ['uuid', 'code', 'allow_db', 'allow_live', 'allow_mqtt', 'can_delete'],
+    type: 'object'
+} as const;
+
+export const $File = {
+    additionalProperties: false,
     type: 'object'
 } as const;
 
@@ -961,7 +966,31 @@ export const $ListEvents = {
             items: {
                 '$ref': '#/components/schemas/DeviceEvent'
             },
-            type: 'array'
+            type: ['array', 'null']
+        },
+        pagination: {
+            '$ref': '#/components/schemas/PagePagination'
+        }
+    },
+    required: ['pagination', 'data'],
+    type: 'object'
+} as const;
+
+export const $ListFiles = {
+    additionalProperties: false,
+    properties: {
+        '$schema': {
+            description: 'A URL to the JSON Schema for this object.',
+            examples: ['https://example.com/schemas/ListFiles.json'],
+            format: 'uri',
+            readOnly: true,
+            type: 'string'
+        },
+        data: {
+            items: {
+                '$ref': '#/components/schemas/File'
+            },
+            type: ['array', 'null']
         },
         pagination: {
             '$ref': '#/components/schemas/PagePagination'
@@ -1190,7 +1219,7 @@ export const $UpdateDevice = {
                 enum: ['camera'],
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         ip: {
             format: 'ipv4',
@@ -1253,7 +1282,7 @@ export const $UpdateEmailEndpoint = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         },
         disabled: {
             default: false,
@@ -1272,7 +1301,7 @@ export const $UpdateEmailEndpoint = {
             items: {
                 type: 'string'
             },
-            type: 'array'
+            type: ['array', 'null']
         }
     },
     required: ['urls'],

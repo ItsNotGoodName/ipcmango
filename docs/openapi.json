@@ -51,7 +51,10 @@
               ],
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "ip": {
             "format": "ipv4",
@@ -124,7 +127,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "disabled": {
             "default": false,
@@ -143,7 +149,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "uuid": {
             "format": "uuid",
@@ -260,7 +269,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "ip": {
             "format": "ipv4",
@@ -520,7 +532,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
@@ -753,7 +768,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "group": {
             "type": "string"
@@ -893,7 +911,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "disabled": {
             "type": "boolean"
@@ -915,7 +936,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "uuid": {
             "type": "string"
@@ -977,7 +1001,10 @@
             "items": {
               "$ref": "#/components/schemas/ErrorDetail"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "instance": {
             "description": "A URI reference that identifies the specific occurrence of the problem.",
@@ -1053,6 +1080,10 @@
           "allow_mqtt",
           "can_delete"
         ],
+        "type": "object"
+      },
+      "File": {
+        "additionalProperties": false,
         "type": "object"
       },
       "FileScanCursor": {
@@ -1163,7 +1194,41 @@
             "items": {
               "$ref": "#/components/schemas/DeviceEvent"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "pagination",
+          "data"
+        ],
+        "type": "object"
+      },
+      "ListFiles": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/schemas/ListFiles.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/File"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "pagination": {
             "$ref": "#/components/schemas/PagePagination"
@@ -1442,7 +1507,10 @@
               ],
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "ip": {
             "format": "ipv4",
@@ -1524,7 +1592,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "disabled": {
             "default": false,
@@ -1543,7 +1614,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           }
         },
         "required": [
@@ -1654,7 +1728,10 @@
                   "items": {
                     "$ref": "#/components/schemas/Device"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -1681,7 +1758,10 @@
                 "items": {
                   "$ref": "#/components/schemas/CreateDevice"
                 },
-                "type": "array"
+                "type": [
+                  "array",
+                  "null"
+                ]
               }
             }
           },
@@ -1695,7 +1775,10 @@
                   "items": {
                     "$ref": "#/components/schemas/Device"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2168,7 +2251,10 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceGroup"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2209,7 +2295,10 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceLicense"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2259,7 +2348,10 @@
                   "items": {
                     "$ref": "#/components/schemas/DevicePTZPreset"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2657,7 +2749,10 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceStorage"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2736,7 +2831,10 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceUser"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2777,7 +2875,10 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceActiveUser"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2893,7 +2994,10 @@
                   "items": {
                     "$ref": "#/components/schemas/EmailEndpoint"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -2920,7 +3024,10 @@
                 "items": {
                   "$ref": "#/components/schemas/CreateEmailEndpoint"
                 },
-                "type": "array"
+                "type": [
+                  "array",
+                  "null"
+                ]
               }
             }
           },
@@ -2934,7 +3041,10 @@
                   "items": {
                     "$ref": "#/components/schemas/EmailEndpoint"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -3114,7 +3224,10 @@
                   "items": {
                     "type": "string"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -3144,7 +3257,10 @@
                   "items": {
                     "type": "string"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -3173,7 +3289,10 @@
                 "items": {
                   "type": "string"
                 },
-                "type": "array"
+                "type": [
+                  "array",
+                  "null"
+                ]
               }
             }
           },
@@ -3205,7 +3324,10 @@
                   "items": {
                     "$ref": "#/components/schemas/EventRule"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -3322,7 +3444,10 @@
                   "items": {
                     "$ref": "#/components/schemas/EventRule"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -3406,7 +3531,10 @@
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {
@@ -3417,7 +3545,10 @@
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {
@@ -3428,7 +3559,10 @@
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           }
         ],
@@ -3468,7 +3602,10 @@
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {
@@ -3479,7 +3616,10 @@
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {
@@ -3490,7 +3630,10 @@
               "items": {
                 "type": "string"
               },
-              "type": "array"
+              "type": [
+                "array",
+                "null"
+              ]
             }
           }
         ],
@@ -3550,6 +3693,72 @@
         "summary": "Listen for events"
       }
     },
+    "/api/files": {
+      "get": {
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "perPage",
+            "schema": {
+              "default": 20,
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "device",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListFiles"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List files"
+      }
+    },
     "/api/locations": {
       "get": {
         "responses": {
@@ -3560,7 +3769,10 @@
                   "items": {
                     "type": "string"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -3739,7 +3951,10 @@
                   "items": {
                     "$ref": "#/components/schemas/StorageDestination"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },
@@ -3766,7 +3981,10 @@
                 "items": {
                   "$ref": "#/components/schemas/CreateStorageDestination"
                 },
-                "type": "array"
+                "type": [
+                  "array",
+                  "null"
+                ]
               }
             }
           },
@@ -3780,7 +3998,10 @@
                   "items": {
                     "$ref": "#/components/schemas/StorageDestination"
                   },
-                  "type": "array"
+                  "type": [
+                    "array",
+                    "null"
+                  ]
                 }
               }
             },

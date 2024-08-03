@@ -1,99 +1,104 @@
-import { Menubar } from "@kobalte/core/menubar";
-import { createVirtualizer } from "@tanstack/solid-virtual";
-import { createSignal } from "solid-js";
-import { formatDate } from "~/lib/utils";
-import { Button } from "~/ui/Button";
+import { Image } from "@kobalte/core/image";
+import { createQuery } from "@tanstack/solid-query";
+import { RiMediaImageLine, RiSystemDownloadLine } from "solid-icons/ri";
+import { api } from "./data";
+import { ErrorBoundary, For, Suspense } from "solid-js";
+import { Skeleton } from "~/ui/Skeleton";
+import { PageError, PageTitle } from "~/ui/Page";
+import { formatDate, useQueryFilter, useQueryNumber } from "~/lib/utils";
+import { LayoutCenter } from "~/ui/Layout";
+import { DeviceFilterCombobox } from "~/components/Device";
 import {
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarSeparator,
-  MenubarShortcut,
-  MenubarSub,
-  MenubarSubContent,
-  MenubarSubTrigger,
-  MenubarTrigger,
-} from "~/ui/Menubar";
-
-// type Item = {
-//   color: string;
-//   start_time: Date;
-//   duration: number;
-// };
+  PaginationEllipsis,
+  PaginationEnd,
+  PaginationItem,
+  PaginationItems,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationRoot,
+  PaginationStart,
+} from "~/ui/Pagination";
 
 export default function Files() {
-  // seconds, must be even
-  // const [range, setRange] = createSignal(60 * 60);
-  // current cursor position
-  const [cursor, _] = createSignal(new Date(Date.now()));
-  // items to render
-  // const [items, setItems] = createSignal<Array<Item>>();
-  const [offset, setOffset] = createSignal(0);
+  const pageQuery = useQueryNumber("page", 1);
+  const devicesFilter = useQueryFilter("devices");
 
-  // let down = false;
-  // let startX = 0;
+  const data = createQuery(() => ({
+    ...api.files.list({
+      device: devicesFilter.values(),
+    }),
+    throwOnError: true,
+  }));
 
-  let ref: HTMLDivElement | null;
-  const virtualizer = createVirtualizer({
-    count: 10000,
-    getScrollElement: () => ref,
-    estimateSize: () => 32,
-    overscan: 5,
-  });
+  const devices = createQuery(() => ({
+    ...api.devices.list,
+    throwOnError: true,
+  }));
 
   return (
-    <div class="flex h-full flex-col">
-      <Menubar class="flex h-10 items-center space-x-1 border-b bg-background p-1">
-        <MenubarMenu>
-          <MenubarTrigger>File</MenubarTrigger>
-          <MenubarContent>
-            <MenubarItem>
-              New Tab <MenubarShortcut>⌘+T</MenubarShortcut>
-            </MenubarItem>
-            <MenubarItem>
-              New Window <MenubarShortcut>⌘+N</MenubarShortcut>
-            </MenubarItem>
-            <MenubarItem disabled>New Incognito Window</MenubarItem>
-            <MenubarSeparator />
-            <MenubarSub overlap gutter={4} shift={-8}>
-              <MenubarSubTrigger>Share</MenubarSubTrigger>
-              <MenubarSubContent>
-                <MenubarItem>Email Link</MenubarItem>
-                <MenubarItem>Messages</MenubarItem>
-                <MenubarItem>Notes</MenubarItem>
-              </MenubarSubContent>
-            </MenubarSub>
-            <MenubarSeparator />
-            <MenubarItem>
-              Print... <MenubarShortcut>⌘+P</MenubarShortcut>
-            </MenubarItem>
-          </MenubarContent>
-        </MenubarMenu>
-      </Menubar>
-      <div class="flex-1">{formatDate(cursor())}</div>
-      <div class="flex h-20 flex-col border-t">
-        <div
-          class="relative h-14"
-          ref={ref!}
-          style={{
-            width: `${virtualizer.getTotalSize()}px`,
-          }}
+    <LayoutCenter>
+      <PageTitle>Files</PageTitle>
+      <ErrorBoundary fallback={(e) => <PageError error={e} />}>
+        <div>
+          <DeviceFilterCombobox
+            deviceIDs={devicesFilter.values()}
+            setDeviceIDs={devicesFilter.setValues}
+          />
+        </div>
+
+        <PaginationRoot
+          page={data.data?.pagination.page}
+          count={data.data?.pagination.total_pages || 0}
+          onPageChange={(page) => pageQuery.setValue(page)}
+          itemComponent={(props) => (
+            <PaginationItem page={props.page}>
+              <PaginationLink
+                isActive={props.page == data.data?.pagination.page}
+              >
+                {props.page}
+              </PaginationLink>
+            </PaginationItem>
+          )}
+          ellipsisComponent={() => <PaginationEllipsis />}
         >
-          <div class="flex-1"></div>
-          <div
-            class="h-2 bg-red-500"
-            style={{ translate: offset() + "px" }}
-          ></div>
-        </div>
-        <div class="flex h-10 justify-center gap-2 p-2">
-          <Button size="xs" onClick={() => setOffset((prev) => prev - 1)}>
-            Back
-          </Button>
-          <Button size="xs" onClick={() => setOffset((prev) => prev + 1)}>
-            Forward
-          </Button>
-        </div>
-      </div>
-    </div>
+          <PaginationStart>
+            <PaginationItems />
+          </PaginationStart>
+          <PaginationEnd>
+            <PaginationPrevious />
+            <PaginationNext />
+          </PaginationEnd>
+        </PaginationRoot>
+
+        <Suspense fallback={<Skeleton class="h-32" />}>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <For each={devices.data}>
+              {(device) => (
+                <div class="w-full">
+                  <div class="rounded-b border">
+                    <Image>
+                      <Image.Img
+                        src={`/api/devices/${device.uuid}/snapshot`}
+                        class="aspect-video object-contain"
+                      />
+                      <Image.Fallback>
+                        <RiMediaImageLine class="aspect-video h-full w-full" />
+                      </Image.Fallback>
+                    </Image>
+                    <div class="flex items-center justify-between gap-2 border-t p-2">
+                      <div class="flex flex-col text-sm">
+                        {formatDate(new Date())}
+                      </div>
+                      <RiSystemDownloadLine class="h-5 w-5" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        </Suspense>
+      </ErrorBoundary>
+    </LayoutCenter>
   );
 }
