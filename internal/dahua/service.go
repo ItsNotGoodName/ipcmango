@@ -33,7 +33,7 @@ func (d DefaultWorkerFactory) build(device Device) []sutureext.Service {
 	}
 }
 
-func (f DefaultWorkerFactory) List(ctx context.Context) ([]Worker, error) {
+func (f DefaultWorkerFactory) BuildAll(ctx context.Context) ([]Worker, error) {
 	var devices []Device
 	err := f.db.SelectContext(ctx, &devices, `
 		SELECT * FROM dahua_devices
@@ -55,7 +55,7 @@ func (f DefaultWorkerFactory) List(ctx context.Context) ([]Worker, error) {
 	return services, nil
 }
 
-func (f DefaultWorkerFactory) One(ctx context.Context, deviceKey types.Key) ([]Worker, error) {
+func (f DefaultWorkerFactory) BuildOne(ctx context.Context, deviceKey types.Key) ([]Worker, error) {
 	var devices []Device
 	err := f.db.SelectContext(ctx, &devices, `
 		SELECT * FROM dahua_devices WHERE id = ?
@@ -83,8 +83,8 @@ type Worker struct {
 }
 
 type WorkerFactory interface {
-	List(ctx context.Context) ([]Worker, error)
-	One(ctx context.Context, deviceKey types.Key) ([]Worker, error)
+	BuildAll(ctx context.Context) ([]Worker, error)
+	BuildOne(ctx context.Context, deviceKey types.Key) ([]Worker, error)
 }
 
 func NewWorkerManager(super *suture.Supervisor, serviceFactory WorkerFactory) *WorkerManager {
@@ -135,7 +135,7 @@ func (m *WorkerManager) Start(ctx context.Context) error {
 	m.servicesMu.Lock()
 	defer m.servicesMu.Unlock()
 
-	services, err := m.serviceFactory.List(ctx)
+	services, err := m.serviceFactory.BuildAll(ctx)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (m *WorkerManager) Refresh(ctx context.Context, deviceKey types.Key) error 
 		}
 	}
 
-	services, err := m.serviceFactory.One(ctx, deviceKey)
+	services, err := m.serviceFactory.BuildOne(ctx, deviceKey)
 	if err != nil {
 		return err
 	}

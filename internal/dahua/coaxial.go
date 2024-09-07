@@ -57,7 +57,7 @@ func (w CoaxialWorker) Serve(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	HandleCoaxialStatus(ctx, w.conn.Key, channel, lastStatus)
+	HandleCoaxialStatusChange(ctx, w.conn.Key, channel, lastStatus)
 
 	// Get and send status if it changes on an interval
 	for {
@@ -74,12 +74,12 @@ func (w CoaxialWorker) Serve(ctx context.Context) error {
 			}
 			lastStatus = status
 
-			HandleCoaxialStatus(ctx, w.conn.Key, channel, status)
+			HandleCoaxialStatusChange(ctx, w.conn.Key, channel, status)
 		}
 	}
 }
 
-func HandleCoaxialStatus(ctx context.Context, deviceKey types.Key, channel int, coaxialStatus DeviceCoaxialStatus) {
+func HandleCoaxialStatusChange(ctx context.Context, deviceKey types.Key, channel int, coaxialStatus DeviceCoaxialStatus) {
 	bus.Publish(bus.CoaxialStatusUpdated{
 		DeviceKey:  deviceKey,
 		Channel:    channel,

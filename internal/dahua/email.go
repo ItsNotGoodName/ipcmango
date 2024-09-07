@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-// -------------------- EmailEndpoint CRUD
 type EmailEndpoint struct {
 	types.Key
 	types.Timestamp
@@ -242,7 +241,6 @@ func associateEmailEndpointWithDevices(ctx context.Context, tx *sqlx.Tx, emailEn
 	return nil
 }
 
-// -------------------- Email CRUD
 type EmailMessage struct {
 	types.Key
 	Device_ID           int64
@@ -397,8 +395,6 @@ func DeleteOrphanEmailAttachments(ctx context.Context, afs afero.Fs, db *sqlx.DB
 
 	return DeleteOrphanEmailAttachments(ctx, afs, db)
 }
-
-// ---------- END
 
 type EmailContent struct {
 	AlarmEvent        string
