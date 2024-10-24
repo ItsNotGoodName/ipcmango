@@ -946,9 +946,17 @@ export const $GetHomePage = {
         file_usage: {
             format: 'int64',
             type: 'integer'
+        },
+        home: {
+            '$ref': '#/components/schemas/GetHomePageEmails'
         }
     },
-    required: ['device_count', 'event_count', 'email_count', 'file_count', 'db_usage', 'file_usage', 'build'],
+    required: ['device_count', 'event_count', 'email_count', 'file_count', 'db_usage', 'file_usage', 'build', 'home'],
+    type: 'object'
+} as const;
+
+export const $GetHomePageEmails = {
+    additionalProperties: false,
     type: 'object'
 } as const;
 

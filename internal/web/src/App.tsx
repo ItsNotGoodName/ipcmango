@@ -1,5 +1,4 @@
 import { provideTheme } from "./ui/theme";
-import { createQueryKeyStore } from "@lukemorales/query-key-factory";
 import { lazy } from "solid-js";
 import { Route, Router } from "@solidjs/router";
 import { NotFound } from "./pages/404";
@@ -23,12 +22,6 @@ const EventsRules = lazy(() => import("~/pages/EventsRules"));
 import loadEventsRules from "~/pages/EventsRules.data";
 const Files = lazy(() => import("~/pages/Files"));
 import loadFiles from "~/pages/Files.data";
-
-export const queries = createQueryKeyStore({
-  github: {
-    tanstack: null,
-  },
-});
 
 function App() {
   provideTheme();

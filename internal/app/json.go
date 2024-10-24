@@ -244,11 +244,14 @@ type UpdateEventRule struct {
 //---------- Pages
 
 type GetHomePage struct {
-	Device_Count int         `json:"device_count"`
-	Event_Count  int         `json:"event_count"`
-	Email_Count  int         `json:"email_count"`
-	File_Count   int         `json:"file_count"`
-	DB_Usage     int         `json:"db_usage"`
-	FileUsage    int64       `json:"file_usage"`
-	Build        build.Build `json:"build"`
+	Device_Count int               `json:"device_count"`
+	Event_Count  int               `json:"event_count"`
+	Email_Count  int               `json:"email_count"`
+	File_Count   int               `json:"file_count"`
+	DB_Usage     int               `json:"db_usage"`
+	FileUsage    int64             `json:"file_usage"`
+	Build        build.Build       `json:"build"`
+	Emails       GetHomePageEmails `json:"home"`
 }
+
+type GetHomePageEmails struct{}

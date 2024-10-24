@@ -352,6 +352,11 @@ export type GetHomePage = {
     event_count: number;
     file_count: number;
     file_usage: number;
+    home: GetHomePageEmails;
+};
+
+export type GetHomePageEmails = {
+    [key: string]: unknown;
 };
 
 export type ListEvents = {

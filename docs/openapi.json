@@ -1165,6 +1165,9 @@
           "file_usage": {
             "format": "int64",
             "type": "integer"
+          },
+          "home": {
+            "$ref": "#/components/schemas/GetHomePageEmails"
           }
         },
         "required": [
@@ -1174,8 +1177,13 @@
           "file_count",
           "db_usage",
           "file_usage",
-          "build"
+          "build",
+          "home"
         ],
+        "type": "object"
+      },
+      "GetHomePageEmails": {
+        "additionalProperties": false,
         "type": "object"
       },
       "ListEvents": {
