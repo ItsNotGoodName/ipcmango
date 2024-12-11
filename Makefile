@@ -4,7 +4,7 @@ export SERVICE_DIR=ipcmanview_data
 -include .env
 
 TOOL_AIR=github.com/cosmtrek/air@v1.51.0
-TOOL_GOOSE=github.com/pressly/goose/v3/cmd/goose@v3.20.0
+TOOL_GOOSE=github.com/pressly/goose/v3/cmd/goose@v3.23.0
 TOOL_RESTISH=github.com/danielgtaylor/restish@v0.20.0
 
 migration:

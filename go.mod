@@ -21,16 +21,16 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/phsym/console-slog v0.3.1
 	github.com/pkg/sftp v1.13.6
-	github.com/pressly/goose/v3 v3.22.0
+	github.com/pressly/goose/v3 v3.23.0
 	github.com/reugn/go-quartz v0.13.0
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/thejerf/suture/v4 v4.0.6
 	github.com/tidwall/gjson v1.17.3
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/crypto v0.28.0
-	modernc.org/sqlite v1.32.0
+	modernc.org/sqlite v1.34.1
 )
 
 require (
@@ -64,7 +64,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
