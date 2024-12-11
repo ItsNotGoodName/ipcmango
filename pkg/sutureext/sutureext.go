@@ -3,7 +3,6 @@ package sutureext
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log/slog"
 
 	"github.com/thejerf/suture/v4"
@@ -43,50 +42,6 @@ func EventHook() suture.EventHook {
 type Service interface {
 	String() string
 	suture.Service
-}
-
-func Add(super *suture.Supervisor, service Service) suture.ServiceToken {
-	return super.Add(sanitizeService{Service: service})
-}
-
-type sanitizeService struct {
-	Service
-}
-
-func (s sanitizeService) Serve(ctx context.Context) error {
-	return SanitizeError(ctx, s.Service.Serve(ctx))
-}
-
-// SanitizeError prevents the error from being interpreted as a context error unless it
-// really is a context error because suture kills the service when it sees a context error.
-func SanitizeError(ctx context.Context, err error) error {
-	if err == nil {
-		return nil
-	}
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
-	if !(errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
-		return err
-	}
-
-	var newErrs [3]error
-
-	if errors.Is(err, suture.ErrDoNotRestart) {
-		newErrs[0] = suture.ErrDoNotRestart
-	}
-
-	if errors.Is(err, suture.ErrTerminateSupervisorTree) {
-		newErrs[1] = suture.ErrTerminateSupervisorTree
-	}
-
-	newErrs[2] = errors.New(err.Error())
-
-	return errors.Join(newErrs[:]...)
 }
 
 type ServiceFunc struct {

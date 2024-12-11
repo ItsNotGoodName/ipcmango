@@ -141,7 +141,7 @@ func (m *WorkerManager) Start(ctx context.Context) error {
 	}
 
 	for _, service := range services {
-		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], sutureext.Add(m.super, service.Service))
+		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], m.super.Add(service.Service))
 	}
 
 	return nil
@@ -167,7 +167,7 @@ func (m *WorkerManager) Refresh(ctx context.Context, deviceKey types.Key) error 
 	}
 
 	for _, service := range services {
-		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], sutureext.Add(m.super, service.Service))
+		m.services[service.DeviceKey.UUID] = append(m.services[service.DeviceKey.UUID], m.super.Add(service.Service))
 	}
 
 	return nil
