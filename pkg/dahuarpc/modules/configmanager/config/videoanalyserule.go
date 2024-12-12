@@ -8,8 +8,8 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/configmanager"
 )
 
-func GetVideoAnalyseRules(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[VideoAnalyseRules], error) {
-	return configmanager.GetConfig[VideoAnalyseRules](ctx, c, "VideoAnalyseRule", true)
+func GetVideoAnalyseRules(ctx context.Context, c dahuarpc.Conn) (configmanager.ConfigArray[VideoAnalyseRules], error) {
+	return configmanager.GetConfigArray[VideoAnalyseRules](ctx, c, "VideoAnalyseRule")
 }
 
 type VideoAnalyseRule struct {

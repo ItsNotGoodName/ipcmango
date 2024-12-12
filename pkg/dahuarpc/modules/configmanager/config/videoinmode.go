@@ -9,8 +9,8 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/configmanager"
 )
 
-func GetVideoInMode(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[VideoInMode], error) {
-	return configmanager.GetConfig[VideoInMode](ctx, c, "VideoInMode", true)
+func GetVideoInMode(ctx context.Context, c dahuarpc.Conn) (configmanager.ConfigArray[VideoInMode], error) {
+	return configmanager.GetConfigArray[VideoInMode](ctx, c, "VideoInMode")
 }
 
 type VideoInMode struct {

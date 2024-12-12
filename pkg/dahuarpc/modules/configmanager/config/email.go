@@ -8,7 +8,7 @@ import (
 )
 
 func GetEmail(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[Email], error) {
-	return configmanager.GetConfig[Email](ctx, c, "Email", false)
+	return configmanager.GetConfig[Email](ctx, c, "Email")
 }
 
 type Email struct {

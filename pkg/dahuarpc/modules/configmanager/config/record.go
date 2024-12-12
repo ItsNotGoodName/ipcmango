@@ -9,8 +9,8 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/configmanager"
 )
 
-func GetRecord(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[Record], error) {
-	return configmanager.GetConfig[Record](ctx, c, "Record", true)
+func GetRecord(ctx context.Context, c dahuarpc.Conn) (configmanager.ConfigArray[Record], error) {
+	return configmanager.GetConfigArray[Record](ctx, c, "Record")
 }
 
 type Record struct {

@@ -36,9 +36,20 @@ func NewStoreClient(conn Conn) StoreClient {
 		},
 	}
 
-	clientRPC := dahuarpc.NewClient(&httpClient, urL, conn.Username, conn.Password)
+	clientRPC := dahuarpc.NewClient(
+		"",
+		conn.Username,
+		conn.Password,
+		dahuarpc.WithHTTPClient(&httpClient),
+		dahuarpc.WithURL(dahuarpc.URL(urL), dahuarpc.LoginURL(urL)),
+	)
 	clientPTZ := ptz.NewClient(clientRPC)
-	clientCGI := dahuacgi.NewClient(httpClient, urL, conn.Username, conn.Password)
+	clientCGI := dahuacgi.NewClient(
+		"",
+		conn.Username,
+		conn.Password,
+		dahuacgi.WithURL(dahuacgi.URL(urL)),
+	)
 	clientFile := dahuarpc.NewFileClient(&httpClient, 10)
 
 	return StoreClient{

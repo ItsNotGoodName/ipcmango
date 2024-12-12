@@ -8,7 +8,7 @@ import (
 )
 
 func GetNTP(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[NTP], error) {
-	return configmanager.GetConfig[NTP](ctx, c, "NTP", false)
+	return configmanager.GetConfig[NTP](ctx, c, "NTP")
 }
 
 type NTP struct {

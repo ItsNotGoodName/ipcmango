@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -16,8 +15,11 @@ var ErrClientClosed = errors.New("client closed")
 const clientKeepAliveTimeout = 60 * time.Second
 
 type Config struct {
-	ctx     context.Context
-	onError func(err error)
+	ctx         context.Context
+	rpcURL      string
+	rpcLoginURL string
+	onError     func(err error)
+	httpClient  *http.Client
 }
 
 type ConfigFunc func(c *Config)
@@ -31,6 +33,19 @@ func WithContext(ctx context.Context) ConfigFunc {
 func WithOnError(fn func(err error)) ConfigFunc {
 	return func(c *Config) {
 		c.onError = fn
+	}
+}
+
+func WithHTTPClient(httpClient *http.Client) ConfigFunc {
+	return func(c *Config) {
+		c.httpClient = httpClient
+	}
+}
+
+func WithURL(rpcURL, rpcLoginURL string) ConfigFunc {
+	return func(c *Config) {
+		c.rpcURL = rpcURL
+		c.rpcLoginURL = rpcLoginURL
 	}
 }
 
@@ -112,10 +127,13 @@ func (s clientLogin) Do(ctx context.Context, rb RequestBuilder) (io.ReadCloser, 
 	return DoRaw(ctx, rb.ID(s.NextID()).Session(s.Session), s.client, urL)
 }
 
-func NewClient(httpClient *http.Client, u *url.URL, username, password string, configFuncs ...ConfigFunc) Client {
+func NewClient(ip, username, password string, configFuncs ...ConfigFunc) Client {
 	cfg := Config{
-		ctx:     context.Background(),
-		onError: clientLogError(u.String()),
+		ctx:         context.Background(),
+		rpcURL:      fmt.Sprintf("http://%s/RPC2", ip),
+		rpcLoginURL: fmt.Sprintf("http://%s/RPC2_Login", ip),
+		onError:     clientLogError(ip),
+		httpClient:  http.DefaultClient,
 	}
 
 	for _, fn := range configFuncs {
@@ -123,11 +141,11 @@ func NewClient(httpClient *http.Client, u *url.URL, username, password string, c
 	}
 
 	c := Client{
-		client:      httpClient,
+		client:      cfg.httpClient,
 		username:    username,
 		password:    password,
-		rpcURL:      URL(u),
-		rpcLoginURL: LoginURL(u),
+		rpcURL:      cfg.rpcURL,
+		rpcLoginURL: cfg.rpcLoginURL,
 		onError:     cfg.onError,
 		doneC:       make(chan struct{}),
 		rpcCC:       make(chan chan clientRPC),

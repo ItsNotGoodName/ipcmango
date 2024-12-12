@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"slices"
 	"time"
 
@@ -241,8 +240,7 @@ func (w EventWorker) Serve(ctx context.Context) error {
 	slog.Info("Started service", "service", w.String())
 	defer slog.Info("Stopped service", "service", w.String())
 
-	connURL, _ := url.Parse("http://" + w.conn.IP)
-	c := dahuacgi.NewClient(http.Client{}, connURL, w.conn.Username, w.conn.Password)
+	c := dahuacgi.NewClient(w.conn.IP, w.conn.Username, w.conn.Password)
 
 	manager, err := dahuacgi.EventManagerGet(ctx, c, 0)
 	if err != nil {

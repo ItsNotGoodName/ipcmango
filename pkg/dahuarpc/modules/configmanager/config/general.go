@@ -8,7 +8,7 @@ import (
 )
 
 func GetGeneral(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[General], error) {
-	return configmanager.GetConfig[General](ctx, c, "General", false)
+	return configmanager.GetConfig[General](ctx, c, "General")
 }
 
 type General struct {

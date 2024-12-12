@@ -3,28 +3,52 @@ package configmanager
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc"
 )
 
 type ConfigData interface {
+	// Merge should merge its own data with the input js.
+	// The return should be the merged data.
 	Merge(js string) (string, error)
+	// Validate its own data.
 	Validate() error
 }
 
 type ConfigTable[T ConfigData] struct {
 	Data T
-	JSON json.RawMessage
+	raw  string
+}
+
+func (ct *ConfigTable[T]) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &ct.Data); err != nil {
+		return err
+	}
+
+	err := ct.Data.Validate()
+	if err != nil {
+		return err
+	}
+
+	ct.raw = string(data)
+
+	return nil
+}
+
+func (ct *ConfigTable[T]) MarshalJSON() ([]byte, error) {
+	b, err := ct.Data.Merge(string(ct.raw))
+	if err != nil {
+		return nil, err
+	}
+	return []byte(b), err
 }
 
 type Config[T ConfigData] struct {
 	name   string
-	array  bool
-	Tables []ConfigTable[T]
+	Tables ConfigTable[T]
 }
 
-func GetConfig[T ConfigData](ctx context.Context, c dahuarpc.Conn, name string, array bool) (Config[T], error) {
+func GetConfig[T ConfigData](ctx context.Context, c dahuarpc.Conn, name string) (Config[T], error) {
 	rb := dahuarpc.
 		New("configManager.getConfig").
 		Params(struct {
@@ -33,96 +57,68 @@ func GetConfig[T ConfigData](ctx context.Context, c dahuarpc.Conn, name string, 
 			Name: name,
 		})
 
-	var tables []json.RawMessage
-	if array {
-		res, err := dahuarpc.Send[struct {
-			Table []json.RawMessage `json:"table"`
-		}](ctx, c, rb)
-		if err != nil {
-			return Config[T]{}, err
-		}
-
-		tables = res.Params.Table
-	} else {
-		res, err := dahuarpc.Send[struct {
-			Table json.RawMessage `json:"table"`
-		}](ctx, c, rb)
-		if err != nil {
-			return Config[T]{}, err
-		}
-
-		tables = append(tables, res.Params.Table)
-	}
-	if len(tables) == 0 {
-		return Config[T]{}, fmt.Errorf("no tables")
-	}
-
-	var configTables []ConfigTable[T]
-	for _, table := range tables {
-		var data T
-		if err := json.Unmarshal(table, &data); err != nil {
-			return Config[T]{}, err
-		}
-
-		err := data.Validate()
-		if err != nil {
-			return Config[T]{}, err
-		}
-
-		configTables = append(configTables, ConfigTable[T]{
-			Data: data,
-			JSON: table,
-		})
+	res, err := dahuarpc.Send[struct {
+		Table ConfigTable[T] `json:"table"`
+	}](ctx, c, rb)
+	if err != nil {
+		return Config[T]{}, err
 	}
 
 	return Config[T]{
 		name:   name,
-		array:  array,
-		Tables: configTables,
+		Tables: res.Params.Table,
 	}, nil
 }
 
 func SetConfig[T ConfigData](ctx context.Context, c dahuarpc.Conn, config Config[T]) error {
-	table, err := config.table()
-	if err != nil {
-		return err
-	}
-
-	_, err = dahuarpc.Send[any](ctx, c, dahuarpc.
+	_, err := dahuarpc.Send[any](ctx, c, dahuarpc.
 		New("configManager.setConfig").
 		Params(struct {
-			Name  string          `json:"name"`
-			Table json.RawMessage `json:"table"`
+			Name  string         `json:"name"`
+			Table ConfigTable[T] `json:"table"`
 		}{
 			Name:  config.name,
-			Table: table,
+			Table: config.Tables,
 		}))
 	return err
 }
 
-func (c Config[T]) table() (json.RawMessage, error) {
-	if len(c.Tables) == 0 {
-		return nil, fmt.Errorf("no tables")
-	}
+type ConfigArray[T ConfigData] struct {
+	name   string
+	Tables []ConfigTable[T]
+}
 
-	var tables []json.RawMessage
-	for _, table := range c.Tables {
-		js, err := table.Data.Merge(string(table.JSON))
-		if err != nil {
-			return nil, err
-		}
+func GetConfigArray[T ConfigData](ctx context.Context, c dahuarpc.Conn, name string) (ConfigArray[T], error) {
+	rb := dahuarpc.
+		New("configManager.getConfig").
+		Params(struct {
+			Name string `json:"name"`
+		}{
+			Name: name,
+		})
 
-		tables = append(tables, json.RawMessage(js))
-	}
-
-	if !c.array {
-		return tables[0], nil
-	}
-
-	b, err := json.Marshal(tables)
+	res, err := dahuarpc.Send[struct {
+		Table []ConfigTable[T] `json:"table"`
+	}](ctx, c, rb)
 	if err != nil {
-		return nil, err
+		return ConfigArray[T]{}, err
 	}
 
-	return json.RawMessage(b), nil
+	return ConfigArray[T]{
+		name:   name,
+		Tables: res.Params.Table,
+	}, nil
+}
+
+func SetConfigArray[T ConfigData](ctx context.Context, c dahuarpc.Conn, config ConfigArray[T]) error {
+	_, err := dahuarpc.Send[any](ctx, c, dahuarpc.
+		New("configManager.setConfig").
+		Params(struct {
+			Name  string           `json:"name"`
+			Table []ConfigTable[T] `json:"table"`
+		}{
+			Name:  config.name,
+			Table: config.Tables,
+		}))
+	return err
 }

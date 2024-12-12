@@ -65,7 +65,7 @@ func SyncVideoInMode(ctx context.Context, c dahuarpc.Conn, args SyncVideoInModeA
 	}
 
 	if changed {
-		err := configmanager.SetConfig(ctx, c, cfg)
+		err := configmanager.SetConfigArray(ctx, c, cfg)
 		if err != nil {
 			return DeviceVideoInMode{}, err
 		}

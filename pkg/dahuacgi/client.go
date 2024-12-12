@@ -9,24 +9,45 @@ import (
 	"github.com/icholy/digest"
 )
 
+type Config struct {
+	url string
+}
+
+type ConfigFunc func(c *Config)
+
+func WithURL(urL string) ConfigFunc {
+	return func(c *Config) {
+		c.url = urL
+	}
+}
+
 type Client struct {
 	client  *http.Client
 	baseURL string
 }
 
-func NewClient(httpClient http.Client, u *url.URL, username, password string) Client {
-	t := &digest.Transport{
-		Username: username,
-		Password: password,
+func NewClient(ip, username, password string, configFuncs ...ConfigFunc) Client {
+	cfg := Config{
+		url: fmt.Sprintf("http://%s/cgi-bin/", ip),
 	}
-	if httpClient.Transport != nil {
-		t.Transport = httpClient.Transport
+
+	for _, fn := range configFuncs {
+		fn(&cfg)
 	}
-	httpClient.Transport = t
+
 	return Client{
-		baseURL: fmt.Sprintf("%s://%s/cgi-bin/", u.Scheme, u.Hostname()),
-		client:  &httpClient,
+		baseURL: cfg.url,
+		client: &http.Client{
+			Transport: &digest.Transport{
+				Username: username,
+				Password: password,
+			},
+		},
 	}
+}
+
+func URL(u *url.URL) string {
+	return fmt.Sprintf("%s://%s/cgi-bin/", u.Scheme, u.Hostname())
 }
 
 func (c Client) Do(ctx context.Context, r *Request) (*http.Response, error) {

@@ -9,8 +9,8 @@ import (
 	"github.com/ItsNotGoodName/ipcmanview/pkg/dahuarpc/modules/configmanager"
 )
 
-func GetStorageGroup(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[StorageGroup], error) {
-	return configmanager.GetConfig[StorageGroup](ctx, c, "StorageGroup", true)
+func GetStorageGroup(ctx context.Context, c dahuarpc.Conn) (configmanager.ConfigArray[StorageGroup], error) {
+	return configmanager.GetConfigArray[StorageGroup](ctx, c, "StorageGroup")
 }
 
 type StorageGroup struct {

@@ -10,7 +10,7 @@ import (
 )
 
 func GetLocales(ctx context.Context, c dahuarpc.Conn) (configmanager.Config[Locales], error) {
-	return configmanager.GetConfig[Locales](ctx, c, "Locales", false)
+	return configmanager.GetConfig[Locales](ctx, c, "Locales")
 }
 
 type Locales struct {
